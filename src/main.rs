@@ -69,9 +69,9 @@ fn create_gcroot(gcroot_path: &str, store_path: &StorePath) -> Result<(), Box<dy
 
 fn get_store_path(nix_build_result: process::Output) -> Result<StorePath, Box<dyn Error>> {
     if nix_build_result.status.success() {
-        return String::from_utf8(nix_build_result.stdout)
+        String::from_utf8(nix_build_result.stdout)
             .map_err(Box::from)
-            .map(StorePath::from);
+            .map(StorePath::from)
     } else {
         String::from_utf8(nix_build_result.stderr).map_or_else(boxed_error(), boxed_error())
     }
