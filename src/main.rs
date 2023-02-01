@@ -1,6 +1,8 @@
 use clap::Parser;
 use std::error::Error;
-use std::{env, process, str};
+use std::os::unix;
+use std::path::Path;
+use std::{env, fs, process, str};
 
 #[derive(Debug)]
 struct StorePath {
@@ -30,6 +32,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     // we will move this to /nix/var/nix/profiles/system later on.
     let user = env::var("USER").expect("USER env var undefined");
     let profile_path = format!("/nix/var/nix/profiles/per-user/{}/{}", user, profile_name);
+    let gcroot_path = format!(
+        "/nix/var/nix/gcroots/per-user/{}/{}-current",
+        user, profile_name
+    );
 
     let flake_attr = "serviceConfig";
 
@@ -38,6 +44,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let store_path = get_store_path(nix_build_output)?;
     println!("Found store path: {:?}", store_path);
     print_out_and_err(install_nix_profile(&store_path, &profile_path));
+    create_gcroot(&gcroot_path, &store_path).expect("Failed to create GC root.");
     Ok(())
 }
 
@@ -50,6 +57,14 @@ fn install_nix_profile(store_path: &StorePath, profile_path: &str) -> process::O
         .arg("--remove-all")
         .output()
         .expect("Failed to execute nix-env, is it on your path?")
+}
+
+fn create_gcroot(gcroot_path: &str, store_path: &StorePath) -> Result<(), Box<dyn Error>> {
+    let path = Path::new(gcroot_path);
+    if path.is_symlink() {
+        fs::remove_file(path).expect("Error removing old GC root.");
+    }
+    unix::fs::symlink(&store_path.path, gcroot_path).map_err(Box::from)
 }
 
 fn get_store_path(nix_build_result: process::Output) -> Result<StorePath, Box<dyn Error>> {
