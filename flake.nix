@@ -11,25 +11,6 @@
       module = { imports = [ ./modules ]; };
     };
 
-    lib = {
-      makeServiceConfig = { system, module }:
-        let
-          lib = nixpkgs.lib;
-          nixosConfig = nixpkgs.lib.nixosSystem {
-            inherit system;
-            specialArgs = { };
-            modules = [ module ];
-          };
-          services = lib.flip lib.genAttrs
-            (serviceName:
-              nixosConfig.config.systemd.units."${serviceName}.service".unit)
-            nixosConfig.config.service-manager.services;
-        in
-        nixpkgs.legacyPackages.${system}.writeTextFile {
-          name = "services";
-          destination = "/services.json";
-          text = lib.generators.toJSON { } services;
-        };
-    };
+    lib = import ./lib.nix { inherit nixpkgs; };
   };
 }
