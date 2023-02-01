@@ -7,13 +7,13 @@
 
   outputs = { self, nixpkgs, flake-utils }: {
     serviceConfig = self.lib.makeServiceConfig {
+      system = flake-utils.lib.system.x86_64-linux;
       module = { imports = [ ./modules ]; };
     };
 
     lib = {
-      makeServiceConfig = { module }:
+      makeServiceConfig = { system, module }:
         let
-          system = flake-utils.lib.system.x86_64-linux;
           lib = nixpkgs.lib;
           nixosConfig = nixpkgs.lib.nixosSystem {
             inherit system;
