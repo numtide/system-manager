@@ -8,9 +8,9 @@
   outputs = { self, nixpkgs, flake-utils }: {
     serviceConfig = self.lib.makeServiceConfig {
       system = flake-utils.lib.system.x86_64-linux;
-      module = { imports = [ ./modules ]; };
+      module = { imports = [ ./nix/modules ]; };
     };
 
-    lib = import ./lib.nix { inherit nixpkgs; };
+    lib = import ./nix/lib.nix { inherit nixpkgs; };
   };
 }
