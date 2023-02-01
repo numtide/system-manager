@@ -5,6 +5,8 @@ in
 {
   makeServiceConfig = { system, module }:
     let
+      pkgs = nixpkgs.legacyPackages.${system};
+
       nixosConfig = lib.nixosSystem {
         inherit system;
         specialArgs = { };
@@ -14,10 +16,19 @@ in
         (serviceName:
           nixosConfig.config.systemd.units."${serviceName}.service".unit)
         nixosConfig.config.service-manager.services;
+
+      servicesPath =
+        pkgs.writeTextFile {
+          name = "services";
+          destination = "/services.json";
+          text = lib.generators.toJSON { } services;
+        };
+      activationScript = pkgs.writeShellScript "activate" ''
+        echo "${servicesPath}"
+      '';
     in
-    nixpkgs.legacyPackages.${system}.writeTextFile {
-      name = "services";
-      destination = "/services.json";
-      text = lib.generators.toJSON { } services;
-    };
+    pkgs.linkFarmFromDrvs "service-manager" [
+      servicesPath
+      activationScript
+    ];
 }
