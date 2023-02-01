@@ -37,7 +37,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         user, profile_name
     );
 
-    let flake_attr = "serviceConfig";
+    let flake_attr = "serviceConfig.x86_64-linux";
 
     let nix_build_output = run_nix_build(&args.flake_uri, flake_attr);
 
