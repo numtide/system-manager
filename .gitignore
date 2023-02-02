@@ -6,3 +6,4 @@
 **/*.rs.bk
 
 result
+.pre-commit-config.yaml
