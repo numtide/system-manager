@@ -32,7 +32,7 @@
     , pre-commit-hooks
     ,
     }:
-    flake-utils.lib.eachDefaultSystem (system:
+    (flake-utils.lib.eachDefaultSystem (system:
     let
       pkgs = import nixpkgs {
         inherit system;
@@ -57,8 +57,6 @@
         inherit system;
         module = { imports = [ ./nix/modules ]; };
       };
-
-      lib = import ./nix/lib.nix { inherit nixpkgs; };
 
       packages = rec {
         service-manager =
@@ -127,5 +125,9 @@
           };
         };
       };
-    });
+    }))
+    //
+    {
+      lib = import ./nix/lib.nix { inherit nixpkgs; };
+    };
 }
