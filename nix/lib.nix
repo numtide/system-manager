@@ -5,16 +5,15 @@ in
 {
   makeServiceConfig =
     { system
-    , module
+    , modules
     ,
     }:
     let
       pkgs = nixpkgs.legacyPackages.${system};
 
       nixosConfig = lib.nixosSystem {
-        inherit system;
+        inherit system modules;
         specialArgs = { };
-        modules = [ module ];
       };
       services =
         lib.flip lib.genAttrs

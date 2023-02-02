@@ -55,7 +55,9 @@
     {
       serviceConfig = self.lib.makeServiceConfig {
         inherit system;
-        module = { imports = [ ./nix/modules ]; };
+        modules = [
+          ./nix/modules
+        ];
       };
 
       packages = rec {
