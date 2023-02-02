@@ -52,8 +52,8 @@
         };
       };
     in
-    rec {
-      serviceConfig = lib.makeServiceConfig {
+    {
+      serviceConfig = self.lib.makeServiceConfig {
         inherit system;
         module = { imports = [ ./nix/modules ]; };
       };
