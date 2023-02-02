@@ -6,6 +6,7 @@ in
   makeServiceConfig =
     { system
     , modules
+    , service-manager
     ,
     }:
     let
@@ -15,11 +16,13 @@ in
         inherit system modules;
         specialArgs = { };
       };
-      services =
-        lib.flip lib.genAttrs
-          (serviceName:
-            nixosConfig.config.systemd.units."${serviceName}.service".unit)
-          nixosConfig.config.service-manager.services;
+
+      services = map
+        (name: {
+          inherit name;
+          service = ''${nixosConfig.config.systemd.units."${name}.service".unit}/${name}.service'';
+        })
+        nixosConfig.config.service-manager.services;
 
       servicesPath = pkgs.writeTextFile {
         name = "services";
@@ -27,7 +30,8 @@ in
         text = lib.generators.toJSON { } services;
       };
       activationScript = pkgs.writeShellScript "activate" ''
-        echo "${servicesPath}"
+        ${service-manager}/bin/service-manager activate \
+          --store-path "$(realpath $(dirname ''${0}))"
       '';
     in
     pkgs.linkFarmFromDrvs "service-manager" [

@@ -58,9 +58,10 @@
         modules = [
           ./nix/modules
         ];
+        inherit (self.packages.${system}) service-manager;
       };
 
-      packages = rec {
+      packages = {
         service-manager =
           pkgs.rustPlatform.buildRustPackage
             {
@@ -74,7 +75,7 @@
 
               cargoLock.lockFile = ./Cargo.lock;
             };
-        default = service-manager;
+        default = self.packages.${system}.service-manager;
       };
       devShells.default = pkgs.devshell.mkShell {
         packages = with pkgs; [
