@@ -69,9 +69,8 @@ impl ServiceConfig {
     }
 }
 
-// TODO: error message if not euid 0
 fn activate(store_path: StorePath) -> Result<(), Box<dyn Error>> {
-    if nix::unistd::Uid::is_root(nix::unistd::getuid()) {
+    if !nix::unistd::Uid::is_root(nix::unistd::getuid()) {
         return Err("We need root permissions.".into());
     }
     println!("Activating service-manager profile: {}", store_path);
@@ -89,6 +88,12 @@ fn activate(store_path: StorePath) -> Result<(), Box<dyn Error>> {
         )
     })?;
 
+    start_services(&services);
+
+    Ok(())
+}
+
+fn start_services(services: &[ServiceConfig]) {
     if process::Command::new("systemctl")
         .arg("daemon-reload")
         .output()
@@ -97,17 +102,21 @@ fn activate(store_path: StorePath) -> Result<(), Box<dyn Error>> {
         .success()
     {
         services.iter().for_each(|service| {
-            print_out_and_err(
+            println!("Starting service {} ...", service.name);
+            let output = print_out_and_err(
                 process::Command::new("systemctl")
                     .arg("start")
                     .arg(&service.name)
                     .output()
                     .expect("Unable to run systemctl"),
             );
+            if output.status.success() {
+                println!("Started service {}", service.name);
+            } else {
+                println!("Error starting service {}", service.name);
+            }
         });
     }
-
-    Ok(())
 }
 
 fn generate(flake_uri: &str) -> Result<(), Box<dyn Error>> {
