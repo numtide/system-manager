@@ -1,7 +1,7 @@
+use anyhow::{anyhow, Result};
 use clap::Parser;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::error::Error;
 use std::os::unix;
 use std::path::Path;
 use std::{env, fs, io, process, str};
@@ -47,8 +47,10 @@ enum Action {
     },
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<()> {
     let args = Args::parse();
+
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
     match args.action {
         Action::Activate { store_path } => activate(store_path),
@@ -69,17 +71,17 @@ impl ServiceConfig {
     }
 }
 
-fn activate(store_path: StorePath) -> Result<(), Box<dyn Error>> {
+fn activate(store_path: StorePath) -> Result<()> {
     if !nix::unistd::Uid::is_root(nix::unistd::getuid()) {
-        return Err("We need root permissions.".into());
+        log::error!("We need root permissions");
+        return Err(anyhow!("We need root permissions."));
     }
-    println!("Activating service-manager profile: {}", store_path);
+    log::info!("Activating service-manager profile: {}", store_path);
 
     let file = fs::File::open(store_path.path + "/services/services.json")?;
     let reader = io::BufReader::new(file);
 
     let services: Vec<ServiceConfig> = serde_json::from_reader(reader)?;
-    println!("{:?}", services);
 
     services.iter().try_for_each(|service| {
         create_store_link(
@@ -102,7 +104,7 @@ fn start_services(services: &[ServiceConfig]) {
         .success()
     {
         services.iter().for_each(|service| {
-            println!("Starting service {} ...", service.name);
+            log::info!("Starting service {} ...", service.name);
             let output = print_out_and_err(
                 process::Command::new("systemctl")
                     .arg("start")
@@ -111,15 +113,15 @@ fn start_services(services: &[ServiceConfig]) {
                     .expect("Unable to run systemctl"),
             );
             if output.status.success() {
-                println!("Started service {}", service.name);
+                log::info!("Started service {}", service.name);
             } else {
-                println!("Error starting service {}", service.name);
+                log::error!("Error starting service {}", service.name);
             }
         });
     }
 }
 
-fn generate(flake_uri: &str) -> Result<(), Box<dyn Error>> {
+fn generate(flake_uri: &str) -> Result<()> {
     let user = env::var("USER")?;
     // TODO: we temporarily put this under per-user to avoid needing root access
     // we will move this to /nix/var/nix/profiles/ later on.
@@ -131,49 +133,53 @@ fn generate(flake_uri: &str) -> Result<(), Box<dyn Error>> {
     // FIXME: we should not hard-code the system here
     let flake_attr = format!("{}.x86_64-linux", FLAKE_ATTR);
 
-    println!("Running nix build...");
-    let nix_build_output = run_nix_build(flake_uri, &flake_attr);
-    let store_path = get_store_path(nix_build_output)?;
+    log::info!("Running nix build...");
+    let store_path = run_nix_build(flake_uri, &flake_attr).and_then(get_store_path)?;
 
-    println!("Generating new generation from {}", store_path);
-    print_out_and_err(install_nix_profile(&store_path, &profile_path));
+    log::info!("Generating new generation from {}", store_path);
+    install_nix_profile(&store_path, &profile_path).map(print_out_and_err)?;
 
-    println!("Registering GC root...");
+    log::info!("Registering GC root...");
     create_gcroot(&gcroot_path, &profile_path)?;
     Ok(())
 }
 
-fn install_nix_profile(store_path: &StorePath, profile_path: &str) -> process::Output {
+fn install_nix_profile(store_path: &StorePath, profile_path: &str) -> Result<process::Output> {
     process::Command::new("nix-env")
         .arg("--profile")
         .arg(profile_path)
         .arg("--set")
         .arg(&store_path.path)
         .output()
-        .expect("Failed to execute nix-env, is it on your path?")
+        .map_err(anyhow::Error::from)
 }
 
-fn create_gcroot(gcroot_path: &str, profile_path: &str) -> Result<(), Box<dyn Error>> {
+fn create_gcroot(gcroot_path: &str, profile_path: &str) -> Result<()> {
     let profile_store_path = fs::canonicalize(profile_path)?;
     let store_path = StorePath::from(String::from(profile_store_path.to_string_lossy()));
     create_store_link(&store_path, Path::new(gcroot_path))
 }
 
-fn create_store_link(store_path: &StorePath, from: &Path) -> Result<(), Box<dyn Error>> {
-    println!("Creating symlink: {} -> {}", from.display(), store_path);
+fn create_store_link(store_path: &StorePath, from: &Path) -> Result<()> {
+    log::info!("Creating symlink: {} -> {}", from.display(), store_path);
     if from.is_symlink() {
         fs::remove_file(from)?;
     }
-    unix::fs::symlink(&store_path.path, from).map_err(Box::from)
+    unix::fs::symlink(&store_path.path, from).map_err(anyhow::Error::from)
 }
 
-fn get_store_path(nix_build_result: process::Output) -> Result<StorePath, Box<dyn Error>> {
+fn get_store_path(nix_build_result: process::Output) -> Result<StorePath> {
     if nix_build_result.status.success() {
         String::from_utf8(nix_build_result.stdout)
-            .map_err(Box::from)
+            .map_err(anyhow::Error::from)
             .and_then(parse_nix_build_output)
     } else {
-        String::from_utf8(nix_build_result.stderr).map_or_else(boxed_error(), boxed_error())
+        String::from_utf8(nix_build_result.stderr)
+            .map_err(anyhow::Error::from)
+            .and_then(|e| {
+                log::error!("{}", e);
+                Err(anyhow!("Nix build failed."))
+            })
     }
 }
 
@@ -184,7 +190,7 @@ struct NixBuildOutput {
     outputs: HashMap<String, String>,
 }
 
-fn parse_nix_build_output(output: String) -> Result<StorePath, Box<dyn Error>> {
+fn parse_nix_build_output(output: String) -> Result<StorePath> {
     let expected_output_name = "out";
     let results: Vec<NixBuildOutput> = serde_json::from_str(&output)?;
 
@@ -192,22 +198,23 @@ fn parse_nix_build_output(output: String) -> Result<StorePath, Box<dyn Error>> {
         if let Some(store_path) = result.outputs.get(expected_output_name) {
             return Ok(StorePath::from(store_path.to_owned()));
         }
-        return Err(format!(
+        return Err(anyhow!(
             "No output '{}' found in nix build result.",
             expected_output_name
-        )
-        .into());
+        ));
     }
-    Err("Multiple build results were returned, we cannot handle that yet.".into())
+    Err(anyhow!(
+        "Multiple build results were returned, we cannot handle that yet."
+    ))
 }
 
-fn run_nix_build(flake_uri: &str, flake_attr: &str) -> process::Output {
+fn run_nix_build(flake_uri: &str, flake_attr: &str) -> Result<process::Output> {
     process::Command::new("nix")
         .arg("build")
         .arg(format!("{}#{}", flake_uri, flake_attr))
         .arg("--json")
         .output()
-        .expect("Failed to execute nix, is it on your path?")
+        .map_err(anyhow::Error::from)
 }
 
 fn print_out_and_err(output: process::Output) -> process::Output {
@@ -219,7 +226,7 @@ fn print_out_and_err(output: process::Output) -> process::Output {
 fn print_u8(bytes: &[u8]) {
     str::from_utf8(bytes).map_or((), |s| {
         if !s.trim().is_empty() {
-            println!("{}", s.trim())
+            log::info!("{}", s.trim())
         }
     })
 }
@@ -230,11 +237,4 @@ where
     G: Fn(A) -> B,
 {
     move |x| f(g(x))
-}
-
-fn boxed_error<V, E>() -> impl Fn(E) -> Result<V, Box<dyn Error>>
-where
-    E: Into<Box<dyn Error>>,
-{
-    compose(Err, Into::into)
 }
