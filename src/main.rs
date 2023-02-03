@@ -139,11 +139,7 @@ fn generate(flake_uri: &str) -> Result<(), Box<dyn Error>> {
     print_out_and_err(install_nix_profile(&store_path, &profile_path));
 
     println!("Registering GC root...");
-    let profile_store_path = std::fs::canonicalize(&profile_path)?;
-    create_gcroot(
-        &gcroot_path,
-        &StorePath::from(String::from(profile_store_path.to_string_lossy())),
-    )?;
+    create_gcroot(&gcroot_path, &profile_path)?;
     Ok(())
 }
 
@@ -157,15 +153,16 @@ fn install_nix_profile(store_path: &StorePath, profile_path: &str) -> process::O
         .expect("Failed to execute nix-env, is it on your path?")
 }
 
-fn create_gcroot(gcroot_path: &str, store_path: &StorePath) -> Result<(), Box<dyn Error>> {
-    create_store_link(store_path, Path::new(gcroot_path))
+fn create_gcroot(gcroot_path: &str, profile_path: &str) -> Result<(), Box<dyn Error>> {
+    let profile_store_path = fs::canonicalize(profile_path)?;
+    let store_path = StorePath::from(String::from(profile_store_path.to_string_lossy()));
+    create_store_link(&store_path, Path::new(gcroot_path))
 }
 
 fn create_store_link(store_path: &StorePath, from: &Path) -> Result<(), Box<dyn Error>> {
     println!("Creating symlink: {} -> {}", from.display(), store_path);
     if from.is_symlink() {
-        fs::remove_file(from)
-            .unwrap_or_else(|_| panic!("Error removing old symlink: {}.", from.display()));
+        fs::remove_file(from)?;
     }
     unix::fs::symlink(&store_path.path, from).map_err(Box::from)
 }
