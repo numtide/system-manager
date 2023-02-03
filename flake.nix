@@ -38,7 +38,7 @@
         inherit system;
         overlays = [ (import rust-overlay) devshell.overlay ];
       };
-      rust = pkgs.rust-bin.stable."1.64.0";
+      rust = pkgs.rust-bin.stable."1.66.0";
       llvm = pkgs.llvmPackages_latest;
       # treefmt-nix configuration
       treefmt.config = {
@@ -104,17 +104,13 @@
             value = "${llvm.libclang}/lib";
           }
           {
-            # for rust-anaylzer
+            # for rust-analyzer
             name = "RUST_SRC_PATH";
             value = "${rust.rust-src}";
           }
           {
             name = "RUST_BACKTRACE";
             value = "1";
-          }
-          {
-            name = "RUST_LOG";
-            value = "info";
           }
           {
             name = "DEVSHELL_NO_MOTD";
