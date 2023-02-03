@@ -120,26 +120,30 @@ fn start_services(services: &[ServiceConfig]) {
 }
 
 fn generate(flake_uri: &str) -> Result<(), Box<dyn Error>> {
+    let user = env::var("USER")?;
     // TODO: we temporarily put this under per-user to avoid needing root access
-    // we will move this to /nix/var/nix/profiles/system later on.
-    let user = env::var("USER").expect("USER env var undefined");
-    let profile_path = format!("/nix/var/nix/profiles/per-user/{}/{}", user, PROFILE_NAME);
-    let gcroot_path = format!(
-        "/nix/var/nix/gcroots/per-user/{}/{}-current",
-        user, PROFILE_NAME
-    );
+    // we will move this to /nix/var/nix/profiles/ later on.
+    let profiles_dir = format!("profiles/per-user/{}", user);
+    let gcroots_dir = format!("gcroots/per-user/{}", user);
+    let profile_path = format!("/nix/var/nix/{}/{}", profiles_dir, PROFILE_NAME);
+    let gcroot_path = format!("/nix/var/nix/{}/{}-current", gcroots_dir, PROFILE_NAME);
 
     // FIXME: we should not hard-code the system here
     let flake_attr = format!("{}.x86_64-linux", FLAKE_ATTR);
 
     println!("Running nix build...");
     let nix_build_output = run_nix_build(flake_uri, &flake_attr);
-
     let store_path = get_store_path(nix_build_output)?;
+
     println!("Generating new generation from {}", store_path);
     print_out_and_err(install_nix_profile(&store_path, &profile_path));
+
     println!("Registering GC root...");
-    create_gcroot(&gcroot_path, &store_path).expect("Failed to create GC root.");
+    let profile_store_path = std::fs::canonicalize(&profile_path)?;
+    create_gcroot(
+        &gcroot_path,
+        &StorePath::from(String::from(profile_store_path.to_string_lossy())),
+    )?;
     Ok(())
 }
 
@@ -147,9 +151,8 @@ fn install_nix_profile(store_path: &StorePath, profile_path: &str) -> process::O
     process::Command::new("nix-env")
         .arg("--profile")
         .arg(profile_path)
-        .arg("--install")
+        .arg("--set")
         .arg(&store_path.path)
-        .arg("--remove-all")
         .output()
         .expect("Failed to execute nix-env, is it on your path?")
 }
@@ -198,7 +201,7 @@ fn parse_nix_build_output(output: String) -> Result<StorePath, Box<dyn Error>> {
         )
         .into());
     }
-    Err("Multiple build results were returned, we cannot handle that yet.No output '{}' found in nix build result.".into())
+    Err("Multiple build results were returned, we cannot handle that yet.".into())
 }
 
 fn run_nix_build(flake_uri: &str, flake_attr: &str) -> process::Output {
