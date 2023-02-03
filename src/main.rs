@@ -1,3 +1,5 @@
+mod systemd;
+
 use anyhow::{anyhow, Result};
 use clap::Parser;
 use serde::{Deserialize, Serialize};

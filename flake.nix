@@ -74,6 +74,13 @@
               };
 
               cargoLock.lockFile = ./Cargo.lock;
+
+              nativeBuildInputs = with pkgs; [
+                pkg-config
+              ];
+              buildInputs = with pkgs; [
+                dbus
+              ];
             };
         default = self.packages.${system}.service-manager;
       };
@@ -82,10 +89,16 @@
           llvm.clang
           openssl
           pkg-config
-          rust.default
+          (rust.default.override {
+            extensions = [ "rust-src" ];
+          })
           (treefmt-nix.lib.mkWrapper pkgs treefmt.config)
         ];
         env = [
+          {
+            name = "PKG_CONFIG_PATH";
+            value = "${pkgs.lib.getOutput "dev" pkgs.dbus}/lib/pkgconfig";
+          }
           {
             name = "LIBCLANG_PATH";
             value = "${llvm.libclang}/lib";
