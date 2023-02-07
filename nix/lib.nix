@@ -17,12 +17,17 @@ in
         specialArgs = { };
       };
 
-      services = map
-        (name: {
-          inherit name;
-          service = ''${nixosConfig.config.systemd.units."${name}.service".unit}/${name}.service'';
-        })
-        nixosConfig.config.service-manager.services;
+      services =
+        map
+          (name:
+            let
+              serviceName = "${name}.service";
+            in
+            {
+              name = serviceName;
+              service = ''${nixosConfig.config.systemd.units."${serviceName}".unit}/${serviceName}'';
+            })
+          nixosConfig.config.service-manager.services;
 
       servicesPath = pkgs.writeTextFile {
         name = "services";
