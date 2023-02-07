@@ -4,22 +4,27 @@
 mod manager;
 mod unit;
 
-use anyhow::Error;
-
 use crate::{
     systemd::manager::{OrgFreedesktopSystemd1Manager, OrgFreedesktopSystemd1ManagerJobRemoved},
     systemd::unit::OrgFreedesktopSystemd1Unit,
 };
+use anyhow::Error;
 use dbus::{
     blocking::{Connection, Proxy},
+    channel::Token,
     Message, Path,
 };
 use std::{
     collections::HashSet,
+    hash::Hash,
     rc::Rc,
     result::Result,
-    sync::atomic::{AtomicBool, Ordering},
     sync::Arc,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Mutex,
+    },
+    thread,
     time::{Duration, Instant},
 };
 
@@ -74,7 +79,8 @@ pub struct Job<'a> {
 }
 
 pub struct JobMonitor {
-    ready: Arc<AtomicBool>,
+    job_names: Arc<Mutex<HashSet<String>>>,
+    tokens: HashSet<Token>,
 }
 
 impl Drop for ServiceManager {
@@ -85,7 +91,7 @@ impl Drop for ServiceManager {
 
 impl ServiceManager {
     pub fn new_session() -> Result<ServiceManager, Error> {
-        let conn = Connection::new_session()?;
+        let conn = Connection::new_system()?;
         let proxy = Proxy::new(
             SD_DESTINATION,
             SD_PATH,
@@ -143,43 +149,52 @@ impl ServiceManager {
         }
     }
 
-    pub fn monitor_jobs_init<F, I>(&self, names: I, handler: F) -> Result<JobMonitor, Error>
-    where
-        F: Fn(&str, &str) + Send + 'static,
-        I: IntoIterator,
-        I::Item: AsRef<String>,
-    {
-        let mut names_remaining = names
-            .into_iter()
-            .map(|n| String::from(n.as_ref()))
-            .collect::<HashSet<_>>();
-        let ready = Arc::new(AtomicBool::from(false));
-        let ready_jobs_removed = Arc::clone(&ready);
+    pub fn monitor_jobs_init(&self) -> Result<JobMonitor, Error> {
+        let job_names: Arc<Mutex<HashSet<String>>> = Arc::new(Mutex::from(HashSet::new()));
 
-        self.proxy.match_signal(
+        let job_names_clone = Arc::clone(&job_names);
+        let token = self.proxy.match_signal(
             move |h: OrgFreedesktopSystemd1ManagerJobRemoved, _: &Connection, _: &Message| {
-                names_remaining.remove(&h.unit);
-                handler(&h.unit, &h.result);
-
-                let res = names_remaining.is_empty();
-                ready_jobs_removed.store(res, Ordering::Relaxed);
-                !res
+                log::debug!("{} added", h.unit);
+                log_thread("Signal handling");
+                {
+                    // Insert a new name, and let the lock go out of scope immediately
+                    job_names_clone.lock().unwrap().insert(h.unit);
+                }
+                // The callback gets removed at the end of monitor_jobs_finish
+                true
             },
         )?;
 
-        Ok(JobMonitor { ready })
+        Ok(JobMonitor {
+            job_names: Arc::clone(&job_names),
+            tokens: HashSet::from([token]),
+        })
     }
 
     /// Waits for the monitored jobs to finish. Returns `true` if all jobs
     /// finished before the timeout, `false` otherwise.
-    pub fn monitor_jobs_finish(
+    pub fn monitor_jobs_finish<I>(
         &self,
-        job_monitor: &JobMonitor,
+        job_monitor: JobMonitor,
         timeout: &Option<Duration>,
-    ) -> Result<bool, Error> {
+        services: I,
+    ) -> Result<bool, Error>
+    where
+        I: IntoIterator,
+        I::Item: AsRef<String> + Eq + Hash,
+    {
+        log::info!("Waiting for jobs to finish...");
         let start_time = Instant::now();
 
-        while !job_monitor.ready.load(Ordering::Relaxed) {
+        let mut waiting_for = services
+            .into_iter()
+            .map(|n| String::from(n.as_ref()))
+            .collect::<HashSet<String>>();
+        let total_jobs = waiting_for.len();
+
+        while !waiting_for.is_empty() {
+            log_thread("Job handling");
             self.proxy.connection.process(Duration::from_millis(50))?;
 
             if timeout
@@ -188,8 +203,28 @@ impl ServiceManager {
             {
                 return Ok(false);
             }
+            {
+                let mut job_names = job_monitor.job_names.lock().unwrap();
+                waiting_for = waiting_for
+                    .iter()
+                    .filter_map(|n| {
+                        if job_names.contains(n) {
+                            None
+                        } else {
+                            Some(n.to_owned())
+                        }
+                    })
+                    .collect();
+                *job_names = HashSet::new();
+                log::debug!("{:?}/{:?}", waiting_for.len(), total_jobs);
+            }
         }
-
+        log::info!("All jobs finished.");
+        // Remove the signal handling callback
+        job_monitor
+            .tokens
+            .into_iter()
+            .try_for_each(|t| self.proxy.match_stop(t, true))?;
         Ok(true)
     }
 
@@ -257,4 +292,9 @@ impl UnitManager<'_> {
     pub fn refuse_manual_stop(&self) -> Result<bool, Error> {
         Ok(OrgFreedesktopSystemd1Unit::refuse_manual_stop(&self.proxy)?)
     }
+}
+
+fn log_thread(name: &str) {
+    let thread = thread::current();
+    log::debug!("{} thread: {:?} ({:?})", name, thread.name(), thread.id());
 }

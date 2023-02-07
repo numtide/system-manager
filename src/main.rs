@@ -3,10 +3,11 @@ mod systemd;
 use anyhow::{anyhow, Result};
 use clap::Parser;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::os::unix;
 use std::path::Path;
-use std::{env, fs, io, process, str};
+use std::time::Duration;
+use std::{env, fs, io, iter, process, str};
 
 const FLAKE_ATTR: &str = "serviceConfig";
 const PROFILE_NAME: &str = "service-manager";
@@ -49,14 +50,21 @@ enum Action {
     },
 }
 
-fn main() -> Result<()> {
+fn main() {
     let args = Args::parse();
 
+    // FIXME: set default level to info
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
     match args.action {
-        Action::Activate { store_path } => activate(store_path),
-        Action::Generate { flake_uri } => generate(&flake_uri),
+        Action::Activate { store_path } => handle_toplevel_error(activate(store_path)),
+        Action::Generate { flake_uri } => handle_toplevel_error(generate(&flake_uri)),
+    }
+}
+
+fn handle_toplevel_error<T>(r: Result<T>) {
+    if let Err(e) = r {
+        log::error!("{}", e)
     }
 }
 
@@ -75,7 +83,6 @@ impl ServiceConfig {
 
 fn activate(store_path: StorePath) -> Result<()> {
     if !nix::unistd::Uid::is_root(nix::unistd::getuid()) {
-        log::error!("We need root permissions");
         return Err(anyhow!("We need root permissions."));
     }
     log::info!("Activating service-manager profile: {}", store_path);
@@ -88,39 +95,50 @@ fn activate(store_path: StorePath) -> Result<()> {
     services.iter().try_for_each(|service| {
         create_store_link(
             &service.store_path(),
-            Path::new(&format!("/run/systemd/system/{}.service", service.name)),
+            Path::new(&format!("/run/systemd/system/{}", service.name)),
         )
     })?;
 
-    start_services(&services);
+    let service_manager = systemd::ServiceManager::new_session()?;
+    start_services(&service_manager, &services, &Some(Duration::from_secs(30)))?;
 
     Ok(())
 }
 
-fn start_services(services: &[ServiceConfig]) {
-    if process::Command::new("systemctl")
-        .arg("daemon-reload")
-        .output()
-        .expect("Unable to run systemctl.")
-        .status
-        .success()
-    {
-        services.iter().for_each(|service| {
-            log::info!("Starting service {} ...", service.name);
-            let output = print_out_and_err(
-                process::Command::new("systemctl")
-                    .arg("start")
-                    .arg(&service.name)
-                    .output()
-                    .expect("Unable to run systemctl"),
-            );
-            if output.status.success() {
-                log::info!("Started service {}", service.name);
-            } else {
-                log::error!("Error starting service {}", service.name);
+fn start_services(
+    service_manager: &systemd::ServiceManager,
+    services: &[ServiceConfig],
+    timeout: &Option<Duration>,
+) -> Result<()> {
+    service_manager.daemon_reload()?;
+
+    let job_monitor = service_manager.monitor_jobs_init()?;
+
+    let successful_services = services.iter().fold(HashSet::new(), |set, service| {
+        match service_manager.restart_unit(&service.name) {
+            Ok(_) => {
+                log::info!("Restarting service {}...", service.name);
+                set.into_iter()
+                    .chain(iter::once(Box::new(service.name.to_owned())))
+                    .collect()
             }
-        });
+            Err(e) => {
+                log::error!(
+                    "Error restarting unit, please consult the logs: {}",
+                    service.name
+                );
+                log::error!("{}", e);
+                set
+            }
+        }
+    });
+
+    if !service_manager.monitor_jobs_finish(job_monitor, timeout, successful_services)? {
+        anyhow::bail!("Timeout waiting for systemd jobs");
     }
+
+    // TODO: do we want to propagate unit failures here in some way?
+    Ok(())
 }
 
 fn generate(flake_uri: &str) -> Result<()> {
