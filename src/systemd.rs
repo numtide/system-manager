@@ -155,8 +155,8 @@ impl ServiceManager {
         let job_names_clone = Arc::clone(&job_names);
         let token = self.proxy.match_signal(
             move |h: OrgFreedesktopSystemd1ManagerJobRemoved, _: &Connection, _: &Message| {
-                log::debug!("{} added", h.unit);
                 log_thread("Signal handling");
+                log::info!("Job for {} done", h.unit);
                 {
                     // Insert a new name, and let the lock go out of scope immediately
                     job_names_clone.lock().unwrap().insert(h.unit);
