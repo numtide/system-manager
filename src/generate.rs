@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
-use std::{env, fs, process, str};
+use std::{fs, process, str};
 
 use super::{create_store_link, StorePath, FLAKE_ATTR, PROFILE_NAME};
 
@@ -14,13 +14,8 @@ struct NixBuildOutput {
 }
 
 pub fn generate(flake_uri: &str) -> Result<()> {
-    let user = env::var("USER")?;
-    // TODO: we temporarily put this under per-user to avoid needing root access
-    // we will move this to /nix/var/nix/profiles/ later on.
-    let profiles_dir = format!("profiles/per-user/{}", user);
-    let gcroots_dir = format!("gcroots/per-user/{}", user);
-    let profile_path = format!("/nix/var/nix/{}/{}", profiles_dir, PROFILE_NAME);
-    let gcroot_path = format!("/nix/var/nix/{}/{}-current", gcroots_dir, PROFILE_NAME);
+    let profile_path = format!("/nix/var/nix/profiles/{}", PROFILE_NAME);
+    let gcroot_path = format!("/nix/var/nix/gcroots/{}-current", PROFILE_NAME);
 
     // FIXME: we should not hard-code the system here
     let flake_attr = format!("{}.x86_64-linux", FLAKE_ATTR);
