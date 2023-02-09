@@ -18,16 +18,14 @@ in
       };
 
       services =
-        map
-          (name:
-            let
-              serviceName = "${name}.service";
-            in
-            {
-              name = serviceName;
-              service = ''${nixosConfig.config.systemd.units."${serviceName}".unit}/${serviceName}'';
-            })
-          nixosConfig.config.service-manager.services;
+        lib.listToAttrs
+          (map
+            (name:
+              let
+                serviceName = "${name}.service";
+              in
+              lib.nameValuePair serviceName { storePath = ''${nixosConfig.config.systemd.units."${serviceName}".unit}/${serviceName}''; })
+            nixosConfig.config.service-manager.services);
 
       servicesPath = pkgs.writeTextFile {
         name = "services";

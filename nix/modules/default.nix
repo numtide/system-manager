@@ -4,31 +4,32 @@
 }:
 let
   services =
-    lib.listToAttrs (lib.flip lib.genList 30 (ix: {
-      name = "service-${toString ix}";
-      value = {
-        enable = true;
-        description = "service-${toString ix}";
-        wants = [ "network-online.target" ];
-        after = [
-          "network-online.target"
-          "avahi-daemon.service"
-          "chrony.service"
-          "nss-lookup.target"
-          "tinc.service"
-          "pulseaudio.service"
-        ];
-        serviceConfig = {
-          Type = "oneshot";
-          RemainAfterExit = true;
-          ExecReload = "true";
-        };
-        wantedBy = [ "multi-user.target" ];
-        script = ''
-          sleep ${if ix > 20 then "3" else "1"}
-        '';
-      };
-    }));
+    lib.listToAttrs
+      (lib.flip lib.genList 10 (ix:
+        lib.nameValuePair "service-${toString ix}"
+          {
+            enable = true;
+            description = "service-${toString ix}";
+            wants = [ "network-online.target" ];
+            after = [
+              "network-online.target"
+              "avahi-daemon.service"
+              "chrony.service"
+              "nss-lookup.target"
+              "tinc.service"
+              "pulseaudio.service"
+            ];
+            serviceConfig = {
+              Type = "oneshot";
+              RemainAfterExit = true;
+              ExecReload = "true";
+            };
+            wantedBy = [ "multi-user.target" ];
+            script = ''
+              sleep ${if ix > 5 then "3" else "1"}
+            '';
+          })
+      );
 in
 {
   options = {

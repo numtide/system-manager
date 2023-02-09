@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::{fs, process, str};
 
-use super::{create_store_link, StorePath, FLAKE_ATTR, PROFILE_NAME};
+use super::{create_store_link, StorePath, FLAKE_ATTR, GCROOT_PATH, PROFILE_PATH};
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -14,9 +14,6 @@ struct NixBuildOutput {
 }
 
 pub fn generate(flake_uri: &str) -> Result<()> {
-    let profile_path = format!("/nix/var/nix/profiles/{}", PROFILE_NAME);
-    let gcroot_path = format!("/nix/var/nix/gcroots/{}-current", PROFILE_NAME);
-
     // FIXME: we should not hard-code the system here
     let flake_attr = format!("{}.x86_64-linux", FLAKE_ATTR);
 
@@ -24,10 +21,10 @@ pub fn generate(flake_uri: &str) -> Result<()> {
     let store_path = run_nix_build(flake_uri, &flake_attr).and_then(get_store_path)?;
 
     log::info!("Generating new generation from {}", store_path);
-    install_nix_profile(&store_path, &profile_path).map(print_out_and_err)?;
+    install_nix_profile(&store_path, PROFILE_PATH).map(print_out_and_err)?;
 
     log::info!("Registering GC root...");
-    create_gcroot(&gcroot_path, &profile_path)?;
+    create_gcroot(GCROOT_PATH, PROFILE_PATH)?;
     Ok(())
 }
 
@@ -36,7 +33,7 @@ fn install_nix_profile(store_path: &StorePath, profile_path: &str) -> Result<pro
         .arg("--profile")
         .arg(profile_path)
         .arg("--set")
-        .arg(&store_path.path)
+        .arg(&store_path.store_path)
         .output()
         .map_err(anyhow::Error::from)
 }

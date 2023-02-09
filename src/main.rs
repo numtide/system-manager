@@ -28,7 +28,7 @@ fn main() -> ExitCode {
     let args = Args::parse();
 
     // FIXME: set default level to info
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug")).init();
     handle_toplevel_error(go(args.action))
 }
 

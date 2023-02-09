@@ -1,73 +1,135 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
+use std::fs::DirBuilder;
 use std::path::Path;
 use std::time::Duration;
-use std::{fs, io, iter, str};
+use std::{fs, io, str};
 
-use super::{create_store_link, systemd, StorePath};
+use super::{create_store_link, systemd, StorePath, SERVICE_MANAGER_STATE_DIR, SYSTEMD_UNIT_DIR};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct ServiceConfig {
-    name: String,
-    service: String,
+    #[serde(flatten)]
+    store_path: StorePath,
 }
 
-impl ServiceConfig {
-    fn store_path(&self) -> StorePath {
-        StorePath::from(self.service.to_owned())
-    }
+type Services = HashMap<String, ServiceConfig>;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct LinkedServiceConfig {
+    #[serde(flatten)]
+    service_config: ServiceConfig,
+    linked_path: String,
 }
+
+type LinkedServices = HashMap<String, LinkedServiceConfig>;
 
 pub fn activate(store_path: StorePath) -> Result<()> {
     log::info!("Activating service-manager profile: {}", store_path);
 
-    let file = fs::File::open(store_path.path + "/services/services.json")?;
+    log::debug!("{:?}", read_linked_services()?);
+
+    log::info!("Reading service definitions...");
+    let file = fs::File::open(store_path.store_path + "/services/services.json")?;
     let reader = io::BufReader::new(file);
+    let services: Services = serde_json::from_reader(reader)?;
 
-    let services: Vec<ServiceConfig> = serde_json::from_reader(reader)?;
-
-    services.iter().try_for_each(|service| {
-        create_store_link(
-            &service.store_path(),
-            Path::new(&format!("/run/systemd/system/{}", service.name)),
-        )
-    })?;
+    let linked_services = link_services(services);
+    serialise_linked_services(&linked_services)?;
 
     let service_manager = systemd::ServiceManager::new_session()?;
-    start_services(&service_manager, &services, &Some(Duration::from_secs(30)))?;
-
+    start_services(
+        &service_manager,
+        linked_services,
+        &Some(Duration::from_secs(30)),
+    )?;
     Ok(())
+}
+
+fn link_services(services: Services) -> LinkedServices {
+    services.iter().fold(
+        HashMap::with_capacity(services.len()),
+        |mut linked_services, (name, service_config)| {
+            let linked_path = format!("{}/{}", SYSTEMD_UNIT_DIR, name);
+            match create_store_link(&service_config.store_path, Path::new(&linked_path)) {
+                Ok(_) => {
+                    linked_services.insert(
+                        name.to_owned(),
+                        LinkedServiceConfig {
+                            service_config: service_config.to_owned(),
+                            linked_path,
+                        },
+                    );
+                    linked_services
+                }
+                e @ Err(_) => {
+                    log::error!("Error linking service {}, skipping.", name);
+                    log::error!("{:?}", e);
+                    linked_services
+                }
+            }
+        },
+    )
+}
+
+// FIXME: we should probably lock this file to avoid concurrent writes
+fn serialise_linked_services(linked_services: &LinkedServices) -> Result<()> {
+    let state_file = format!("{}/services.json", SERVICE_MANAGER_STATE_DIR);
+    DirBuilder::new()
+        .recursive(true)
+        .create(SERVICE_MANAGER_STATE_DIR)?;
+
+    log::info!("Writing state info into file: {}", state_file);
+    let writer = io::BufWriter::new(fs::File::create(state_file)?);
+    serde_json::to_writer(writer, linked_services)?;
+    Ok(())
+}
+
+fn read_linked_services() -> Result<LinkedServices> {
+    let state_file = format!("{}/services.json", SERVICE_MANAGER_STATE_DIR);
+    DirBuilder::new()
+        .recursive(true)
+        .create(SERVICE_MANAGER_STATE_DIR)?;
+
+    if Path::new(&state_file).is_file() {
+        log::info!("Reading state info from {}", state_file);
+        let reader = io::BufReader::new(fs::File::open(state_file)?);
+        let linked_services = serde_json::from_reader(reader)?;
+        return Ok(linked_services);
+    }
+    Ok(HashMap::default())
 }
 
 fn start_services(
     service_manager: &systemd::ServiceManager,
-    services: &[ServiceConfig],
+    services: LinkedServices,
     timeout: &Option<Duration>,
 ) -> Result<()> {
     service_manager.daemon_reload()?;
 
     let job_monitor = service_manager.monitor_jobs_init()?;
 
-    let successful_services = services.iter().fold(HashSet::new(), |set, service| {
-        match service_manager.restart_unit(&service.name) {
+    let successful_services = services.keys().fold(
+        HashSet::with_capacity(services.len()),
+        |mut set, service| match service_manager.restart_unit(service) {
             Ok(_) => {
-                log::info!("Restarting service {}...", service.name);
-                set.into_iter()
-                    .chain(iter::once(Box::new(service.name.to_owned())))
-                    .collect()
+                log::info!("Restarting service {}...", service);
+                set.insert(Box::new(service.to_owned()));
+                set
             }
             Err(e) => {
                 log::error!(
                     "Error restarting unit, please consult the logs: {}",
-                    service.name
+                    service
                 );
                 log::error!("{}", e);
                 set
             }
-        }
-    });
+        },
+    );
 
     if !service_manager.monitor_jobs_finish(job_monitor, timeout, successful_services)? {
         anyhow::bail!("Timeout waiting for systemd jobs");
