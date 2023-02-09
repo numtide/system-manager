@@ -4,21 +4,39 @@
     flake-utils.url = "github:numtide/flake-utils";
     devshell = {
       url = "github:numtide/devshell";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
     };
     nix-filter.url = "github:numtide/nix-filter";
     pre-commit-hooks = {
       url = "github:cachix/pre-commit-hooks.nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
     };
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
     };
-    treefmt-nix.url = "github:numtide/treefmt-nix";
+    crane = {
+      url = "github:ipetkov/crane";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+        rust-overlay.follows = "rust-overlay";
+        flake-compat.follows = "pre-commit-hooks/flake-compat";
+      };
+    };
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -27,6 +45,7 @@
     , flake-utils
     , nix-filter
     , rust-overlay
+    , crane
     , devshell
     , treefmt-nix
     , pre-commit-hooks
@@ -40,6 +59,34 @@
       };
       rust = pkgs.rust-bin.stable."1.66.0";
       llvm = pkgs.llvmPackages_latest;
+
+      craneLib = (crane.mkLib pkgs).overrideToolchain rust.default;
+
+      # Common derivation arguments used for all builds
+      commonArgs = {
+        src = craneLib.cleanCargoSource ./.;
+        buildInputs = with pkgs; [
+          dbus
+        ];
+        nativeBuildInputs = with pkgs; [
+          pkg-config
+        ];
+      };
+
+      # Build only the cargo dependencies
+      cargoArtifacts = craneLib.buildDepsOnly (commonArgs // {
+        pname = "system-manager";
+      });
+
+      system-manager = craneLib.buildPackage (commonArgs // {
+        inherit cargoArtifacts;
+      });
+
+      system-manager-clippy = craneLib.cargoClippy (commonArgs // {
+        inherit cargoArtifacts;
+        cargoClippyExtraArgs = "--all-targets -- --deny warnings";
+      });
+
       # treefmt-nix configuration
       treefmt.config = {
         projectRootFile = "flake.nix";
@@ -58,31 +105,12 @@
         modules = [
           ./nix/modules
         ];
-        inherit (self.packages.${system}) service-manager;
+        inherit (self.packages.${system}) system-manager;
       };
 
       packages = {
-        service-manager =
-          pkgs.rustPlatform.buildRustPackage
-            {
-              pname = "service-manager";
-              version = (pkgs.lib.importTOML ./Cargo.toml).package.version;
-
-              src = nix-filter.lib {
-                root = ./.;
-                include = [ "Cargo.toml" "Cargo.lock" (nix-filter.lib.inDirectory "src") ];
-              };
-
-              cargoLock.lockFile = ./Cargo.lock;
-
-              nativeBuildInputs = with pkgs; [
-                pkg-config
-              ];
-              buildInputs = with pkgs; [
-                dbus
-              ];
-            };
-        default = self.packages.${system}.service-manager;
+        inherit system-manager;
+        default = self.packages.${system}.system-manager;
       };
       devShells.default = pkgs.devshell.mkShell {
         packages = with pkgs; [
@@ -93,6 +121,7 @@
             extensions = [ "rust-src" ];
           })
           (treefmt-nix.lib.mkWrapper pkgs treefmt.config)
+          self.packages.${system}.system-manager
         ];
         env = [
           {
@@ -117,10 +146,7 @@
             value = "1";
           }
         ];
-        devshell.startup.pre-commit.text = self.checks.${system}.pre-commit-check.shellHook;
-      };
-      checks = {
-        pre-commit-check = pre-commit-hooks.lib.${system}.run {
+        devshell.startup.pre-commit.text = (pre-commit-hooks.lib.${system}.run {
           src = ./.;
           hooks = {
             check-format = {
@@ -135,7 +161,13 @@
               pass_filenames = false;
             };
           };
-        };
+        }).shellHook;
+      };
+      checks = {
+        inherit
+          # Build the crate as part of `nix flake check` for convenience
+          system-manager
+          system-manager-clippy;
       };
     }))
     //

@@ -95,14 +95,13 @@ fn link_services(services: Services) -> Result<LinkedServices> {
                         name.to_owned(),
                         LinkedServiceConfig::new(service_config.to_owned(), linked_path)?,
                     );
-                    Ok(linked_services)
                 }
                 e @ Err(_) => {
                     log::error!("Error linking service {}, skipping.", name);
                     log::error!("{:?}", e);
-                    Ok(linked_services)
                 }
-            }
+            };
+            Ok(linked_services)
         },
     )
 }
@@ -190,7 +189,7 @@ where
             }
             Err(e) => {
                 log::error!(
-                    "Service {}: Error {}, please consult the logs",
+                    "Service {}: error {}, please consult the logs",
                     service,
                     log_action
                 );
