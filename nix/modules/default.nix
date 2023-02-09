@@ -33,13 +33,13 @@ let
 in
 {
   options = {
-    service-manager.services = lib.mkOption {
+    system-manager.services = lib.mkOption {
       type = with lib.types; listOf str;
     };
   };
 
   config = {
-    service-manager.services = lib.attrNames services;
+    system-manager.services = lib.attrNames services;
     systemd = { inherit services; };
   };
 }

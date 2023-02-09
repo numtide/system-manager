@@ -17,14 +17,17 @@ pub fn generate(flake_uri: &str) -> Result<()> {
     // FIXME: we should not hard-code the system here
     let flake_attr = format!("{}.x86_64-linux", FLAKE_ATTR);
 
+    log::info!("Building new system-manager generation...");
     log::info!("Running nix build...");
     let store_path = run_nix_build(flake_uri, &flake_attr).and_then(get_store_path)?;
 
-    log::info!("Generating new generation from {}", store_path);
+    log::info!("Creating new generation from {}", store_path);
     install_nix_profile(&store_path, PROFILE_PATH).map(print_out_and_err)?;
 
     log::info!("Registering GC root...");
     create_gcroot(GCROOT_PATH, PROFILE_PATH)?;
+
+    log::info!("Done");
     Ok(())
 }
 

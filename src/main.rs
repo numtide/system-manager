@@ -3,7 +3,7 @@ use std::process::ExitCode;
 use anyhow::{anyhow, Result};
 use clap::Parser;
 
-use service_manager::StorePath;
+use system_manager::StorePath;
 
 #[derive(clap::Parser, Debug)]
 #[command(author, version, about, long_about=None)]
@@ -35,8 +35,8 @@ fn main() -> ExitCode {
 fn go(action: Action) -> Result<()> {
     check_root()?;
     match action {
-        Action::Activate { store_path } => service_manager::activate::activate(store_path),
-        Action::Generate { flake_uri } => service_manager::generate::generate(&flake_uri),
+        Action::Activate { store_path } => system_manager::activate::activate(store_path),
+        Action::Generate { flake_uri } => system_manager::generate::generate(&flake_uri),
     }
 }
 

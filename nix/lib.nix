@@ -6,7 +6,7 @@ in
   makeServiceConfig =
     { system
     , modules
-    , service-manager
+    , system-manager
     ,
     }:
     let
@@ -25,7 +25,7 @@ in
                 serviceName = "${name}.service";
               in
               lib.nameValuePair serviceName { storePath = ''${nixosConfig.config.systemd.units."${serviceName}".unit}/${serviceName}''; })
-            nixosConfig.config.service-manager.services);
+            nixosConfig.config.system-manager.services);
 
       servicesPath = pkgs.writeTextFile {
         name = "services";
@@ -33,11 +33,11 @@ in
         text = lib.generators.toJSON { } services;
       };
       activationScript = pkgs.writeShellScript "activate" ''
-        ${service-manager}/bin/service-manager activate \
+        ${system-manager}/bin/system-manager activate \
           --store-path "$(realpath $(dirname ''${0}))"
       '';
     in
-    pkgs.linkFarmFromDrvs "service-manager" [
+    pkgs.linkFarmFromDrvs "system-manager" [
       servicesPath
       activationScript
     ];

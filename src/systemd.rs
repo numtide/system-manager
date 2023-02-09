@@ -24,7 +24,6 @@ use std::{
         atomic::{AtomicBool, Ordering},
         Mutex,
     },
-    thread,
     time::{Duration, Instant},
 };
 
@@ -155,7 +154,6 @@ impl ServiceManager {
         let job_names_clone = Arc::clone(&job_names);
         let token = self.proxy.match_signal(
             move |h: OrgFreedesktopSystemd1ManagerJobRemoved, _: &Connection, _: &Message| {
-                log_thread("Signal handling");
                 log::info!("Job for {} done", h.unit);
                 {
                     // Insert a new name, and let the lock go out of scope immediately
@@ -184,17 +182,19 @@ impl ServiceManager {
         I: IntoIterator,
         I::Item: AsRef<String> + Eq + Hash,
     {
-        log::info!("Waiting for jobs to finish...");
         let start_time = Instant::now();
 
-        let mut waiting_for = services
+        let mut waiting_for: HashSet<String> = services
             .into_iter()
             .map(|n| String::from(n.as_ref()))
-            .collect::<HashSet<String>>();
+            .collect();
         let total_jobs = waiting_for.len();
 
+        if total_jobs > 0 {
+            log::info!("Waiting for jobs to finish...");
+        }
+
         while !waiting_for.is_empty() {
-            log_thread("Job handling");
             self.proxy.connection.process(Duration::from_millis(50))?;
 
             if timeout
@@ -205,21 +205,25 @@ impl ServiceManager {
             }
             {
                 let mut job_names = job_monitor.job_names.lock().unwrap();
-                waiting_for = waiting_for
-                    .iter()
-                    .filter_map(|n| {
-                        if job_names.contains(n) {
-                            None
-                        } else {
-                            Some(n.to_owned())
-                        }
-                    })
-                    .collect();
-                *job_names = HashSet::new();
-                log::debug!("{:?}/{:?}", waiting_for.len(), total_jobs);
+                if !job_names.is_empty() {
+                    waiting_for = waiting_for
+                        .difference(&job_names)
+                        // FIXME can we avoid copying here?
+                        .map(ToOwned::to_owned)
+                        .collect();
+                    *job_names = HashSet::new();
+                    log::debug!(
+                        "Waiting for jobs to finish... ({:?}/{:?})",
+                        total_jobs - waiting_for.len(),
+                        total_jobs
+                    );
+                }
             }
         }
-        log::info!("All jobs finished.");
+
+        if total_jobs > 0 {
+            log::info!("All jobs finished.");
+        }
         // Remove the signal handling callback
         job_monitor
             .tokens
@@ -292,9 +296,4 @@ impl UnitManager<'_> {
     pub fn refuse_manual_stop(&self) -> Result<bool, Error> {
         Ok(OrgFreedesktopSystemd1Unit::refuse_manual_stop(&self.proxy)?)
     }
-}
-
-fn log_thread(name: &str) {
-    let thread = thread::current();
-    log::debug!("{} thread: {:?} ({:?})", name, thread.name(), thread.id());
 }
