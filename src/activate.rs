@@ -169,7 +169,7 @@ fn stop_services(
 }
 
 fn for_each_service<F, R>(
-    f: F,
+    action: F,
     service_manager: &systemd::ServiceManager,
     services: &LinkedServices,
     timeout: &Option<Duration>,
@@ -182,7 +182,7 @@ where
 
     let successful_services = services.keys().fold(
         HashSet::with_capacity(services.len()),
-        |mut set, service| match f(service) {
+        |mut set, service| match action(service) {
             Ok(_) => {
                 log::info!("Service {}: {}...", service, log_action);
                 set.insert(Box::new(service.to_owned()));
