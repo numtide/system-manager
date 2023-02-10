@@ -69,9 +69,16 @@ pub fn activate(store_path: StorePath) -> Result<()> {
     let service_manager = systemd::ServiceManager::new_session()?;
     let timeout = Some(Duration::from_secs(30));
 
-    service_manager.daemon_reload()?;
+    // We need to do this before we reload the systemd daemon, so that the daemon
+    // still knows about these units.
     stop_services(&service_manager, &services_to_stop, &timeout)?;
     unlink_services(&services_to_stop)?;
+
+    // We added all new services and removed old ones, so let's reload the units
+    // to tell systemd about them.
+    log::info!("Reloading the systemd daemon...");
+    service_manager.daemon_reload()?;
+
     start_services(&service_manager, &linked_services, &timeout)?;
 
     log::info!("Done");
