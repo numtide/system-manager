@@ -121,12 +121,11 @@
             extensions = [ "rust-src" ];
           })
           (treefmt-nix.lib.mkWrapper pkgs treefmt.config)
-          self.packages.${system}.system-manager
         ];
         env = [
           {
             name = "PKG_CONFIG_PATH";
-            value = "${pkgs.lib.getOutput "dev" pkgs.dbus}/lib/pkgconfig";
+            value = pkgs.lib.makeSearchPath "lib/pkgconfig" [ pkgs.dbus.dev pkgs.systemd.dev ];
           }
           {
             name = "LIBCLANG_PATH";
@@ -140,6 +139,10 @@
           {
             name = "RUST_BACKTRACE";
             value = "1";
+          }
+          {
+            name = "RUSTFLAGS";
+            value = "-L${pkgs.systemd}/lib -lsystemd -L${pkgs.lib.getLib pkgs.zstd}/lib -lzstd -L${pkgs.lib.getLib pkgs.libgcrypt}/lib -lgcrypt -L${pkgs.lib.getLib pkgs.libcap}/lib -lcap -lgcrypt -L${pkgs.lib.getLib pkgs.lz4}/lib -llz4 -L${pkgs.lib.getLib pkgs.lzma}/lib -llzma -L${pkgs.lib.getLib pkgs.libgpg-error}/lib -lgpg-error";
           }
           {
             name = "DEVSHELL_NO_MOTD";
