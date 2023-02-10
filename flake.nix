@@ -125,7 +125,10 @@
         env = [
           {
             name = "PKG_CONFIG_PATH";
-            value = pkgs.lib.makeSearchPath "lib/pkgconfig" [ pkgs.dbus.dev pkgs.systemd.dev ];
+            value = pkgs.lib.makeSearchPath "lib/pkgconfig" [
+              pkgs.dbus.dev
+              pkgs.systemdMinimal.dev
+            ];
           }
           {
             name = "LIBCLANG_PATH";
@@ -142,7 +145,13 @@
           }
           {
             name = "RUSTFLAGS";
-            value = "-L${pkgs.systemd}/lib -lsystemd -L${pkgs.lib.getLib pkgs.zstd}/lib -lzstd -L${pkgs.lib.getLib pkgs.libgcrypt}/lib -lgcrypt -L${pkgs.lib.getLib pkgs.libcap}/lib -lcap -lgcrypt -L${pkgs.lib.getLib pkgs.lz4}/lib -llz4 -L${pkgs.lib.getLib pkgs.lzma}/lib -llzma -L${pkgs.lib.getLib pkgs.libgpg-error}/lib -lgpg-error";
+            value =
+              let
+                getLib = pkg: "${pkgs.lib.getLib pkg}/lib";
+              in
+              pkgs.lib.concatStringsSep " " [
+                "-L${getLib pkgs.systemdMinimal} -lsystemd"
+              ];
           }
           {
             name = "DEVSHELL_NO_MOTD";
