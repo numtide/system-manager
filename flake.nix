@@ -121,7 +121,6 @@
             extensions = [ "rust-src" ];
           })
           (treefmt-nix.lib.mkWrapper pkgs treefmt.config)
-          self.packages.${system}.system-manager
         ];
         env = [
           {
