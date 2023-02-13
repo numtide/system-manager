@@ -57,7 +57,7 @@
         inherit system;
         overlays = [ (import rust-overlay) devshell.overlay ];
       };
-      rust = pkgs.rust-bin.stable."1.66.0";
+      rust = pkgs.rust-bin.stable."1.67.1";
       llvm = pkgs.llvmPackages_latest;
 
       craneLib = (crane.mkLib pkgs).overrideToolchain rust.default;
@@ -100,7 +100,7 @@
       };
     in
     {
-      serviceConfig = self.lib.makeServiceConfig {
+      systemConfig = self.lib.makeServiceConfig {
         inherit system;
         modules = [
           ./nix/modules

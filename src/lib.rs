@@ -5,45 +5,65 @@ mod systemd;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::os::unix;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::{fs, str};
 
-const FLAKE_ATTR: &str = "serviceConfig";
+const FLAKE_ATTR: &str = "systemConfig";
 const PROFILE_PATH: &str = "/nix/var/nix/profiles/system-manager";
 const GCROOT_PATH: &str = "/nix/var/nix/gcroots/system-manager-current";
-const SYSTEMD_UNIT_DIR: &str = "/run/systemd/system";
 const SYSTEM_MANAGER_STATE_DIR: &str = "/var/lib/system-manager/state";
-const STATE_FILE_NAME: &str = "services.json";
+const SERVICES_STATE_FILE_NAME: &str = "services.json";
+//const ETC_STATE_FILE_NAME: &str = "etc-files.json";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(from = "String", into = "String", rename_all = "camelCase")]
 pub struct StorePath {
-    pub store_path: String,
+    pub store_path: PathBuf,
 }
 
 impl From<String> for StorePath {
     fn from(path: String) -> Self {
-        StorePath {
-            store_path: path.trim().into(),
+        // FIXME: handle this better
+        if !path.starts_with("/nix/store/") {
+            panic!("Error constructing store path, not in store: {path}");
         }
+        StorePath {
+            store_path: PathBuf::from(path),
+        }
+    }
+}
+
+impl From<StorePath> for PathBuf {
+    fn from(value: StorePath) -> Self {
+        value.store_path
+    }
+}
+
+impl From<StorePath> for String {
+    fn from(value: StorePath) -> Self {
+        format!("{}", value.store_path.display())
     }
 }
 
 impl std::fmt::Display for StorePath {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.store_path)
+        write!(f, "{}", self.store_path.display())
     }
 }
 
 fn create_store_link(store_path: &StorePath, from: &Path) -> Result<()> {
-    log::info!("Creating symlink: {} -> {}", from.display(), store_path);
+    create_link(Path::new(&store_path.store_path), from)
+}
+
+fn create_link(to: &Path, from: &Path) -> Result<()> {
+    log::info!("Creating symlink: {} -> {}", from.display(), to.display());
     if from.is_symlink() {
         fs::remove_file(from)?;
     }
-    unix::fs::symlink(&store_path.store_path, from).map_err(anyhow::Error::from)
+    unix::fs::symlink(to, from).map_err(anyhow::Error::from)
 }
 
-fn remove_store_link(from: &Path) -> Result<()> {
+fn remove_link(from: &Path) -> Result<()> {
     log::info!("Removing symlink: {}", from.display());
     if from.is_symlink() {
         fs::remove_file(from)?;

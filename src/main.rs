@@ -17,6 +17,8 @@ enum Action {
     Activate {
         #[arg(long)]
         store_path: StorePath,
+        #[arg(long, action)]
+        ephemeral: bool,
     },
     Generate {
         #[arg(long)]
@@ -35,7 +37,10 @@ fn main() -> ExitCode {
 fn go(action: Action) -> Result<()> {
     check_root()?;
     match action {
-        Action::Activate { store_path } => system_manager::activate::activate(store_path),
+        Action::Activate {
+            store_path,
+            ephemeral,
+        } => system_manager::activate::activate(store_path, ephemeral),
         Action::Generate { flake_uri } => system_manager::generate::generate(&flake_uri),
     }
 }
@@ -48,7 +53,7 @@ fn check_root() -> Result<()> {
 }
 
 fn handle_toplevel_error<T>(r: Result<T>) -> ExitCode {
-    if let Err(e) = &r {
+    if let Err(e) = r {
         log::error!("{}", e);
         return ExitCode::FAILURE;
     }

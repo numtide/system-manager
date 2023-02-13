@@ -15,7 +15,7 @@ struct NixBuildOutput {
 
 pub fn generate(flake_uri: &str) -> Result<()> {
     // FIXME: we should not hard-code the system here
-    let flake_attr = format!("{}.x86_64-linux", FLAKE_ATTR);
+    let flake_attr = format!("{FLAKE_ATTR}.x86_64-linux");
 
     log::info!("Building new system-manager generation...");
     log::info!("Running nix build...");
@@ -83,7 +83,7 @@ fn parse_nix_build_output(output: String) -> Result<StorePath> {
 fn run_nix_build(flake_uri: &str, flake_attr: &str) -> Result<process::Output> {
     process::Command::new("nix")
         .arg("build")
-        .arg(format!("{}#{}", flake_uri, flake_attr))
+        .arg(format!("{flake_uri}#{flake_attr}"))
         .arg("--json")
         .output()
         .map_err(anyhow::Error::from)
