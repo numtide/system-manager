@@ -57,8 +57,12 @@ fn create_store_link(store_path: &StorePath, from: &Path) -> Result<()> {
 
 fn create_link(to: &Path, from: &Path) -> Result<()> {
     log::info!("Creating symlink: {} -> {}", from.display(), to.display());
-    if from.is_symlink() {
-        fs::remove_file(from)?;
+    if from.exists() {
+        if from.is_symlink() {
+            fs::remove_file(from)?;
+        } else {
+            anyhow::bail!("File exists and is no link!");
+        }
     }
     unix::fs::symlink(to, from).map_err(anyhow::Error::from)
 }
@@ -66,10 +70,10 @@ fn create_link(to: &Path, from: &Path) -> Result<()> {
 fn remove_link(from: &Path) -> Result<()> {
     log::info!("Removing symlink: {}", from.display());
     if from.is_symlink() {
-        fs::remove_file(from)?;
-        return Ok(());
+        fs::remove_file(from).map_err(anyhow::Error::from)
+    } else {
+        anyhow::bail!("Not a symlink!");
     }
-    anyhow::bail!("Not a symlink!")
 }
 
 pub fn compose<A, B, C, G, F>(f: F, g: G) -> impl Fn(A) -> C
