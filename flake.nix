@@ -100,12 +100,11 @@
       };
     in
     {
-      systemConfig = self.lib.makeServiceConfig {
+      systemConfig = self.lib.makeSystemConfig {
         inherit system;
         modules = [
           ./nix/modules
         ];
-        inherit (self.packages.${system}) system-manager;
       };
 
       packages = {
@@ -184,6 +183,8 @@
     }))
     //
     {
-      lib = import ./nix/lib.nix { inherit nixpkgs; };
+      lib = import ./nix/lib.nix {
+        inherit nixpkgs self;
+      };
     };
 }

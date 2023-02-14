@@ -1,21 +1,25 @@
-{ nixpkgs }:
+{ nixpkgs
+, self
+,
+}:
 let
   inherit (nixpkgs) lib;
 in
 {
-  makeServiceConfig =
+  makeSystemConfig =
     { system
     , modules
-    , system-manager
+    , extraSpecialArgs ? { }
     ,
     }:
     let
       pkgs = nixpkgs.legacyPackages.${system};
+      inherit (self.packages.${system}) system-manager;
 
       nixosConfig = (lib.nixosSystem {
         inherit system;
         modules = [ ./modules/system-manager.nix ] ++ modules;
-        specialArgs = { };
+        specialArgs = extraSpecialArgs;
       }).config;
 
       returnIfNoAssertions = drv:
@@ -84,7 +88,6 @@ in
         text = lib.generators.toJSON { } etcFiles;
       };
 
-      # TODO: remove --ephemeral
       activationScript = pkgs.writeShellScript "activate" ''
         ${system-manager}/bin/system-manager activate \
           --store-path "$(realpath $(dirname ''${0}))" \
