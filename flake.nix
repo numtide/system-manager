@@ -79,6 +79,7 @@
       });
 
       system-manager = craneLib.buildPackage (commonArgs // {
+        pname = "system-manager";
         inherit cargoArtifacts;
       });
 
