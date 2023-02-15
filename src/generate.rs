@@ -1,10 +1,11 @@
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fs::DirBuilder;
 use std::path::Path;
 use std::{fs, process, str};
 
-use super::{create_store_link, StorePath, FLAKE_ATTR, GCROOT_PATH, PROFILE_PATH};
+use super::{create_store_link, StorePath, FLAKE_ATTR, GCROOT_PATH, PROFILE_DIR, PROFILE_NAME};
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -21,27 +22,34 @@ pub fn generate(flake_uri: &str) -> Result<()> {
     log::info!("Running nix build...");
     let store_path = run_nix_build(flake_uri, &flake_attr).and_then(get_store_path)?;
 
+    let profile_dir = Path::new(PROFILE_DIR);
+    let profile_name = Path::new(PROFILE_NAME);
     log::info!("Creating new generation from {}", store_path);
-    install_nix_profile(&store_path, PROFILE_PATH).map(print_out_and_err)?;
+    install_nix_profile(&store_path, profile_dir, profile_name).map(print_out_and_err)?;
 
     log::info!("Registering GC root...");
-    create_gcroot(GCROOT_PATH, PROFILE_PATH)?;
+    create_gcroot(GCROOT_PATH, &profile_dir.join(profile_name))?;
 
     log::info!("Done");
     Ok(())
 }
 
-fn install_nix_profile(store_path: &StorePath, profile_path: &str) -> Result<process::Output> {
+fn install_nix_profile(
+    store_path: &StorePath,
+    profile_dir: &Path,
+    profile_name: &Path,
+) -> Result<process::Output> {
+    DirBuilder::new().recursive(true).create(profile_dir)?;
     process::Command::new("nix-env")
         .arg("--profile")
-        .arg(profile_path)
+        .arg(profile_dir.join(profile_name))
         .arg("--set")
         .arg(&store_path.store_path)
         .output()
         .map_err(anyhow::Error::from)
 }
 
-fn create_gcroot(gcroot_path: &str, profile_path: &str) -> Result<()> {
+fn create_gcroot(gcroot_path: &str, profile_path: &Path) -> Result<()> {
     let profile_store_path = fs::canonicalize(profile_path)?;
     let store_path = StorePath::from(String::from(profile_store_path.to_string_lossy()));
     create_store_link(&store_path, Path::new(gcroot_path))

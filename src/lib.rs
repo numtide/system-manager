@@ -9,7 +9,8 @@ use std::path::{Path, PathBuf};
 use std::{fs, str};
 
 const FLAKE_ATTR: &str = "systemConfig";
-const PROFILE_PATH: &str = "/nix/var/nix/profiles/system-manager";
+const PROFILE_DIR: &str = "/nix/var/nix/profiles/system-manager-profiles";
+const PROFILE_NAME: &str = "system-manager";
 const GCROOT_PATH: &str = "/nix/var/nix/gcroots/system-manager-current";
 const SYSTEM_MANAGER_STATE_DIR: &str = "/var/lib/system-manager/state";
 const SERVICES_STATE_FILE_NAME: &str = "services.json";
