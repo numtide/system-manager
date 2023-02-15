@@ -14,16 +14,11 @@ struct NixBuildOutput {
     outputs: HashMap<String, String>,
 }
 
-pub fn generate(flake_uri: &str) -> Result<()> {
-    // FIXME: we should not hard-code the system here
-    let flake_attr = format!("{FLAKE_ATTR}.x86_64-linux");
-
-    log::info!("Building new system-manager generation...");
-    log::info!("Running nix build...");
-    let store_path = run_nix_build(flake_uri, &flake_attr).and_then(get_store_path)?;
-
+pub fn generate(flake_uri: &str) -> Result<StorePath> {
+    let store_path = build(flake_uri)?;
     let profile_dir = Path::new(PROFILE_DIR);
     let profile_name = Path::new(PROFILE_NAME);
+
     log::info!("Creating new generation from {}", store_path);
     install_nix_profile(&store_path, profile_dir, profile_name).map(print_out_and_err)?;
 
@@ -31,7 +26,16 @@ pub fn generate(flake_uri: &str) -> Result<()> {
     create_gcroot(GCROOT_PATH, &profile_dir.join(profile_name))?;
 
     log::info!("Done");
-    Ok(())
+    Ok(store_path)
+}
+
+pub fn build(flake_uri: &str) -> Result<StorePath> {
+    // FIXME: we should not hard-code the system here
+    let flake_attr = format!("{FLAKE_ATTR}.x86_64-linux");
+
+    log::info!("Building new system-manager generation...");
+    log::info!("Running nix build...");
+    run_nix_build(flake_uri, &flake_attr).and_then(get_store_path)
 }
 
 fn install_nix_profile(
