@@ -15,31 +15,38 @@ struct Args {
 #[derive(clap::Args, Debug)]
 struct BuildArgs {
     #[arg(long)]
+    /// The flake defining the system-manager profile
     flake_uri: String,
 }
 
 #[derive(clap::Args, Debug)]
 struct ActivationArgs {
     #[arg(long, action)]
+    /// If true, only write under /run, otherwise write under /etc
     ephemeral: bool,
 }
 
 #[derive(clap::Subcommand, Debug)]
 enum Action {
+    /// Activate a given system-manager profile
     Activate {
         #[arg(long)]
+        /// The store path containing the system-manager profile to activate
         store_path: StorePath,
         #[command(flatten)]
         activation_args: ActivationArgs,
     },
+    /// Build a new system-manager generation without registering it as a nix profile
     Build {
         #[command(flatten)]
         build_args: BuildArgs,
     },
+    /// Generate a new system-manager generation
     Generate {
         #[command(flatten)]
         build_args: BuildArgs,
     },
+    /// Generate a new system-manager generation and activate it
     Switch {
         #[command(flatten)]
         build_args: BuildArgs,
