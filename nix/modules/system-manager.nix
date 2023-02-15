@@ -7,10 +7,12 @@
   options.system-manager = {
     services = lib.mkOption {
       type = with lib.types; listOf str;
+      default = [ ];
     };
 
     etcFiles = lib.mkOption {
       type = with lib.types; listOf str;
+      default = [ ];
     };
   };
 
