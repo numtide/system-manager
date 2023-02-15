@@ -22,6 +22,7 @@
       loader.grub.enable = false;
       initrd.enable = false;
     };
+    system.stateVersion = lib.mkDefault lib.trivial.release;
 
     assertions = lib.flip map config.system-manager.etcFiles (entry:
       {

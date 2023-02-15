@@ -61,7 +61,6 @@ let
 in
 {
   config = {
-    system.stateVersion = lib.trivial.release;
     system-manager = {
       etcFiles = lib.attrNames etcFiles;
       services = lib.attrNames services;
