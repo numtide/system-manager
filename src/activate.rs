@@ -15,3 +15,10 @@ pub fn activate(store_path: StorePath, ephemeral: bool) -> Result<()> {
     services::activate(store_path, ephemeral)?;
     Ok(())
 }
+
+pub fn deactivate() -> Result<()> {
+    log::info!("Deactivating system-manager");
+    etc_files::deactivate()?;
+    services::deactivate()?;
+    Ok(())
+}

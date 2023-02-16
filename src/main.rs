@@ -41,6 +41,7 @@ enum Action {
         #[command(flatten)]
         build_args: BuildArgs,
     },
+    Deactivate,
     /// Generate a new system-manager generation
     Generate {
         #[command(flatten)]
@@ -75,6 +76,10 @@ fn go(action: Action) -> Result<()> {
         Action::Build {
             build_args: BuildArgs { flake_uri },
         } => build(flake_uri),
+        Action::Deactivate => {
+            check_root()?;
+            deactivate()
+        }
         Action::Generate {
             build_args: BuildArgs { flake_uri },
         } => {
@@ -108,6 +113,10 @@ fn generate(flake_uri: String) -> Result<StorePath> {
 
 fn activate(store_path: StorePath, ephemeral: bool) -> Result<()> {
     system_manager::activate::activate(store_path, ephemeral)
+}
+
+fn deactivate() -> Result<()> {
+    system_manager::activate::deactivate()
 }
 
 fn check_root() -> Result<()> {

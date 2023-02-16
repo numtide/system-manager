@@ -50,6 +50,14 @@ pub fn activate(store_path: StorePath, ephemeral: bool) -> Result<()> {
         .into_iter()
         .try_for_each(|(name, entry)| create_etc_link(&name, &entry, &etc_dir))?;
 
+    // TODO register the crated files (including .system-manager-static) in a
+    // state file, and clean up old files from the previous generation
+
+    Ok(())
+}
+
+// TODO we need to record in a state file which files we created and then remove them
+pub fn deactivate() -> Result<()> {
     Ok(())
 }
 

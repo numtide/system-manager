@@ -83,6 +83,29 @@ pub fn activate(store_path: StorePath, ephemeral: bool) -> Result<()> {
     Ok(())
 }
 
+pub fn deactivate() -> Result<()> {
+    let old_linked_services = read_linked_services()?;
+    log::debug!("{:?}", old_linked_services);
+
+    serialise_linked_services(&HashMap::new())?;
+
+    let service_manager = systemd::ServiceManager::new_session()?;
+    let timeout = Some(Duration::from_secs(30));
+
+    // We need to do this before we reload the systemd daemon, so that the daemon
+    // still knows about these units.
+    stop_services(&service_manager, &old_linked_services, &timeout)?;
+    unlink_services(&old_linked_services)?;
+
+    // We added all new services and removed old ones, so let's reload the units
+    // to tell systemd about them.
+    log::info!("Reloading the systemd daemon...");
+    service_manager.daemon_reload()?;
+
+    log::info!("Done");
+    Ok(())
+}
+
 fn unlink_services(services: &LinkedServices) -> Result<()> {
     services
         .values()
