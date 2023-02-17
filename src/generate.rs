@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::DirBuilder;
@@ -71,7 +71,7 @@ fn get_store_path(nix_build_result: process::Output) -> Result<StorePath> {
             .map_err(anyhow::Error::from)
             .and_then(|e| {
                 log::error!("{}", e);
-                Err(anyhow!("Nix build failed."))
+                anyhow::bail!("Nix build failed.")
             })
     }
 }
@@ -85,14 +85,12 @@ fn parse_nix_build_output(output: String) -> Result<StorePath> {
         if let Some(store_path) = result.outputs.get(expected_output_name) {
             return Ok(StorePath::from(store_path.to_owned()));
         }
-        return Err(anyhow!(
+        anyhow::bail!(
             "No output '{}' found in nix build result.",
             expected_output_name
-        ));
+        )
     }
-    Err(anyhow!(
-        "Multiple build results were returned, we cannot handle that yet."
-    ))
+    anyhow::bail!("Multiple build results were returned, we cannot handle that yet.")
 }
 
 fn run_nix_build(flake_uri: &str, flake_attr: &str) -> Result<process::Output> {
