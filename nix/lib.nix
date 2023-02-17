@@ -93,12 +93,17 @@ in
           --store-path "$(realpath $(dirname ''${0}))" \
           "$@"
       '';
+
+      deactivationScript = pkgs.writeShellScript "deactivate" ''
+        ${system-manager}/bin/system-manager deactivate "$@"
+      '';
     in
     returnIfNoAssertions (
       pkgs.linkFarmFromDrvs "system-manager" [
         servicesPath
         etcPath
         activationScript
+        deactivationScript
       ]
     );
 }
