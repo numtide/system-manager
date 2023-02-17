@@ -100,6 +100,8 @@ fn go(action: Action) -> Result<()> {
 fn build(flake_uri: String) -> Result<()> {
     let store_path = do_build(flake_uri)?;
     log::info!("{store_path}");
+    // Print the raw store path to stdout
+    println!("{store_path}");
     Ok(())
 }
 
