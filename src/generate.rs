@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::DirBuilder;
@@ -20,7 +20,7 @@ pub fn generate(flake_uri: &str) -> Result<StorePath> {
     let profile_name = Path::new(PROFILE_NAME);
 
     log::info!("Creating new generation from {}", store_path);
-    install_nix_profile(&store_path, profile_dir, profile_name).map(print_out_and_err)?;
+    install_nix_profile(&store_path, profile_dir, profile_name)?;
 
     log::info!("Registering GC root...");
     create_gcroot(GCROOT_PATH, &profile_dir.join(profile_name))?;
@@ -42,14 +42,16 @@ fn install_nix_profile(
     store_path: &StorePath,
     profile_dir: &Path,
     profile_name: &Path,
-) -> Result<process::Output> {
+) -> Result<process::ExitStatus> {
     DirBuilder::new().recursive(true).create(profile_dir)?;
     process::Command::new("nix-env")
         .arg("--profile")
         .arg(profile_dir.join(profile_name))
         .arg("--set")
         .arg(&store_path.store_path)
-        .output()
+        .stdout(process::Stdio::inherit())
+        .stderr(process::Stdio::inherit())
+        .status()
         .map_err(anyhow::Error::from)
 }
 
@@ -76,7 +78,8 @@ fn get_store_path(nix_build_result: process::Output) -> Result<StorePath> {
 
 fn parse_nix_build_output(output: String) -> Result<StorePath> {
     let expected_output_name = "out";
-    let results: Vec<NixBuildOutput> = serde_json::from_str(&output)?;
+    let results: Vec<NixBuildOutput> =
+        serde_json::from_str(&output).context("Error reading nix build output")?;
 
     if let [result] = results.as_slice() {
         if let Some(store_path) = result.outputs.get(expected_output_name) {
@@ -97,20 +100,10 @@ fn run_nix_build(flake_uri: &str, flake_attr: &str) -> Result<process::Output> {
         .arg("build")
         .arg(format!("{flake_uri}#{flake_attr}"))
         .arg("--json")
+        // Nix outputs progress info on stderr and the final output on stdout,
+        // so we inherit and output stderr directly to the terminal, but we
+        // capture stdout as the result of this call
+        .stderr(process::Stdio::inherit())
         .output()
         .map_err(anyhow::Error::from)
-}
-
-fn print_out_and_err(output: process::Output) -> process::Output {
-    print_u8(&output.stdout);
-    print_u8(&output.stderr);
-    output
-}
-
-fn print_u8(bytes: &[u8]) {
-    str::from_utf8(bytes).map_or((), |s| {
-        if !s.trim().is_empty() {
-            log::info!("{}", s.trim())
-        }
-    })
 }
