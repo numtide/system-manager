@@ -126,7 +126,7 @@ fn link_services(services: Services, ephemeral: bool) -> Result<LinkedServices> 
                     );
                 }
                 Err(e) => {
-                    log::error!("Error linking service {}, skipping.", name);
+                    log::error!("Error linking service {name}, skipping.");
                     log::error!("{:?}", e);
                 }
             };
@@ -227,12 +227,8 @@ where
                 set
             }
             Err(e) => {
-                log::error!(
-                    "Service {}: error {}, please consult the logs",
-                    service,
-                    log_action
-                );
-                log::error!("{}", e);
+                log::error!("Service {service}: error {log_action}, please consult the logs");
+                log::error!("{e}");
                 set
             }
         },

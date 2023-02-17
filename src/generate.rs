@@ -19,7 +19,7 @@ pub fn generate(flake_uri: &str) -> Result<StorePath> {
     let profile_dir = Path::new(PROFILE_DIR);
     let profile_name = Path::new(PROFILE_NAME);
 
-    log::info!("Creating new generation from {}", store_path);
+    log::info!("Creating new generation from {store_path}");
     install_nix_profile(&store_path, profile_dir, profile_name)?;
 
     log::info!("Registering GC root...");
@@ -70,7 +70,7 @@ fn get_store_path(nix_build_result: process::Output) -> Result<StorePath> {
         String::from_utf8(nix_build_result.stderr)
             .map_err(anyhow::Error::from)
             .and_then(|e| {
-                log::error!("{}", e);
+                log::error!("{e}");
                 anyhow::bail!("Nix build failed.")
             })
     }
@@ -85,10 +85,7 @@ fn parse_nix_build_output(output: String) -> Result<StorePath> {
         if let Some(store_path) = result.outputs.get(expected_output_name) {
             return Ok(StorePath::from(store_path.to_owned()));
         }
-        anyhow::bail!(
-            "No output '{}' found in nix build result.",
-            expected_output_name
-        )
+        anyhow::bail!("No output '{expected_output_name}' found in nix build result.")
     }
     anyhow::bail!("Multiple build results were returned, we cannot handle that yet.")
 }

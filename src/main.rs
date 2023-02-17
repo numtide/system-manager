@@ -99,7 +99,7 @@ fn go(action: Action) -> Result<()> {
 
 fn build(flake_uri: String) -> Result<()> {
     let store_path = do_build(flake_uri)?;
-    log::info!("{store_path}");
+    log::info!("Build system-manager profile {store_path}");
     // Print the raw store path to stdout
     println!("{store_path}");
     Ok(())
@@ -130,7 +130,7 @@ fn check_root() -> Result<()> {
 
 fn handle_toplevel_error<T>(r: Result<T>) -> ExitCode {
     if let Err(e) = r {
-        log::error!("{}", e);
+        log::error!("{e}");
         return ExitCode::FAILURE;
     }
     ExitCode::SUCCESS

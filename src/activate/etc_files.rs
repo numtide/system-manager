@@ -75,7 +75,7 @@ fn create_etc_link(name: &str, entry: &EtcFile, etc_dir: &Path) -> Result<()> {
                 etc_dir.join(link_target).as_path(),
             )
         } else {
-            anyhow::bail!("Cannot create link for this entry ({}).", name)
+            anyhow::bail!("Cannot create link for this entry ({name}).")
         }
     } else {
         Ok(())

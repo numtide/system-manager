@@ -6,7 +6,7 @@ use anyhow::Result;
 use crate::StorePath;
 
 pub fn activate(store_path: StorePath, ephemeral: bool) -> Result<()> {
-    log::info!("Activating system-manager profile: {}", store_path);
+    log::info!("Activating system-manager profile: {store_path}");
     if ephemeral {
         log::info!("Running in ephemeral mode");
     }
