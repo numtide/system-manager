@@ -11,8 +11,8 @@ pub fn activate(store_path: StorePath, ephemeral: bool) -> Result<()> {
         log::info!("Running in ephemeral mode");
     }
 
-    etc_files::activate(store_path.clone(), ephemeral)?;
-    services::activate(store_path, ephemeral)?;
+    etc_files::activate(&store_path, ephemeral)?;
+    services::activate(&store_path, ephemeral)?;
     Ok(())
 }
 

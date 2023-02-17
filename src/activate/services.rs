@@ -43,7 +43,7 @@ impl LinkedServiceConfig {
 
 type LinkedServices = HashMap<String, LinkedServiceConfig>;
 
-pub fn activate(store_path: StorePath, ephemeral: bool) -> Result<()> {
+pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
     let old_linked_services = read_linked_services()?;
     log::debug!("{:?}", old_linked_services);
 

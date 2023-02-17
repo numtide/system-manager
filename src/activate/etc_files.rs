@@ -29,7 +29,7 @@ struct EtcFilesConfig {
     static_env: StorePath,
 }
 
-pub fn activate(store_path: StorePath, ephemeral: bool) -> Result<()> {
+pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
     log::info!("Reading etc file definitions...");
     let file = fs::File::open(Path::new(&store_path.store_path).join("etcFiles/etcFiles.json"))?;
     let reader = io::BufReader::new(file);
