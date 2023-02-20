@@ -14,28 +14,18 @@ struct NixBuildOutput {
     outputs: HashMap<String, String>,
 }
 
-pub fn generate(flake_uri: &str) -> Result<StorePath> {
-    let store_path = build(flake_uri)?;
+pub fn generate(store_path: &StorePath) -> Result<()> {
     let profile_dir = Path::new(PROFILE_DIR);
     let profile_name = Path::new(PROFILE_NAME);
 
     log::info!("Creating new generation from {store_path}");
-    install_nix_profile(&store_path, profile_dir, profile_name)?;
+    install_nix_profile(store_path, profile_dir, profile_name)?;
 
     log::info!("Registering GC root...");
     create_gcroot(GCROOT_PATH, &profile_dir.join(profile_name))?;
 
     log::info!("Done");
-    Ok(store_path)
-}
-
-pub fn build(flake_uri: &str) -> Result<StorePath> {
-    // FIXME: we should not hard-code the system here
-    let flake_attr = format!("{FLAKE_ATTR}.x86_64-linux");
-
-    log::info!("Building new system-manager generation...");
-    log::info!("Running nix build...");
-    run_nix_build(flake_uri, &flake_attr).and_then(get_store_path)
+    Ok(())
 }
 
 fn install_nix_profile(
@@ -59,6 +49,15 @@ fn create_gcroot(gcroot_path: &str, profile_path: &Path) -> Result<()> {
     let profile_store_path = fs::canonicalize(profile_path)?;
     let store_path = StorePath::from(String::from(profile_store_path.to_string_lossy()));
     create_store_link(&store_path, Path::new(gcroot_path))
+}
+
+pub fn build(flake_uri: &str) -> Result<StorePath> {
+    // FIXME: we should not hard-code the system here
+    let flake_attr = format!("{FLAKE_ATTR}.x86_64-linux");
+
+    log::info!("Building new system-manager generation...");
+    log::info!("Running nix build...");
+    run_nix_build(flake_uri, &flake_attr).and_then(get_store_path)
 }
 
 fn get_store_path(nix_build_result: process::Output) -> Result<StorePath> {

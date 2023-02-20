@@ -88,22 +88,39 @@ in
         text = lib.generators.toJSON { } etcFiles;
       };
 
+      registerProfileScript = pkgs.writeShellScript "register-profile" ''
+        ${system-manager}/bin/system-manager generate \
+          --store-path "$(dirname $(realpath $(dirname ''${0})))" \
+          "$@"
+      '';
+
       activationScript = pkgs.writeShellScript "activate" ''
         ${system-manager}/bin/system-manager activate \
-          --store-path "$(realpath $(dirname ''${0}))" \
+          --store-path "$(dirname $(realpath $(dirname ''${0})))" \
           "$@"
       '';
 
       deactivationScript = pkgs.writeShellScript "deactivate" ''
         ${system-manager}/bin/system-manager deactivate "$@"
       '';
+
+      linkFarmEntryFromDrv = drv: {
+        name = drv.name;
+        path = drv;
+      };
+
+      linkFarmBinEntryFromDrv = drv: {
+        name = "bin/${drv.name}";
+        path = drv;
+      };
     in
     returnIfNoAssertions (
-      pkgs.linkFarmFromDrvs "system-manager" [
-        servicesPath
-        etcPath
-        activationScript
-        deactivationScript
+      pkgs.linkFarm "system-manager" [
+        (linkFarmEntryFromDrv servicesPath)
+        (linkFarmEntryFromDrv etcPath)
+        (linkFarmBinEntryFromDrv activationScript)
+        (linkFarmBinEntryFromDrv deactivationScript)
+        (linkFarmBinEntryFromDrv registerProfileScript)
       ]
     );
 }
