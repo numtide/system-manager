@@ -57,7 +57,9 @@ pub fn build(flake_uri: &str) -> Result<StorePath> {
 
     log::info!("Building new system-manager generation...");
     log::info!("Running nix build...");
-    run_nix_build(flake_uri, &flake_attr).and_then(get_store_path)
+    let store_path = run_nix_build(flake_uri, &flake_attr).and_then(get_store_path)?;
+    log::info!("Build system-manager profile {store_path}");
+    Ok(store_path)
 }
 
 fn get_store_path(nix_build_result: process::Output) -> Result<StorePath> {

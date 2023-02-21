@@ -98,20 +98,20 @@ fn go(args: Args) -> Result<()> {
         }
         Action::Build {
             build_args: BuildArgs { flake_uri },
-        } => build(flake_uri),
+        } => build(&flake_uri, &target_host),
         Action::Deactivate => {
             check_root()?;
             // FIXME handle target_host
             deactivate()
         }
         Action::Generate { generate_args } => {
-            generate(generate_args, &target_host, use_remote_sudo)
+            generate(&generate_args, &target_host, use_remote_sudo)
         }
         Action::Switch {
             build_args: BuildArgs { flake_uri },
             activation_args: ActivationArgs { ephemeral },
         } => {
-            let store_path = do_build(flake_uri)?;
+            let store_path = do_build(&flake_uri)?;
             copy_closure(&store_path, &target_host)?;
             do_generate(&store_path, &target_host, use_remote_sudo)?;
             activate(&store_path, ephemeral, &target_host, use_remote_sudo)
@@ -119,7 +119,23 @@ fn go(args: Args) -> Result<()> {
     }
 }
 
-fn generate(args: GenerateArgs, target_host: &Option<String>, use_remote_sudo: bool) -> Result<()> {
+fn build(flake_uri: &str, target_host: &Option<String>) -> Result<()> {
+    let store_path = do_build(flake_uri)?;
+    copy_closure(&store_path, target_host)?;
+    // Print the raw store path to stdout
+    println!("{store_path}");
+    Ok(())
+}
+
+fn do_build(flake_uri: &str) -> Result<StorePath> {
+    system_manager::generate::build(flake_uri)
+}
+
+fn generate(
+    args: &GenerateArgs,
+    target_host: &Option<String>,
+    use_remote_sudo: bool,
+) -> Result<()> {
     match args {
         GenerateArgs {
             flake_uri: Some(flake_uri),
@@ -133,25 +149,13 @@ fn generate(args: GenerateArgs, target_host: &Option<String>, use_remote_sudo: b
             flake_uri: None,
             store_path: Some(store_path),
         } => {
-            copy_closure(&store_path, target_host)?;
-            do_generate(&store_path, target_host, use_remote_sudo)
+            copy_closure(store_path, target_host)?;
+            do_generate(store_path, target_host, use_remote_sudo)
         }
         _ => {
             anyhow::bail!("Supply either a flake URI or a store path.")
         }
     }
-}
-
-fn build(flake_uri: String) -> Result<()> {
-    let store_path = do_build(flake_uri)?;
-    log::info!("Build system-manager profile {store_path}");
-    // Print the raw store path to stdout
-    println!("{store_path}");
-    Ok(())
-}
-
-fn do_build(flake_uri: String) -> Result<StorePath> {
-    system_manager::generate::build(&flake_uri)
 }
 
 fn do_generate(
@@ -194,7 +198,8 @@ fn copy_closure(store_path: &StorePath, target_host: &Option<String>) -> Result<
 }
 
 fn do_copy_closure(store_path: &StorePath, target_host: &str) -> Result<()> {
-    process::Command::new("nix-copy-closure")
+    log::info!("Copying closure to target host...");
+    let status = process::Command::new("nix-copy-closure")
         .arg("--to")
         .arg(target_host)
         .arg("--use-substitutes")
@@ -202,6 +207,11 @@ fn do_copy_closure(store_path: &StorePath, target_host: &str) -> Result<()> {
         .stdout(process::Stdio::inherit())
         .stderr(process::Stdio::inherit())
         .status()?;
+    if status.success() {
+        log::info!("Successfully copied closure to target host");
+    } else {
+        log::error!("Error copying closure, {}", status);
+    }
     Ok(())
 }
 
