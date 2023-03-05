@@ -55,7 +55,7 @@
     let
       pkgs = import nixpkgs {
         inherit system;
-        overlays = [ (import rust-overlay) devshell.overlay ];
+        overlays = [ (import rust-overlay) devshell.overlays.default ];
       };
       rust = pkgs.rust-bin.stable."1.67.1";
       llvm = pkgs.llvmPackages_latest;
