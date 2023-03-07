@@ -87,8 +87,6 @@ pub fn deactivate() -> Result<()> {
     let old_linked_services = read_linked_services()?;
     log::debug!("{:?}", old_linked_services);
 
-    serialise_linked_services(&HashMap::new())?;
-
     let service_manager = systemd::ServiceManager::new_session()?;
     let timeout = Some(Duration::from_secs(30));
 
@@ -101,6 +99,8 @@ pub fn deactivate() -> Result<()> {
     // to tell systemd about them.
     log::info!("Reloading the systemd daemon...");
     service_manager.daemon_reload()?;
+
+    serialise_linked_services(&HashMap::new())?;
 
     log::info!("Done");
     Ok(())

@@ -54,6 +54,20 @@ let
       group = "root";
     };
 
+    "a/nested/example/foo3" = {
+      text = "boo!";
+      mode = "0764";
+      user = "root";
+      group = "root";
+    };
+
+    "a/nested/example2/foo3" = {
+      text = "boo!";
+      mode = "0764";
+      user = "root";
+      group = "root";
+    };
+
     out-of-store = {
       source = "/run/systemd/system/";
     };

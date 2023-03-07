@@ -104,15 +104,12 @@ in
         ${system-manager}/bin/system-manager deactivate "$@"
       '';
 
-      linkFarmEntryFromDrv = drv: {
-        name = drv.name;
+      linkFarmNestedEntryFromDrv = dirs: drv: {
+        name = lib.concatStringsSep "/" (dirs ++ [ "${drv.name}" ]);
         path = drv;
       };
-
-      linkFarmBinEntryFromDrv = drv: {
-        name = "bin/${drv.name}";
-        path = drv;
-      };
+      linkFarmEntryFromDrv = linkFarmNestedEntryFromDrv [ ];
+      linkFarmBinEntryFromDrv = linkFarmNestedEntryFromDrv [ "bin" ];
     in
     returnIfNoAssertions (
       pkgs.linkFarm "system-manager" [

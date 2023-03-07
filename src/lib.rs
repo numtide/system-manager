@@ -14,7 +14,7 @@ const PROFILE_NAME: &str = "system-manager";
 const GCROOT_PATH: &str = "/nix/var/nix/gcroots/system-manager-current";
 const SYSTEM_MANAGER_STATE_DIR: &str = "/var/lib/system-manager/state";
 const SERVICES_STATE_FILE_NAME: &str = "services.json";
-//const ETC_STATE_FILE_NAME: &str = "etc-files.json";
+const ETC_STATE_FILE_NAME: &str = "etc-files.json";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(from = "String", into = "String", rename_all = "camelCase")]
@@ -75,6 +75,16 @@ fn remove_link(from: &Path) -> Result<()> {
     } else {
         anyhow::bail!("Not a symlink!");
     }
+}
+
+fn remove_file(from: &Path) -> Result<()> {
+    log::info!("Removing file: {}", from.display());
+    fs::remove_file(from).map_err(anyhow::Error::from)
+}
+
+fn remove_dir(from: &Path) -> Result<()> {
+    log::info!("Removing directory: {}", from.display());
+    fs::remove_dir(from).map_err(anyhow::Error::from)
 }
 
 pub fn compose<A, B, C, G, F>(f: F, g: G) -> impl Fn(A) -> C

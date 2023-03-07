@@ -11,6 +11,8 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
         log::info!("Running in ephemeral mode");
     }
 
+    // TODO we probably need to first deactivate left-over files and services
+    // before we start putting in place the new ones.
     etc_files::activate(store_path, ephemeral)?;
     services::activate(store_path, ephemeral)?;
     Ok(())
