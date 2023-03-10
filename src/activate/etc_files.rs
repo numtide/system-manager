@@ -1,8 +1,11 @@
 use anyhow::{anyhow, Result};
+use im::HashMap;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::cmp::Eq;
+use std::ffi::{OsStr, OsString};
 use std::fs::{DirBuilder, Permissions};
+use std::iter::Peekable;
 use std::os::unix::prelude::PermissionsExt;
 use std::path;
 use std::path::{Path, PathBuf};
@@ -13,7 +16,7 @@ use crate::{
     ETC_STATE_FILE_NAME, SYSTEM_MANAGER_STATE_DIR,
 };
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct EtcFile {
     source: StorePath,
@@ -36,15 +39,16 @@ struct EtcFilesConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct EtcStateInfo {
+struct EtcTree {
     status: EtcFileStatus,
+    path: PathBuf,
     // TODO directories and files are now both represented as a string associated with a nested
     // map. For files the nested map is simple empty.
     // We could potentially optimise this.
-    nested: HashMap<String, EtcStateInfo>,
+    nested: HashMap<OsString, EtcTree>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 enum EtcFileStatus {
     Managed,
@@ -52,6 +56,8 @@ enum EtcFileStatus {
 }
 
 impl EtcFileStatus {
+    // TODO
+    #[allow(dead_code)]
     fn merge(&self, other: &Self) -> Self {
         use EtcFileStatus::*;
 
@@ -62,34 +68,181 @@ impl EtcFileStatus {
     }
 }
 
-impl EtcStateInfo {
-    fn new() -> Self {
-        Self::with_status(EtcFileStatus::Unmanaged)
+/// Data structure to represent files that are managed by system-manager.
+///
+/// This data will be serialised to disk and read on the next run.
+///
+/// We need these basic operations:
+/// 1. Create a new, empty structure
+/// 2. Persist to a file
+/// 3. Import from a file
+/// 4. Add a path to the tree, that will from then on be considered as managed
+/// 5.
+impl EtcTree {
+    fn new(path: PathBuf) -> Self {
+        Self::with_status(path, EtcFileStatus::Unmanaged)
     }
 
-    fn with_status(status: EtcFileStatus) -> Self {
+    fn with_status(path: PathBuf, status: EtcFileStatus) -> Self {
         Self {
             status,
+            path,
             nested: HashMap::new(),
         }
     }
 
-    // TODO unit tests
-    fn register_managed_path(mut self, components: &[String], path: String) -> Self {
-        let state = components.iter().fold(&mut self, |state, component| {
-            if !state.nested.contains_key(component) {
-                let new_state = Self::new();
-                state.nested.insert(component.to_owned(), new_state);
+    // TODO is recursion OK here?
+    // Should we convert to CPS and use a crate like tramp to TCO this?
+    fn register_managed_entry(self, path: &Path) -> Self {
+        fn go<'a, C>(mut tree: EtcTree, mut components: Peekable<C>, path: PathBuf) -> EtcTree
+        where
+            C: Iterator<Item = path::Component<'a>>,
+        {
+            if let Some(component) = components.next() {
+                match component {
+                    path::Component::Normal(name) => {
+                        let new_path = path.join(component);
+                        tree.nested = tree.nested.alter(
+                            |maybe_subtree| {
+                                Some(go(
+                                    maybe_subtree.unwrap_or_else(|| {
+                                        EtcTree::with_status(
+                                            new_path.to_owned(),
+                                            if components.peek().is_some() {
+                                                EtcFileStatus::Unmanaged
+                                            } else {
+                                                EtcFileStatus::Managed
+                                            },
+                                        )
+                                    }),
+                                    components,
+                                    new_path,
+                                ))
+                            },
+                            name.to_owned(),
+                        );
+                        tree
+                    }
+                    path::Component::RootDir => go(
+                        tree,
+                        components,
+                        path.join(path::MAIN_SEPARATOR.to_string()),
+                    ),
+                    _ => panic!(
+                        "Unsupported path provided! At path component: {:?}",
+                        component
+                    ),
+                }
+            } else {
+                tree
             }
-            state.nested.get_mut(component).unwrap()
+        }
+
+        go(self, path.components().peekable(), PathBuf::new())
+    }
+
+    fn deactivate<F>(self, delete_action: &F) -> Option<EtcTree>
+    where
+        F: Fn(&Path) -> bool,
+    {
+        let new_tree = self.nested.keys().fold(self.clone(), |mut new_tree, name| {
+            new_tree.nested = new_tree.nested.alter(
+                |subtree| subtree.and_then(|subtree| subtree.deactivate(delete_action)),
+                name.to_owned(),
+            );
+            new_tree
         });
 
-        state
-            .nested
-            .insert(path, Self::with_status(EtcFileStatus::Managed));
-
-        self
+        if let EtcFileStatus::Managed = new_tree.status {
+            if new_tree.nested.is_empty() && delete_action(&new_tree.path) {
+                None
+            } else {
+                Some(new_tree)
+            }
+        } else {
+            Some(new_tree)
+        }
     }
+
+    fn deactivate_managed_entry<F>(self, path: &Path, delete_action: &F) -> Self
+    where
+        F: Fn(&Path) -> bool,
+    {
+        fn go<'a, C, F>(
+            mut tree: EtcTree,
+            path: PathBuf,
+            mut components: Peekable<C>,
+            delete_action: &F,
+        ) -> EtcTree
+        where
+            C: Iterator<Item = path::Component<'a>>,
+            F: Fn(&Path) -> bool,
+        {
+            log::debug!("Deactivating {}", path.display());
+
+            if let Some(component) = components.next() {
+                match component {
+                    path::Component::Normal(name) => {
+                        let new_path = path.join(name);
+                        tree.nested = tree.nested.alter(
+                            |maybe_subtree| {
+                                maybe_subtree.and_then(|subtree| {
+                                    if components.peek().is_some() {
+                                        Some(go(subtree, new_path, components, delete_action))
+                                    } else {
+                                        subtree.deactivate(delete_action)
+                                    }
+                                })
+                            },
+                            name.to_owned(),
+                        );
+                        tree
+                    }
+                    path::Component::RootDir => go(
+                        tree,
+                        path.join(path::MAIN_SEPARATOR.to_string()),
+                        components,
+                        delete_action,
+                    ),
+                    _ => todo!(),
+                }
+            } else {
+                tree
+            }
+        }
+        go(
+            self,
+            PathBuf::new(),
+            path.components().peekable(),
+            delete_action,
+        )
+    }
+
+    //    /// Remove from this tree all subtrees also contained in the given tree
+    //    fn diff<F>(&mut self, old: &mut EtcTree, deactivate_action: &F)
+    //    where
+    //        F: Fn(&str, &mut EtcTree) -> bool,
+    //    {
+    //        if self.status != old.status {
+    //            self.status = self.status.merge(&old.status);
+    //        }
+    //
+    //        let keys = old.nested.keys().collect::<HashSet<_>>();
+    //        keys.iter().for_each(|key| {
+    //            if let Some(subtree) = self.nested.get_mut::<str>(key.as_ref()) {
+    //                subtree.diff(
+    //                    old.nested.get_mut::<str>(key.as_ref()).unwrap(),
+    //                    deactivate_action,
+    //                );
+    //            } else {
+    //                let deleted =
+    //                    deactivate_action(key, old.nested.get_mut::<str>(key.as_ref()).unwrap());
+    //                if !deleted {
+    //                    // TODO what can we do here??
+    //                }
+    //            }
+    //        });
+    //    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -110,78 +263,72 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
 
     DirBuilder::new().recursive(true).create(&etc_dir)?;
 
-    // TODO: constant?
-    let static_dir_name = ".system-manager-static";
-    let static_path = etc_dir.join(static_dir_name);
-    create_store_link(&config.static_env, static_path.as_path())?;
-
     // TODO remove all paths that are in the state file from the previous generation
     // and not in the current one.
+    let old_state = read_created_files()?;
 
-    let state = read_created_files()?;
+    // TODO: constant?
+    let static_dir_name = ".system-manager-static";
+    let (state, status) =
+        create_etc_static_link(static_dir_name, &config.static_env, &etc_dir, old_state);
+    status?;
     let new_state = create_etc_links(config.entries.values(), &etc_dir, state);
-    serialise_created_files(&new_state.register_managed_path(&[], static_dir_name.to_owned()))?;
 
-    Ok(())
-}
+    //    new_state.diff(&mut old_state, &|name, subtree| {
+    //        log::debug!("Deactivating: {name}");
+    //        false
+    //    });
+    //log::debug!("{old_state}");
 
-pub fn deactivate() -> Result<()> {
-    let old_created_files = read_created_files()?;
-    log::debug!("{:?}", old_created_files);
-
-    // TODO
-    //old_created_files
-    //    .iter()
-    //    .try_for_each(|created_file| remove_created_file(&created_file.path, "etc"))?;
-
-    serialise_created_files(&EtcStateInfo::new())?;
+    serialise_state(&new_state)?;
 
     log::info!("Done");
     Ok(())
 }
 
-fn remove_created_file<P>(created_file: &P, root_dir: &str) -> Result<()>
-where
-    P: AsRef<Path>,
-{
-    let path = created_file.as_ref();
-    let recurse = if path.is_file() {
-        remove_file(path)?;
-        true
-    } else if path.is_symlink() {
-        remove_link(path)?;
-        true
-    } else if path.is_dir() && fs::read_dir(created_file)?.next().is_none() {
-        log::info!("We will remove the following directory: {}", path.display());
-        remove_dir(path)?;
-        true
-    } else {
-        log::debug!("Stopped at directory {}.", path.display());
-        false
-    };
+pub fn deactivate() -> Result<()> {
+    let state = read_created_files()?;
+    log::debug!("{:?}", state);
 
-    if recurse {
-        if let Some(parent) = path.parent() {
-            if parent
-                .file_name()
-                .filter(|name| &root_dir != name)
-                .is_some()
-            {
-                log::debug!("Recursing up into directory {}...", parent.display());
-                return remove_created_file(&parent, root_dir);
+    serialise_state(&state.deactivate_managed_entry(
+        Path::new("/"),
+        &|path| match try_delete_path(path) {
+            Ok(()) => true,
+            Err(e) => {
+                log::error!("Error deleting path: {}", path.display());
+                log::error!("{e}");
+                false
             }
-            log::debug!("Reached root dir: {}", parent.display());
-        }
-    }
+        },
+    ))?;
+
+    log::info!("Done");
     Ok(())
 }
 
-fn create_etc_links<'a, E>(entries: E, etc_dir: &Path, state: EtcStateInfo) -> EtcStateInfo
+fn try_delete_path(path: &Path) -> Result<()> {
+    // exists() returns false for broken symlinks
+    if path.exists() || path.is_symlink() {
+        if path.is_symlink() {
+            remove_link(path)
+        } else if path.is_file() {
+            remove_file(path)
+        } else if path.is_dir() {
+            remove_dir(path)
+        } else {
+            Err(anyhow!("Unsupported file type! {}", path.display()))
+        }
+    } else {
+        Ok(())
+    }
+}
+
+fn create_etc_links<'a, E>(entries: E, etc_dir: &Path, state: EtcTree) -> EtcTree
 where
     E: Iterator<Item = &'a EtcFile>,
 {
     entries.fold(state, |state, entry| {
-        let (new_state, status) = create_etc_link(entry, etc_dir, state);
+        let (new_state, status) = create_etc_entry(entry, etc_dir, state);
         match status {
             Ok(_) => new_state,
             Err(e) => {
@@ -192,30 +339,44 @@ where
     })
 }
 
-fn create_etc_link(
-    entry: &EtcFile,
+fn create_etc_static_link(
+    static_dir_name: &str,
+    store_path: &StorePath,
     etc_dir: &Path,
-    state: EtcStateInfo,
-) -> (EtcStateInfo, Result<()>) {
+    state: EtcTree,
+) -> (EtcTree, Result<()>) {
+    let static_path = etc_dir.join(static_dir_name);
+    let (new_state, status) = create_dir_recursively(static_path.parent().unwrap(), state);
+    match status.and_then(|_| create_store_link(store_path, static_path.as_path())) {
+        Ok(_) => (new_state.register_managed_entry(&static_path), Ok(())),
+        e => (new_state, e),
+    }
+}
+
+fn create_etc_link(link_target: &OsStr, etc_dir: &Path, state: EtcTree) -> (EtcTree, Result<()>) {
+    let link_path = etc_dir.join(link_target);
+    let (new_state, status) = create_dir_recursively(link_path.parent().unwrap(), state);
+    match status.and_then(|_| {
+        create_link(
+            Path::new(".")
+                .join(".system-manager-static")
+                .join("etc")
+                .join(link_target)
+                .as_path(),
+            link_path.as_path(),
+        )
+    }) {
+        Ok(_) => (new_state.register_managed_entry(&link_path), Ok(())),
+        e => (new_state, e),
+    }
+}
+
+// TODO split up this function, and treat symlinks and copied files the same in the state file (ie
+// include the root for both).
+fn create_etc_entry(entry: &EtcFile, etc_dir: &Path, state: EtcTree) -> (EtcTree, Result<()>) {
     if entry.mode == "symlink" {
-        if let Some(path::Component::Normal(link_target)) =
-            entry.target.components().into_iter().next()
-        {
-            let link_name = etc_dir.join(link_target);
-            match create_link(
-                Path::new(".")
-                    .join(".system-manager-static")
-                    .join("etc")
-                    .join(link_target)
-                    .as_path(),
-                link_name.as_path(),
-            ) {
-                Ok(_) => (
-                    state.register_managed_path(&[], link_target.to_string_lossy().into_owned()),
-                    Ok(()),
-                ),
-                e => (state, e),
-            }
+        if let Some(path::Component::Normal(link_target)) = entry.target.components().next() {
+            create_etc_link(link_target, etc_dir, state)
         } else {
             (
                 state,
@@ -223,56 +384,8 @@ fn create_etc_link(
             )
         }
     } else {
-        let dirbuilder = DirBuilder::new();
         let target_path = etc_dir.join(entry.target.as_path());
-
-        // Create all parent dirs that do not exist yet
-        let (new_state, created_paths, _, status) = target_path
-            .parent()
-            .unwrap() // TODO
-            .components()
-            .fold_while(
-                (state, Vec::new(), PathBuf::from("/"), Ok(())),
-                |(state, mut created, path, _), component| {
-                    use itertools::FoldWhile::{Continue, Done};
-                    use path::Component;
-
-                    match component {
-                        Component::RootDir => Continue((state, created, path, Ok(()))),
-                        Component::Normal(dir) => {
-                            let new_path = path.join(dir);
-                            if !new_path.exists() {
-                                log::debug!("Creating path: {}", new_path.display());
-                                match dirbuilder.create(new_path.as_path()) {
-                                    Ok(_) => {
-                                        let new_state = state.register_managed_path(
-                                            &created,
-                                            dir.to_string_lossy().into_owned(),
-                                        );
-                                        created.push(dir.to_string_lossy().into_owned());
-                                        Continue((new_state, created, new_path, Ok(())))
-                                    }
-                                    Err(e) => Done((state, created, path, Err(anyhow!(e)))),
-                                }
-                            } else {
-                                created.push(dir.to_string_lossy().into_owned());
-                                Continue((state, created, new_path, Ok(())))
-                            }
-                        }
-                        otherwise => Done((
-                            state,
-                            created,
-                            path,
-                            Err(anyhow!(
-                                "Unexpected path component encountered: {:?}",
-                                otherwise
-                            )),
-                        )),
-                    }
-                },
-            )
-            .into_inner();
-
+        let (new_state, status) = create_dir_recursively(target_path.parent().unwrap(), state);
         match status.and_then(|_| {
             copy_file(
                 entry
@@ -285,20 +398,50 @@ fn create_etc_link(
                 &entry.mode,
             )
         }) {
-            Ok(_) => (
-                new_state.register_managed_path(
-                    &created_paths,
-                    target_path
-                        .file_name()
-                        .unwrap()
-                        .to_string_lossy()
-                        .into_owned(),
-                ),
-                Ok(()),
-            ),
+            Ok(_) => (new_state.register_managed_entry(&target_path), Ok(())),
             e => (new_state, e),
         }
     }
+}
+
+fn create_dir_recursively(dir: &Path, state: EtcTree) -> (EtcTree, Result<()>) {
+    use itertools::FoldWhile::{Continue, Done};
+    use path::Component;
+
+    let dirbuilder = DirBuilder::new();
+    let (new_state, _, status) = dir
+        .components()
+        .fold_while(
+            (state, PathBuf::from("/"), Ok(())),
+            |(state, path, _), component| match component {
+                Component::RootDir => Continue((state, path, Ok(()))),
+                Component::Normal(dir) => {
+                    let new_path = path.join(dir);
+                    if !new_path.exists() {
+                        log::debug!("Creating path: {}", new_path.display());
+                        match dirbuilder.create(new_path.as_path()) {
+                            Ok(_) => {
+                                let new_state = state.register_managed_entry(&new_path);
+                                Continue((new_state, new_path, Ok(())))
+                            }
+                            Err(e) => Done((state, path, Err(anyhow!(e)))),
+                        }
+                    } else {
+                        Continue((state, new_path, Ok(())))
+                    }
+                }
+                otherwise => Done((
+                    state,
+                    path,
+                    Err(anyhow!(
+                        "Unexpected path component encountered: {:?}",
+                        otherwise
+                    )),
+                )),
+            },
+        )
+        .into_inner();
+    (new_state, status)
 }
 
 fn copy_file(source: &Path, target: &Path, mode: &str) -> Result<()> {
@@ -316,7 +459,7 @@ fn etc_dir(ephemeral: bool) -> PathBuf {
     }
 }
 
-fn serialise_created_files(created_files: &EtcStateInfo) -> Result<()> {
+fn serialise_state(created_files: &EtcTree) -> Result<()> {
     let state_file = Path::new(SYSTEM_MANAGER_STATE_DIR).join(ETC_STATE_FILE_NAME);
     DirBuilder::new()
         .recursive(true)
@@ -328,7 +471,7 @@ fn serialise_created_files(created_files: &EtcStateInfo) -> Result<()> {
     Ok(())
 }
 
-fn read_created_files() -> Result<EtcStateInfo> {
+fn read_created_files() -> Result<EtcTree> {
     let state_file = Path::new(SYSTEM_MANAGER_STATE_DIR).join(ETC_STATE_FILE_NAME);
     DirBuilder::new()
         .recursive(true)
@@ -345,5 +488,82 @@ fn read_created_files() -> Result<EtcStateInfo> {
             }
         }
     }
-    Ok(EtcStateInfo::new())
+    Ok(EtcTree::new(PathBuf::from("/")))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn etc_tree_register() {
+        let tree1 = EtcTree::new(PathBuf::from("/"))
+            .register_managed_entry(&PathBuf::from("/").join("foo").join("bar"))
+            .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz").join("bar"))
+            .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz2").join("bar"));
+        dbg!(&tree1);
+        assert_eq!(
+            tree1.nested.keys().sorted().collect::<Vec<_>>(),
+            ["foo", "foo2"]
+        );
+        assert_eq!(
+            tree1
+                .nested
+                .get(OsStr::new("foo2"))
+                .unwrap()
+                .nested
+                .get(OsStr::new("baz"))
+                .unwrap()
+                .nested
+                .get(OsStr::new("bar"))
+                .unwrap()
+                .path,
+            PathBuf::from("/").join("foo2").join("baz").join("bar")
+        );
+    }
+
+    #[test]
+    fn etc_tree_deactivate() {
+        let tree1 = EtcTree::new(PathBuf::from("/"))
+            .register_managed_entry(&PathBuf::from("/").join("foo").join("bar"))
+            .register_managed_entry(&PathBuf::from("/").join("foo2"))
+            .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz"))
+            .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz").join("bar"))
+            .register_managed_entry(&PathBuf::from("/").join("foo2"))
+            .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz2"))
+            .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz2").join("bar"));
+        let tree2 =
+            tree1
+                .clone()
+                .deactivate_managed_entry(&PathBuf::from("/").join("foo2"), &|p| {
+                    println!("Deactivating: {}", p.display());
+                    true
+                });
+        dbg!(&tree1);
+        assert_eq!(tree2.nested.keys().sorted().collect::<Vec<_>>(), ["foo"]);
+        assert_eq!(
+            tree1.nested.keys().sorted().collect::<Vec<_>>(),
+            ["foo", "foo2"]
+        );
+    }
+
+    #[test]
+    fn etc_tree_diff() {
+        let tree1 = EtcTree::new(PathBuf::from("/"))
+            .register_managed_entry(&PathBuf::from("/").join("foo").join("bar"))
+            .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz").join("bar"))
+            .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz2").join("bar"));
+        let tree2 = EtcTree::new(PathBuf::from("/"))
+            .register_managed_entry(&PathBuf::from("/").join("foo").join("bar"))
+            .register_managed_entry(&PathBuf::from("/").join("foo3").join("bar"));
+        //tree2.diff(&mut tree1, &|name, _subtree| {
+        //    println!("Deactivating subtree: {name}");
+        //    true
+        //});
+        dbg!(&tree1);
+        assert_eq!(
+            tree1.nested.keys().sorted().collect::<Vec<_>>(),
+            ["foo", "foo2"]
+        );
+    }
 }
