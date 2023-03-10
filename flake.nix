@@ -57,7 +57,8 @@
         inherit system;
         overlays = [ (import rust-overlay) devshell.overlays.default ];
       };
-      rust = pkgs.rust-bin.stable."1.67.1";
+      # TODO Pin the version for release
+      rust = pkgs.rust-bin.stable.latest;
       llvm = pkgs.llvmPackages_latest;
 
       craneLib = (crane.mkLib pkgs).overrideToolchain rust.default;
