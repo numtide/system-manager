@@ -204,7 +204,10 @@ impl EtcTree {
                         components,
                         delete_action,
                     ),
-                    _ => todo!(),
+                    _ => panic!(
+                        "Unsupported path provided! At path component: {:?}",
+                        component
+                    ),
                 }
             } else {
                 tree
@@ -531,19 +534,39 @@ mod tests {
             .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz").join("bar"))
             .register_managed_entry(&PathBuf::from("/").join("foo2"))
             .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz2"))
-            .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz2").join("bar"));
-        let tree2 =
-            tree1
-                .clone()
-                .deactivate_managed_entry(&PathBuf::from("/").join("foo2"), &|p| {
-                    println!("Deactivating: {}", p.display());
-                    true
-                });
+            .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz2").join("bar"))
+            .register_managed_entry(&PathBuf::from("/").join("foo3").join("baz2").join("bar"));
+        let tree2 = tree1
+            .clone()
+            .deactivate_managed_entry(&PathBuf::from("/").join("foo2"), &|p| {
+                println!("Deactivating: {}", p.display());
+                true
+            })
+            // Since foo3 is unmanaged, it should not be removed
+            .deactivate_managed_entry(&PathBuf::from("/").join("foo3"), &|p| {
+                println!("Deactivating: {}", p.display());
+                true
+            });
         dbg!(&tree1);
-        assert_eq!(tree2.nested.keys().sorted().collect::<Vec<_>>(), ["foo"]);
+        assert_eq!(
+            tree2.nested.keys().sorted().collect::<Vec<_>>(),
+            ["foo", "foo3"]
+        );
+        assert!(tree2
+            .nested
+            .get(OsStr::new("foo3"))
+            .unwrap()
+            .nested
+            .get(OsStr::new("baz2"))
+            .unwrap()
+            .nested
+            .keys()
+            .sorted()
+            .collect::<Vec<_>>()
+            .is_empty());
         assert_eq!(
             tree1.nested.keys().sorted().collect::<Vec<_>>(),
-            ["foo", "foo2"]
+            ["foo", "foo2", "foo3"]
         );
     }
 
