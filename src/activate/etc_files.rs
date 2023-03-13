@@ -145,7 +145,7 @@ impl EtcTree {
     where
         F: Fn(&Path) -> bool,
     {
-        let new_tree = self.nested.keys().fold(self.clone(), |mut new_tree, name| {
+        let new_tree = self.nested.clone().keys().fold(self, |mut new_tree, name| {
             new_tree.nested = new_tree.nested.alter(
                 |subtree| subtree.and_then(|subtree| subtree.deactivate(delete_action)),
                 name.to_owned(),
@@ -221,31 +221,41 @@ impl EtcTree {
         )
     }
 
-    //    /// Remove from this tree all subtrees also contained in the given tree
-    //    fn diff<F>(&mut self, old: &mut EtcTree, deactivate_action: &F)
-    //    where
-    //        F: Fn(&str, &mut EtcTree) -> bool,
-    //    {
-    //        if self.status != old.status {
-    //            self.status = self.status.merge(&old.status);
-    //        }
-    //
-    //        let keys = old.nested.keys().collect::<HashSet<_>>();
-    //        keys.iter().for_each(|key| {
-    //            if let Some(subtree) = self.nested.get_mut::<str>(key.as_ref()) {
-    //                subtree.diff(
-    //                    old.nested.get_mut::<str>(key.as_ref()).unwrap(),
-    //                    deactivate_action,
-    //                );
-    //            } else {
-    //                let deleted =
-    //                    deactivate_action(key, old.nested.get_mut::<str>(key.as_ref()).unwrap());
-    //                if !deleted {
-    //                    // TODO what can we do here??
-    //                }
-    //            }
-    //        });
-    //    }
+    fn update_state<F>(self, other: Self, delete_action: &F) -> Self
+    where
+        F: Fn(&Path) -> bool,
+    {
+        let to_deactivate = other
+            .nested
+            .clone()
+            .relative_complement(self.nested.clone());
+        let to_merge = other.nested.clone().intersection(self.nested.clone());
+
+        let deactivated = to_deactivate.keys().fold(self, |mut new_tree, name| {
+            new_tree.nested = new_tree.nested.alter(
+                |subtree| subtree.and_then(|subtree| subtree.deactivate(delete_action)),
+                name.to_owned(),
+            );
+            new_tree
+        });
+
+        to_merge.keys().fold(deactivated, |mut new_tree, name| {
+            new_tree.nested = new_tree.nested.alter(
+                |subtree| {
+                    subtree.and_then(|subtree| {
+                        other.nested.get(name).map(|other_tree| {
+                            let mut new_tree =
+                                subtree.update_state(other_tree.clone(), delete_action);
+                            new_tree.status = new_tree.status.merge(&other_tree.status);
+                            new_tree
+                        })
+                    })
+                },
+                name.to_owned(),
+            );
+            new_tree
+        })
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -272,16 +282,20 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
 
     // TODO: constant?
     let static_dir_name = ".system-manager-static";
-    let (state, status) =
-        create_etc_static_link(static_dir_name, &config.static_env, &etc_dir, old_state);
+    let (state, status) = create_etc_static_link(
+        static_dir_name,
+        &config.static_env,
+        &etc_dir,
+        EtcTree::new(PathBuf::new()),
+    );
     status?;
-    let new_state = create_etc_links(config.entries.values(), &etc_dir, state);
-
-    //    new_state.diff(&mut old_state, &|name, subtree| {
-    //        log::debug!("Deactivating: {name}");
-    //        false
-    //    });
-    //log::debug!("{old_state}");
+    let new_state = create_etc_links(config.entries.values(), &etc_dir, state).update_state(
+        old_state,
+        &|path| {
+            log::debug!("Deactivating: {}", path.display());
+            false
+        },
+    );
 
     serialise_state(&new_state)?;
 
