@@ -73,6 +73,29 @@ impl EtcTree {
         Self::new(PathBuf::from(path::MAIN_SEPARATOR_STR))
     }
 
+    pub fn get_status<'a>(&'a self, path: &Path) -> &'a EtcFileStatus {
+        fn go<'a, 'b, C>(tree: &'a EtcTree, mut components: C, path: &Path) -> &'a EtcFileStatus
+        where
+            C: Iterator<Item = path::Component<'b>>,
+        {
+            if let Some(component) = components.next() {
+                match component {
+                    path::Component::Normal(name) => tree
+                        .nested
+                        .get(name.to_string_lossy().as_ref())
+                        .map(|subtree| go(subtree, components, path))
+                        .unwrap_or(&EtcFileStatus::Unmanaged),
+                    path::Component::RootDir => go(tree, components, path),
+                    _ => todo!(),
+                }
+            } else {
+                debug_assert!(tree.path == path);
+                &tree.status
+            }
+        }
+        go(self, path.components(), path)
+    }
+
     // TODO is recursion OK here?
     // Should we convert to CPS and use a crate like tramp to TCO this?
     pub fn register_managed_entry(self, path: &Path) -> Self {
@@ -266,6 +289,38 @@ mod tests {
                 delete_action,
             )
         }
+    }
+
+    #[test]
+    fn etc_tree_get_status() {
+        let tree1 = EtcTree::root_node()
+            .register_managed_entry(&PathBuf::from("/").join("foo").join("bar"))
+            .register_managed_entry(&PathBuf::from("/").join("foo2"))
+            .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz"))
+            .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz").join("bar"))
+            .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz2"))
+            .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz2").join("bar"))
+            .register_managed_entry(&PathBuf::from("/").join("foo3").join("baz2").join("bar"))
+            .register_managed_entry(&PathBuf::from("/").join("foo4"))
+            .register_managed_entry(&PathBuf::from("/").join("foo4").join("baz"))
+            .register_managed_entry(&PathBuf::from("/").join("foo4").join("baz").join("bar"))
+            .register_managed_entry(&PathBuf::from("/").join("foo5"))
+            .register_managed_entry(&PathBuf::from("/").join("foo5").join("baz"))
+            .register_managed_entry(&PathBuf::from("/").join("foo5").join("baz2"))
+            .register_managed_entry(&PathBuf::from("/").join("foo5").join("baz").join("bar"));
+
+        assert_eq!(
+            tree1.get_status(&PathBuf::from("/").join("foo5").join("baz").join("bar")),
+            &EtcFileStatus::Managed
+        );
+        assert_eq!(
+            tree1.get_status(&PathBuf::from("/").join("foo")),
+            &EtcFileStatus::Unmanaged
+        );
+        assert_eq!(
+            tree1.get_status(&PathBuf::from("/").join("foo").join("nonexistent")),
+            &EtcFileStatus::Unmanaged
+        );
     }
 
     #[test]
