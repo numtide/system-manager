@@ -1,4 +1,4 @@
-use std::process::{self, ExitCode, ExitStatus};
+use std::process::{self, ExitCode};
 
 use anyhow::Result;
 use clap::Parser;
@@ -220,7 +220,7 @@ fn invoke_remote_script(
     script_name: &str,
     target_host: &str,
     use_remote_sudo: bool,
-) -> Result<ExitStatus> {
+) -> Result<process::ExitStatus> {
     let mut cmd = process::Command::new("ssh");
     cmd.arg(target_host).arg("--");
     if use_remote_sudo {

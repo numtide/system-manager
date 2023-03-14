@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::DirBuilder;
 use std::path::Path;
-use std::process::ExitStatus;
 use std::{fs, process, str};
 
 use super::{create_store_link, StorePath, FLAKE_ATTR, GCROOT_PATH, PROFILE_DIR, PROFILE_NAME};
