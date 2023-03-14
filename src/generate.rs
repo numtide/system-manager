@@ -34,15 +34,15 @@ fn install_nix_profile(
     profile_name: &Path,
 ) -> Result<process::ExitStatus> {
     DirBuilder::new().recursive(true).create(profile_dir)?;
-    process::Command::new("nix-env")
+    let status = process::Command::new("nix-env")
         .arg("--profile")
         .arg(profile_dir.join(profile_name))
         .arg("--set")
         .arg(&store_path.store_path)
         .stdout(process::Stdio::inherit())
         .stderr(process::Stdio::inherit())
-        .status()
-        .map_err(anyhow::Error::from)
+        .status()?;
+    Ok(status)
 }
 
 fn create_gcroot(gcroot_path: &str, profile_path: &Path) -> Result<()> {
@@ -92,7 +92,7 @@ fn parse_nix_build_output(output: String) -> Result<StorePath> {
 }
 
 fn run_nix_build(flake_uri: &str, flake_attr: &str) -> Result<process::Output> {
-    process::Command::new("nix")
+    let output = process::Command::new("nix")
         .arg("build")
         .arg(format!("{flake_uri}#{flake_attr}"))
         .arg("--json")
@@ -100,6 +100,6 @@ fn run_nix_build(flake_uri: &str, flake_attr: &str) -> Result<process::Output> {
         // so we inherit and output stderr directly to the terminal, but we
         // capture stdout as the result of this call
         .stderr(process::Stdio::inherit())
-        .output()
-        .map_err(anyhow::Error::from)
+        .output()?;
+    Ok(output)
 }

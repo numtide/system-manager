@@ -226,11 +226,12 @@ fn invoke_remote_script(
     if use_remote_sudo {
         cmd.arg("sudo");
     }
-    cmd.arg(format!("{store_path}/bin/{script_name}"))
+    let status = cmd
+        .arg(format!("{store_path}/bin/{script_name}"))
         .stdout(process::Stdio::inherit())
         .stderr(process::Stdio::inherit())
-        .status()
-        .map_err(anyhow::Error::from)
+        .status()?;
+    Ok(status)
 }
 
 fn check_root() -> Result<()> {

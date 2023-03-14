@@ -66,13 +66,15 @@ fn create_link(to: &Path, from: &Path) -> Result<()> {
             anyhow::bail!("File exists and is no link!");
         }
     }
-    unix::fs::symlink(to, from).map_err(anyhow::Error::from)
+    unix::fs::symlink(to, from)?;
+    Ok(())
 }
 
 fn remove_link(from: &Path) -> Result<()> {
     log::info!("Removing symlink: {}", from.display());
     if from.is_symlink() {
-        fs::remove_file(from).map_err(anyhow::Error::from)
+        fs::remove_file(from)?;
+        Ok(())
     } else {
         anyhow::bail!("Not a symlink!");
     }
@@ -80,12 +82,14 @@ fn remove_link(from: &Path) -> Result<()> {
 
 fn remove_file(from: &Path) -> Result<()> {
     log::info!("Removing file: {}", from.display());
-    fs::remove_file(from).map_err(anyhow::Error::from)
+    fs::remove_file(from)?;
+    Ok(())
 }
 
 fn remove_dir(from: &Path) -> Result<()> {
     log::info!("Removing directory: {}", from.display());
-    fs::remove_dir(from).map_err(anyhow::Error::from)
+    fs::remove_dir(from)?;
+    Ok(())
 }
 
 pub fn compose<A, B, C, G, F>(f: F, g: G) -> impl Fn(A) -> C
