@@ -90,6 +90,9 @@ impl EtcTree {
                                     maybe_subtree.unwrap_or_else(|| {
                                         EtcTree::with_status(
                                             new_path.to_owned(),
+                                            // We only label as managed the final path entry,
+                                            // to label intermediate nodes as managed, we should
+                                            // call this function for every one of them separately.
                                             components
                                                 .peek()
                                                 .map_or(EtcFileStatus::Managed, |_| {
@@ -133,6 +136,10 @@ impl EtcTree {
             new_tree
         });
 
+        // We clean up nodes that are empty and unmanaged.
+        // These represent intermediate directories that already existed, so we
+        // are not responsible for cleaning them up (we don't run the delete_action
+        // closure on their paths).
         if new_tree.nested.is_empty() {
             if let EtcFileStatus::Managed = new_tree.status {
                 if delete_action(&new_tree.path) {
@@ -189,11 +196,10 @@ impl EtcTree {
                 new_tree
             });
 
-        if merged.nested.is_empty() {
-            if let EtcFileStatus::Unmanaged = merged.status {
-                return None;
-            }
-        }
+        // If our invariants are properly maintained, then we should never end up
+        // here with dangling unmanaged nodes.
+        debug_assert!(!merged.nested.is_empty() || merged.status == EtcFileStatus::Managed);
+
         Some(merged)
     }
 }
