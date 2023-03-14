@@ -1,21 +1,9 @@
 use im::HashMap;
 use serde::{Deserialize, Serialize};
 use std::cmp::Eq;
-use std::ffi::OsString;
 use std::iter::Peekable;
 use std::path;
 use std::path::{Path, PathBuf};
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct EtcTree {
-    status: EtcFileStatus,
-    path: PathBuf,
-    // TODO directories and files are now both represented as a string associated with a nested
-    // map. For files the nested map is simple empty.
-    // We could potentially optimise this.
-    nested: HashMap<OsString, EtcTree>,
-}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -35,27 +23,54 @@ impl EtcFileStatus {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EtcTree {
+    status: EtcFileStatus,
+    path: PathBuf,
+    // TODO directories and files are now both represented as a string associated with a nested
+    // map. For files the nested map is simple empty.
+    // We could potentially optimise this.
+    nested: HashMap<String, EtcTree>,
+}
+
+impl AsRef<EtcTree> for EtcTree {
+    fn as_ref(&self) -> &EtcTree {
+        self
+    }
+}
+
+impl Default for EtcTree {
+    fn default() -> Self {
+        Self::root_node()
+    }
+}
+
 /// Data structure to represent files that are managed by system-manager.
 ///
 /// This data will be serialised to disk and read on the next run.
 ///
 /// We need these basic operations:
-/// 1. Create a new, empty structure
+/// 1. Create a new root structure
 /// 2. Persist to a file
 /// 3. Import from a file
 /// 4. Add a path to the tree, that will from then on be considered as managed
 /// 5.
 impl EtcTree {
-    pub fn new(path: PathBuf) -> Self {
+    fn new(path: PathBuf) -> Self {
         Self::with_status(path, EtcFileStatus::Unmanaged)
     }
 
-    pub fn with_status(path: PathBuf, status: EtcFileStatus) -> Self {
+    fn with_status(path: PathBuf, status: EtcFileStatus) -> Self {
         Self {
             status,
             path,
             nested: HashMap::new(),
         }
+    }
+
+    pub fn root_node() -> Self {
+        Self::new(PathBuf::from(path::MAIN_SEPARATOR_STR))
     }
 
     // TODO is recursion OK here?
@@ -75,26 +90,24 @@ impl EtcTree {
                                     maybe_subtree.unwrap_or_else(|| {
                                         EtcTree::with_status(
                                             new_path.to_owned(),
-                                            if components.peek().is_some() {
-                                                EtcFileStatus::Unmanaged
-                                            } else {
-                                                EtcFileStatus::Managed
-                                            },
+                                            components
+                                                .peek()
+                                                .map_or(EtcFileStatus::Managed, |_| {
+                                                    EtcFileStatus::Unmanaged
+                                                }),
                                         )
                                     }),
                                     components,
                                     new_path,
                                 ))
                             },
-                            name.to_owned(),
+                            name.to_string_lossy().to_string(),
                         );
                         tree
                     }
-                    path::Component::RootDir => go(
-                        tree,
-                        components,
-                        path.join(path::MAIN_SEPARATOR.to_string()),
-                    ),
+                    path::Component::RootDir => {
+                        go(tree, components, path.join(path::MAIN_SEPARATOR_STR))
+                    }
                     _ => panic!(
                         "Unsupported path provided! At path component: {:?}",
                         component
@@ -129,63 +142,6 @@ impl EtcTree {
         } else {
             Some(new_tree)
         }
-    }
-
-    pub fn deactivate_managed_entry<F>(self, path: &Path, delete_action: &F) -> Self
-    where
-        F: Fn(&Path) -> bool,
-    {
-        fn go<'a, C, F>(
-            mut tree: EtcTree,
-            path: PathBuf,
-            mut components: Peekable<C>,
-            delete_action: &F,
-        ) -> EtcTree
-        where
-            C: Iterator<Item = path::Component<'a>>,
-            F: Fn(&Path) -> bool,
-        {
-            log::debug!("Deactivating {}", path.display());
-
-            if let Some(component) = components.next() {
-                match component {
-                    path::Component::Normal(name) => {
-                        let new_path = path.join(name);
-                        tree.nested = tree.nested.alter(
-                            |maybe_subtree| {
-                                maybe_subtree.and_then(|subtree| {
-                                    if components.peek().is_some() {
-                                        Some(go(subtree, new_path, components, delete_action))
-                                    } else {
-                                        subtree.deactivate(delete_action)
-                                    }
-                                })
-                            },
-                            name.to_owned(),
-                        );
-                        tree
-                    }
-                    path::Component::RootDir => go(
-                        tree,
-                        path.join(path::MAIN_SEPARATOR.to_string()),
-                        components,
-                        delete_action,
-                    ),
-                    _ => panic!(
-                        "Unsupported path provided! At path component: {:?}",
-                        component
-                    ),
-                }
-            } else {
-                tree
-            }
-        }
-        go(
-            self,
-            PathBuf::new(),
-            path.components().peekable(),
-            delete_action,
-        )
     }
 
     pub fn update_state<F>(self, other: Self, delete_action: &F) -> Option<Self>
@@ -237,29 +193,86 @@ impl EtcTree {
 mod tests {
     use super::*;
     use itertools::Itertools;
-    use std::ffi::OsStr;
+
+    impl EtcTree {
+        pub fn deactivate_managed_entry<F>(self, path: &Path, delete_action: &F) -> Self
+        where
+            F: Fn(&Path) -> bool,
+        {
+            fn go<'a, C, F>(
+                mut tree: EtcTree,
+                path: PathBuf,
+                mut components: Peekable<C>,
+                delete_action: &F,
+            ) -> EtcTree
+            where
+                C: Iterator<Item = path::Component<'a>>,
+                F: Fn(&Path) -> bool,
+            {
+                log::debug!("Deactivating {}", path.display());
+
+                if let Some(component) = components.next() {
+                    match component {
+                        path::Component::Normal(name) => {
+                            let new_path = path.join(name);
+                            tree.nested = tree.nested.alter(
+                                |maybe_subtree| {
+                                    maybe_subtree.and_then(|subtree| {
+                                        if components.peek().is_some() {
+                                            Some(go(subtree, new_path, components, delete_action))
+                                        } else {
+                                            subtree.deactivate(delete_action)
+                                        }
+                                    })
+                                },
+                                name.to_string_lossy().to_string(),
+                            );
+                            tree
+                        }
+                        path::Component::RootDir => go(
+                            tree,
+                            path.join(path::MAIN_SEPARATOR.to_string()),
+                            components,
+                            delete_action,
+                        ),
+                        _ => panic!(
+                            "Unsupported path provided! At path component: {:?}",
+                            component
+                        ),
+                    }
+                } else {
+                    tree
+                }
+            }
+            go(
+                self,
+                PathBuf::new(),
+                path.components().peekable(),
+                delete_action,
+            )
+        }
+    }
 
     #[test]
     fn etc_tree_register() {
-        let tree1 = EtcTree::new(PathBuf::from("/"))
+        let tree = EtcTree::root_node()
             .register_managed_entry(&PathBuf::from("/").join("foo").join("bar"))
             .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz").join("bar"))
             .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz2").join("bar"));
-        dbg!(&tree1);
+        dbg!(&tree);
         assert_eq!(
-            tree1.nested.keys().sorted().collect::<Vec<_>>(),
+            tree.nested.keys().sorted().collect::<Vec<_>>(),
             ["foo", "foo2"]
         );
         assert_eq!(
-            tree1
-                .nested
-                .get(OsStr::new("foo2"))
+            tree.nested
+                .get("foo2")
                 .unwrap()
                 .nested
-                .get(OsStr::new("baz"))
+                .get("baz")
                 .unwrap()
                 .nested
-                .get(OsStr::new("bar"))
+                .get("bar")
                 .unwrap()
                 .path,
             PathBuf::from("/").join("foo2").join("baz").join("bar")
@@ -268,7 +281,7 @@ mod tests {
 
     #[test]
     fn etc_tree_deactivate() {
-        let tree1 = EtcTree::new(PathBuf::from("/"))
+        let tree1 = EtcTree::root_node()
             .register_managed_entry(&PathBuf::from("/").join("foo").join("bar"))
             .register_managed_entry(&PathBuf::from("/").join("foo2"))
             .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz"))
@@ -301,10 +314,10 @@ mod tests {
         );
         assert!(tree2
             .nested
-            .get(OsStr::new("foo3"))
+            .get("foo3")
             .unwrap()
             .nested
-            .get(OsStr::new("baz2"))
+            .get("baz2")
             .unwrap()
             .nested
             .keys()
@@ -319,7 +332,7 @@ mod tests {
 
     #[test]
     fn etc_tree_update_state() {
-        let tree1 = EtcTree::new(PathBuf::from("/"))
+        let tree1 = EtcTree::root_node()
             .register_managed_entry(&PathBuf::from("/").join("foo").join("bar"))
             .register_managed_entry(&PathBuf::from("/").join("foo2"))
             .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz"))
@@ -327,7 +340,7 @@ mod tests {
             .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz2"))
             .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz2").join("bar"))
             .register_managed_entry(&PathBuf::from("/").join("foo3").join("baz2").join("bar"));
-        let tree2 = EtcTree::new(PathBuf::from("/"))
+        let tree2 = EtcTree::root_node()
             .register_managed_entry(&PathBuf::from("/").join("foo").join("bar"))
             .register_managed_entry(&PathBuf::from("/").join("foo3").join("bar"))
             .register_managed_entry(&PathBuf::from("/").join("foo4"))

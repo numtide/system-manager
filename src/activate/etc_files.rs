@@ -13,7 +13,7 @@ use std::{fs, io};
 
 use crate::{
     create_link, create_store_link, remove_dir, remove_file, remove_link, StorePath,
-    ETC_STATE_FILE_NAME, SYSTEM_MANAGER_STATE_DIR,
+    ETC_STATE_FILE_NAME, SYSTEM_MANAGER_STATE_DIR, SYSTEM_MANAGER_STATIC_NAME,
 };
 use etc_tree::EtcTree;
 
@@ -57,16 +57,16 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
     DirBuilder::new().recursive(true).create(&etc_dir)?;
 
     let old_state = read_created_files()?;
+    let initial_state = EtcTree::root_node();
 
-    // TODO: constant?
-    let static_dir_name = ".system-manager-static";
     let (state, status) = create_etc_static_link(
-        static_dir_name,
+        SYSTEM_MANAGER_STATIC_NAME,
         &config.static_env,
         &etc_dir,
-        EtcTree::new(PathBuf::new()),
+        initial_state,
     );
     status?;
+
     let new_state = create_etc_links(config.entries.values(), &etc_dir, state).update_state(
         old_state,
         &|path| {
@@ -75,7 +75,7 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
         },
     );
 
-    serialise_state(&new_state.unwrap_or_else(|| EtcTree::new(PathBuf::from("/"))))?;
+    serialise_state(new_state)?;
 
     log::info!("Done");
     Ok(())
@@ -85,17 +85,15 @@ pub fn deactivate() -> Result<()> {
     let state = read_created_files()?;
     log::debug!("{:?}", state);
 
-    serialise_state(&state.deactivate_managed_entry(
-        Path::new("/"),
-        &|path| match try_delete_path(path) {
-            Ok(()) => true,
-            Err(e) => {
+    serialise_state(state.deactivate(&|path| {
+        try_delete_path(path)
+            .map_err(|e| {
                 log::error!("Error deleting path: {}", path.display());
                 log::error!("{e}");
-                false
-            }
-        },
-    ))?;
+                e
+            })
+            .is_ok()
+    }))?;
 
     log::info!("Done");
     Ok(())
@@ -154,7 +152,7 @@ fn create_etc_link(link_target: &OsStr, etc_dir: &Path, state: EtcTree) -> (EtcT
     match status.and_then(|_| {
         create_link(
             Path::new(".")
-                .join(".system-manager-static")
+                .join(SYSTEM_MANAGER_STATIC_NAME)
                 .join("etc")
                 .join(link_target)
                 .as_path(),
@@ -207,7 +205,7 @@ fn create_dir_recursively(dir: &Path, state: EtcTree) -> (EtcTree, Result<()>) {
     let (new_state, _, status) = dir
         .components()
         .fold_while(
-            (state, PathBuf::from("/"), Ok(())),
+            (state, PathBuf::from(path::MAIN_SEPARATOR_STR), Ok(())),
             |(state, path, _), component| match component {
                 Component::RootDir => Continue((state, path, Ok(()))),
                 Component::Normal(dir) => {
@@ -240,10 +238,15 @@ fn create_dir_recursively(dir: &Path, state: EtcTree) -> (EtcTree, Result<()>) {
 }
 
 fn copy_file(source: &Path, target: &Path, mode: &str) -> Result<()> {
-    fs::copy(source, target)?;
-    let mode_int = u32::from_str_radix(mode, 8).map_err(anyhow::Error::from)?;
-    fs::set_permissions(target, Permissions::from_mode(mode_int))?;
-    Ok(())
+    let exists = target.try_exists()?;
+    if !exists {
+        fs::copy(source, target)?;
+        let mode_int = u32::from_str_radix(mode, 8)?;
+        fs::set_permissions(target, Permissions::from_mode(mode_int))?;
+        Ok(())
+    } else {
+        anyhow::bail!("File {} already exists, ignoring.", target.display());
+    }
 }
 
 fn etc_dir(ephemeral: bool) -> PathBuf {
@@ -254,7 +257,10 @@ fn etc_dir(ephemeral: bool) -> PathBuf {
     }
 }
 
-fn serialise_state(created_files: &EtcTree) -> Result<()> {
+fn serialise_state<E>(created_files: Option<E>) -> Result<()>
+where
+    E: AsRef<EtcTree>,
+{
     let state_file = Path::new(SYSTEM_MANAGER_STATE_DIR).join(ETC_STATE_FILE_NAME);
     DirBuilder::new()
         .recursive(true)
@@ -262,7 +268,12 @@ fn serialise_state(created_files: &EtcTree) -> Result<()> {
 
     log::info!("Writing state info into file: {}", state_file.display());
     let writer = io::BufWriter::new(fs::File::create(state_file)?);
-    serde_json::to_writer(writer, created_files)?;
+
+    if let Some(e) = created_files {
+        serde_json::to_writer(writer, e.as_ref())?;
+    } else {
+        serde_json::to_writer(writer, &EtcTree::default())?;
+    }
     Ok(())
 }
 
@@ -283,5 +294,5 @@ fn read_created_files() -> Result<EtcTree> {
             }
         }
     }
-    Ok(EtcTree::new(PathBuf::from("/")))
+    Ok(EtcTree::default())
 }
