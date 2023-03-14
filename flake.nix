@@ -9,7 +9,6 @@
         flake-utils.follows = "flake-utils";
       };
     };
-    nix-filter.url = "github:numtide/nix-filter";
     pre-commit-hooks = {
       url = "github:cachix/pre-commit-hooks.nix";
       inputs = {
@@ -43,7 +42,6 @@
     { self
     , nixpkgs
     , flake-utils
-    , nix-filter
     , rust-overlay
     , crane
     , devshell
