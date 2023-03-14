@@ -8,7 +8,7 @@ use std::os::unix;
 use std::path::{Path, PathBuf};
 use std::{fs, str};
 
-const FLAKE_ATTR: &str = "systemConfig";
+const FLAKE_ATTR: &str = "systemConfigs";
 const PROFILE_DIR: &str = "/nix/var/nix/profiles/system-manager-profiles";
 const PROFILE_NAME: &str = "system-manager";
 const GCROOT_PATH: &str = "/nix/var/nix/gcroots/system-manager-current";

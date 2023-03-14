@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::DirBuilder;
 use std::path::Path;
+use std::process::ExitStatus;
 use std::{fs, process, str};
 
 use super::{create_store_link, StorePath, FLAKE_ATTR, GCROOT_PATH, PROFILE_DIR, PROFILE_NAME};
@@ -52,14 +53,41 @@ fn create_gcroot(gcroot_path: &str, profile_path: &Path) -> Result<()> {
 }
 
 pub fn build(flake_uri: &str) -> Result<StorePath> {
-    // FIXME: we should not hard-code the system here
-    let flake_attr = format!("{FLAKE_ATTR}.x86_64-linux");
+    let flake_attr = find_flake_attr(flake_uri)?;
 
     log::info!("Building new system-manager generation...");
     log::info!("Running nix build...");
     let store_path = run_nix_build(flake_uri, &flake_attr).and_then(get_store_path)?;
     log::info!("Build system-manager profile {store_path}");
     Ok(store_path)
+}
+
+fn find_flake_attr(flake_uri: &str) -> Result<String> {
+    let hostname = nix::unistd::gethostname()?;
+    let flake_attr = format!("{FLAKE_ATTR}.{}", hostname.to_string_lossy());
+
+    let status = try_flake_attr(flake_uri, &flake_attr)?;
+    if status {
+        return Ok(flake_attr);
+    } else {
+        let flake_attr = format!("{FLAKE_ATTR}.default");
+        let status = try_flake_attr(flake_uri, &flake_attr)?;
+        if status {
+            return Ok(flake_attr);
+        };
+    };
+    anyhow::bail!("No suitable flake attribute found, giving up.");
+}
+
+fn try_flake_attr(flake_uri: &str, flake_attr: &str) -> Result<bool> {
+    log::info!("Trying flake attribute: {flake_uri}#{flake_attr}...");
+    let status = try_nix_eval(flake_uri, flake_attr)?;
+    if status.success() {
+        log::info!("Success, using {flake_uri}#{flake_attr}");
+    } else {
+        log::info!("Attribute {flake_uri}#{flake_attr} not found in flake.");
+    };
+    Ok(status.success())
 }
 
 fn get_store_path(nix_build_result: process::Output) -> Result<StorePath> {
@@ -102,4 +130,15 @@ fn run_nix_build(flake_uri: &str, flake_attr: &str) -> Result<process::Output> {
         .stderr(process::Stdio::inherit())
         .output()?;
     Ok(output)
+}
+
+fn try_nix_eval(flake_uri: &str, flake_attr: &str) -> Result<process::ExitStatus> {
+    let status = process::Command::new("nix")
+        .arg("eval")
+        .arg(format!("{flake_uri}#{flake_attr}"))
+        .arg("--json")
+        .stdout(process::Stdio::null())
+        .stderr(process::Stdio::null())
+        .status()?;
+    Ok(status)
 }

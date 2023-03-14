@@ -100,17 +100,11 @@
       };
     in
     {
-      systemConfig = self.lib.makeSystemConfig {
-        inherit system;
-        modules = [
-          ./nix/modules
-        ];
-      };
-
       packages = {
         inherit system-manager;
         default = self.packages.${system}.system-manager;
       };
+
       devShells.default = pkgs.devshell.mkShell {
         packages = with pkgs; [
           llvm.clang
@@ -174,6 +168,7 @@
           };
         }).shellHook;
       };
+
       checks = {
         inherit
           # Build the crate as part of `nix flake check` for convenience
@@ -185,6 +180,13 @@
     {
       lib = import ./nix/lib.nix {
         inherit nixpkgs self;
+      };
+
+      systemConfigs.default = self.lib.makeSystemConfig {
+        system = flake-utils.lib.system.x86_64-linux;
+        modules = [
+          ./nix/modules
+        ];
       };
     };
 }
