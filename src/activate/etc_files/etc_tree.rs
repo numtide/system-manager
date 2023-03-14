@@ -125,7 +125,7 @@ impl EtcTree {
     where
         F: Fn(&Path) -> bool,
     {
-        let new_tree = self.nested.clone().keys().fold(self, |mut new_tree, name| {
+        let new_tree = self.nested.keys().fold(self.clone(), |mut new_tree, name| {
             new_tree.nested = new_tree.nested.alter(
                 |subtree| subtree.and_then(|subtree| subtree.deactivate(delete_action)),
                 name.to_owned(),
@@ -133,11 +133,15 @@ impl EtcTree {
             new_tree
         });
 
-        if let EtcFileStatus::Managed = new_tree.status {
-            if new_tree.nested.is_empty() && delete_action(&new_tree.path) {
-                None
+        if new_tree.nested.is_empty() {
+            if let EtcFileStatus::Managed = new_tree.status {
+                if delete_action(&new_tree.path) {
+                    None
+                } else {
+                    Some(new_tree)
+                }
             } else {
-                Some(new_tree)
+                None
             }
         } else {
             Some(new_tree)
@@ -185,6 +189,11 @@ impl EtcTree {
                 new_tree
             });
 
+        if merged.nested.is_empty() {
+            if let EtcFileStatus::Unmanaged = merged.status {
+                return None;
+            }
+        }
         Some(merged)
     }
 }
@@ -291,7 +300,11 @@ mod tests {
             .register_managed_entry(&PathBuf::from("/").join("foo3").join("baz2").join("bar"))
             .register_managed_entry(&PathBuf::from("/").join("foo4"))
             .register_managed_entry(&PathBuf::from("/").join("foo4").join("baz"))
-            .register_managed_entry(&PathBuf::from("/").join("foo4").join("baz").join("bar"));
+            .register_managed_entry(&PathBuf::from("/").join("foo4").join("baz").join("bar"))
+            .register_managed_entry(&PathBuf::from("/").join("foo5"))
+            .register_managed_entry(&PathBuf::from("/").join("foo5").join("baz"))
+            .register_managed_entry(&PathBuf::from("/").join("foo5").join("baz2"))
+            .register_managed_entry(&PathBuf::from("/").join("foo5").join("baz").join("bar"));
         let tree2 = tree1
             .clone()
             .deactivate_managed_entry(&PathBuf::from("/").join("foo4"), &|p| {
@@ -302,19 +315,22 @@ mod tests {
                 println!("Deactivating: {}", p.display());
                 true
             })
-            // Since foo3 is unmanaged, it should not be removed
             .deactivate_managed_entry(&PathBuf::from("/").join("foo3"), &|p| {
+                println!("Deactivating: {}", p.display());
+                true
+            })
+            .deactivate_managed_entry(&PathBuf::from("/").join("foo5").join("baz"), &|p| {
                 println!("Deactivating: {}", p.display());
                 true
             });
         dbg!(&tree1);
         assert_eq!(
             tree2.nested.keys().sorted().collect::<Vec<_>>(),
-            ["foo", "foo3", "foo4"]
+            ["foo", "foo4", "foo5"]
         );
         assert!(tree2
             .nested
-            .get("foo3")
+            .get("foo5")
             .unwrap()
             .nested
             .get("baz2")
@@ -326,7 +342,7 @@ mod tests {
             .is_empty());
         assert_eq!(
             tree1.nested.keys().sorted().collect::<Vec<_>>(),
-            ["foo", "foo2", "foo3", "foo4"]
+            ["foo", "foo2", "foo3", "foo4", "foo5"]
         );
     }
 
