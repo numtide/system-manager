@@ -63,9 +63,15 @@ pub fn build(flake_uri: &str) -> Result<StorePath> {
 }
 
 fn find_flake_attr(flake_uri: &str) -> Result<Cow<'_, str>> {
-    if flake_uri.contains('#') {
-        let status = try_flake_attr(flake_uri)?;
-        return if status {
+    let flake_uri = flake_uri.trim_end_matches('#');
+    let hash_count = flake_uri.match_indices('#').count();
+
+    if hash_count > 1 {
+        anyhow::bail!("Invalid flake URI!");
+    }
+
+    if hash_count == 1 {
+        return if try_flake_attr(flake_uri)? {
             Ok(flake_uri.into())
         } else {
             anyhow::bail!(
@@ -78,13 +84,11 @@ fn find_flake_attr(flake_uri: &str) -> Result<Cow<'_, str>> {
     let hostname = nix::unistd::gethostname()?;
     let full_uri = format!("{flake_uri}#{FLAKE_ATTR}.{}", hostname.to_string_lossy());
 
-    let status = try_flake_attr(&full_uri)?;
-    if status {
+    if try_flake_attr(&full_uri)? {
         return Ok(full_uri.into());
     } else {
         let full_uri = format!("{flake_uri}#{FLAKE_ATTR}.default");
-        let status = try_flake_attr(&full_uri)?;
-        if status {
+        if try_flake_attr(&full_uri)? {
             return Ok(full_uri.into());
         };
     };
@@ -94,12 +98,12 @@ fn find_flake_attr(flake_uri: &str) -> Result<Cow<'_, str>> {
 fn try_flake_attr(flake_uri: &str) -> Result<bool> {
     log::info!("Trying flake URI: {flake_uri}...");
     let status = try_nix_eval(flake_uri)?;
-    if status.success() {
+    if status {
         log::info!("Success, using {flake_uri}");
     } else {
         log::info!("Attribute {flake_uri} not found in flake.");
     };
-    Ok(status.success())
+    Ok(status)
 }
 
 fn get_store_path(nix_build_result: process::Output) -> Result<StorePath> {
@@ -144,13 +148,20 @@ fn run_nix_build(flake_uri: &str) -> Result<process::Output> {
     Ok(output)
 }
 
-fn try_nix_eval(flake_uri: &str) -> Result<process::ExitStatus> {
-    let status = process::Command::new("nix")
+fn try_nix_eval(flake_uri: &str) -> Result<bool> {
+    let output = process::Command::new("nix")
         .arg("eval")
         .arg(flake_uri)
         .arg("--json")
-        .stdout(process::Stdio::null())
+        .arg("--apply")
+        .arg("a: a ? outPath")
         .stderr(process::Stdio::null())
-        .status()?;
-    Ok(status)
+        .output()?;
+    if output.status.success() {
+        let stdout = String::from_utf8(output.stdout)?;
+        let parsed_output: bool = serde_json::from_str(&stdout)?;
+        Ok(parsed_output)
+    } else {
+        Ok(false)
+    }
 }
