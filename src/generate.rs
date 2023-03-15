@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fs::DirBuilder;
 use std::path::Path;
@@ -52,39 +53,51 @@ fn create_gcroot(gcroot_path: &str, profile_path: &Path) -> Result<()> {
 }
 
 pub fn build(flake_uri: &str) -> Result<StorePath> {
-    let flake_attr = find_flake_attr(flake_uri)?;
+    let full_flake_uri = find_flake_attr(flake_uri)?;
 
     log::info!("Building new system-manager generation...");
     log::info!("Running nix build...");
-    let store_path = run_nix_build(flake_uri, &flake_attr).and_then(get_store_path)?;
+    let store_path = run_nix_build(full_flake_uri.as_ref()).and_then(get_store_path)?;
     log::info!("Build system-manager profile {store_path}");
     Ok(store_path)
 }
 
-fn find_flake_attr(flake_uri: &str) -> Result<String> {
-    let hostname = nix::unistd::gethostname()?;
-    let flake_attr = format!("{FLAKE_ATTR}.{}", hostname.to_string_lossy());
+fn find_flake_attr(flake_uri: &str) -> Result<Cow<'_, str>> {
+    if flake_uri.contains('#') {
+        let status = try_flake_attr(flake_uri)?;
+        return if status {
+            Ok(flake_uri.into())
+        } else {
+            anyhow::bail!(
+                "Explicitly provided flake URI {} does not seem to point to a valid system-manager configuration.",
+                flake_uri
+            )
+        };
+    }
 
-    let status = try_flake_attr(flake_uri, &flake_attr)?;
+    let hostname = nix::unistd::gethostname()?;
+    let full_uri = format!("{flake_uri}#{FLAKE_ATTR}.{}", hostname.to_string_lossy());
+
+    let status = try_flake_attr(&full_uri)?;
     if status {
-        return Ok(flake_attr);
+        return Ok(full_uri.into());
     } else {
-        let flake_attr = format!("{FLAKE_ATTR}.default");
-        let status = try_flake_attr(flake_uri, &flake_attr)?;
+        let full_uri = format!("{flake_uri}#{FLAKE_ATTR}.default");
+        let status = try_flake_attr(&full_uri)?;
         if status {
-            return Ok(flake_attr);
+            return Ok(full_uri.into());
         };
     };
     anyhow::bail!("No suitable flake attribute found, giving up.");
 }
 
-fn try_flake_attr(flake_uri: &str, flake_attr: &str) -> Result<bool> {
-    log::info!("Trying flake attribute: {flake_uri}#{flake_attr}...");
-    let status = try_nix_eval(flake_uri, flake_attr)?;
+fn try_flake_attr(flake_uri: &str) -> Result<bool> {
+    log::info!("Trying flake URI: {flake_uri}...");
+    let status = try_nix_eval(flake_uri)?;
     if status.success() {
-        log::info!("Success, using {flake_uri}#{flake_attr}");
+        log::info!("Success, using {flake_uri}");
     } else {
-        log::info!("Attribute {flake_uri}#{flake_attr} not found in flake.");
+        log::info!("Attribute {flake_uri} not found in flake.");
     };
     Ok(status.success())
 }
@@ -118,10 +131,10 @@ fn parse_nix_build_output(output: String) -> Result<StorePath> {
     anyhow::bail!("Multiple build results were returned, we cannot handle that yet.")
 }
 
-fn run_nix_build(flake_uri: &str, flake_attr: &str) -> Result<process::Output> {
+fn run_nix_build(flake_uri: &str) -> Result<process::Output> {
     let output = process::Command::new("nix")
         .arg("build")
-        .arg(format!("{flake_uri}#{flake_attr}"))
+        .arg(flake_uri)
         .arg("--json")
         // Nix outputs progress info on stderr and the final output on stdout,
         // so we inherit and output stderr directly to the terminal, but we
@@ -131,10 +144,10 @@ fn run_nix_build(flake_uri: &str, flake_attr: &str) -> Result<process::Output> {
     Ok(output)
 }
 
-fn try_nix_eval(flake_uri: &str, flake_attr: &str) -> Result<process::ExitStatus> {
+fn try_nix_eval(flake_uri: &str) -> Result<process::ExitStatus> {
     let status = process::Command::new("nix")
         .arg("eval")
-        .arg(format!("{flake_uri}#{flake_attr}"))
+        .arg(flake_uri)
         .arg("--json")
         .stdout(process::Stdio::null())
         .stderr(process::Stdio::null())
