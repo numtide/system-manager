@@ -36,8 +36,10 @@ in
             (name:
               let
                 serviceName = "${name}.service";
+                service = nixosConfig.systemd.services.${name};
               in
               lib.nameValuePair serviceName {
+                inherit (service) wantedBy requiredBy;
                 storePath =
                   ''${nixosConfig.systemd.units."${serviceName}".unit}/${serviceName}'';
               })
