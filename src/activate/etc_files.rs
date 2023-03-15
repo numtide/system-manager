@@ -17,6 +17,8 @@ use crate::{
 };
 use etc_tree::EtcTree;
 
+use self::etc_tree::EtcFileStatus;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct EtcFile {
@@ -38,6 +40,21 @@ struct EtcFilesConfig {
     static_env: StorePath,
 }
 
+impl std::fmt::Display for EtcFilesConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Files in config:")?;
+        self.entries.values().try_for_each(|entry| {
+            writeln!(
+                f,
+                "target: {}, source:{}, mode:{}",
+                entry.target.display(),
+                entry.source,
+                entry.mode
+            )
+        })
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct CreatedEtcFile {
@@ -49,10 +66,10 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
     let file = fs::File::open(Path::new(&store_path.store_path).join("etcFiles/etcFiles.json"))?;
     let reader = io::BufReader::new(file);
     let config: EtcFilesConfig = serde_json::from_reader(reader)?;
-    log::debug!("{:?}", config);
+    log::debug!("{config}");
 
     let etc_dir = etc_dir(ephemeral);
-    log::debug!("Storing /etc entries in {}", etc_dir.display());
+    log::info!("Creating /etc entries in {}", etc_dir.display());
 
     DirBuilder::new().recursive(true).create(&etc_dir)?;
 

@@ -19,6 +19,17 @@ struct ServiceConfig {
 
 type Services = HashMap<String, ServiceConfig>;
 
+fn print_services(services: &Services) -> Result<String> {
+    use std::fmt::Write as _;
+
+    let mut out = String::new();
+    writeln!(out, "Services in config:")?;
+    services
+        .iter()
+        .try_for_each(|(name, entry)| writeln!(out, "name: {name}, source:{}", entry.store_path))?;
+    Ok(out)
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct LinkedServiceConfig {
@@ -45,7 +56,6 @@ type LinkedServices = HashMap<String, LinkedServiceConfig>;
 
 pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
     let old_linked_services = read_linked_services()?;
-    log::debug!("{:?}", old_linked_services);
 
     log::info!("Reading service definitions...");
     let file = fs::File::open(
@@ -55,6 +65,7 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
     )?;
     let reader = io::BufReader::new(file);
     let services: Services = serde_json::from_reader(reader)?;
+    log::debug!("{}", print_services(&services)?);
 
     let linked_services = link_services(services, ephemeral)?;
     serialise_linked_services(&linked_services)?;
