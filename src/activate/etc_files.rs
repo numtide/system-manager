@@ -67,13 +67,11 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
     );
     status?;
 
-    let new_state = create_etc_links(config.entries.values(), &etc_dir, state).update_state(
-        old_state,
-        &|path| {
+    let new_state = create_etc_links(config.entries.values(), &etc_dir, state, &old_state)
+        .update_state(old_state, &|path| {
             log::debug!("Deactivating: {}", path.display());
             false
-        },
-    );
+        });
 
     serialise_state(new_state)?;
 
@@ -116,12 +114,17 @@ fn try_delete_path(path: &Path) -> Result<()> {
     }
 }
 
-fn create_etc_links<'a, E>(entries: E, etc_dir: &Path, state: EtcTree) -> EtcTree
+fn create_etc_links<'a, E>(
+    entries: E,
+    etc_dir: &Path,
+    state: EtcTree,
+    old_state: &EtcTree,
+) -> EtcTree
 where
     E: Iterator<Item = &'a EtcFile>,
 {
     entries.fold(state, |state, entry| {
-        let (new_state, status) = create_etc_entry(entry, etc_dir, state);
+        let (new_state, status) = create_etc_entry(entry, etc_dir, state, old_state);
         match status {
             Ok(_) => new_state,
             Err(e) => {
@@ -146,6 +149,7 @@ fn create_etc_static_link(
     }
 }
 
+// TODO: should we make sure that an existing file is managed before replacing it?
 fn create_etc_link(link_target: &OsStr, etc_dir: &Path, state: EtcTree) -> (EtcTree, Result<()>) {
     let link_path = etc_dir.join(link_target);
     let (new_state, status) = create_dir_recursively(link_path.parent().unwrap(), state);
@@ -166,7 +170,12 @@ fn create_etc_link(link_target: &OsStr, etc_dir: &Path, state: EtcTree) -> (EtcT
 
 // TODO split up this function, and treat symlinks and copied files the same in the state file (ie
 // include the root for both).
-fn create_etc_entry(entry: &EtcFile, etc_dir: &Path, state: EtcTree) -> (EtcTree, Result<()>) {
+fn create_etc_entry(
+    entry: &EtcFile,
+    etc_dir: &Path,
+    state: EtcTree,
+    old_state: &EtcTree,
+) -> (EtcTree, Result<()>) {
     if entry.mode == "symlink" {
         if let Some(path::Component::Normal(link_target)) = entry.target.components().next() {
             create_etc_link(link_target, etc_dir, state)
@@ -189,6 +198,7 @@ fn create_etc_entry(entry: &EtcFile, etc_dir: &Path, state: EtcTree) -> (EtcTree
                     .as_path(),
                 &target_path,
                 &entry.mode,
+                old_state,
             )
         }) {
             Ok(_) => (new_state.register_managed_entry(&target_path), Ok(())),
@@ -237,9 +247,11 @@ fn create_dir_recursively(dir: &Path, state: EtcTree) -> (EtcTree, Result<()>) {
     (new_state, status)
 }
 
-fn copy_file(source: &Path, target: &Path, mode: &str) -> Result<()> {
+fn copy_file(source: &Path, target: &Path, mode: &str, old_state: &EtcTree) -> Result<()> {
     let exists = target.try_exists()?;
-    if !exists {
+    let old_status = old_state.get_status(target);
+    log::debug!("Status for target {}: {old_status:?}", target.display());
+    if !exists || *old_status == EtcFileStatus::Managed {
         fs::copy(source, target)?;
         let mode_int = u32::from_str_radix(mode, 8)?;
         fs::set_permissions(target, Permissions::from_mode(mode_int))?;
