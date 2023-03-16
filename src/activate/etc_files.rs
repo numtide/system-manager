@@ -85,16 +85,7 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
     status?;
 
     let new_state = create_etc_links(config.entries.values(), &etc_dir, state, &old_state)
-        .update_state(old_state, &|path, status| {
-            log::debug!("Deactivating: {}", path.display());
-            try_delete_path(path, status)
-                .map_err(|e| {
-                    log::error!("Error deleting path: {}", path.display());
-                    log::error!("{e}");
-                    e
-                })
-                .is_ok()
-        });
+        .update_state(old_state, &try_delete_path);
 
     serialise_state(new_state)?;
 
@@ -106,43 +97,45 @@ pub fn deactivate() -> Result<()> {
     let state = read_created_files()?;
     log::debug!("{:?}", state);
 
-    serialise_state(state.deactivate(&|path, status| {
-        log::debug!("Deactivating: {}", path.display());
-        try_delete_path(path, status)
-            .map_err(|e| {
-                log::error!("Error deleting path: {}", path.display());
-                log::error!("{e}");
-                e
-            })
-            .is_ok()
-    }))?;
+    serialise_state(state.deactivate(&try_delete_path))?;
 
     log::info!("Done");
     Ok(())
 }
 
-fn try_delete_path(path: &Path, status: &EtcFileStatus) -> Result<()> {
-    // exists() returns false for broken symlinks
-    if path.exists() || path.is_symlink() {
-        if path.is_symlink() {
-            remove_link(path)
-        } else if path.is_file() {
-            remove_file(path)
-        } else if path.is_dir() {
-            if path.read_dir()?.next().is_none() {
-                remove_dir(path)
-            } else {
-                if let EtcFileStatus::Managed = status {
-                    log::warn!("Managed directory not empty, ignoring: {}", path.display());
+fn try_delete_path(path: &Path, status: &EtcFileStatus) -> bool {
+    fn do_try_delete(path: &Path, status: &EtcFileStatus) -> Result<()> {
+        // exists() returns false for broken symlinks
+        if path.exists() || path.is_symlink() {
+            if path.is_symlink() {
+                remove_link(path)
+            } else if path.is_file() {
+                remove_file(path)
+            } else if path.is_dir() {
+                if path.read_dir()?.next().is_none() {
+                    remove_dir(path)
+                } else {
+                    if let EtcFileStatus::Managed = status {
+                        log::warn!("Managed directory not empty, ignoring: {}", path.display());
+                    }
+                    Ok(())
                 }
-                Ok(())
+            } else {
+                anyhow::bail!("Unsupported file type! {}", path.display())
             }
         } else {
-            Err(anyhow!("Unsupported file type! {}", path.display()))
+            Ok(())
         }
-    } else {
-        Ok(())
     }
+
+    log::debug!("Deactivating: {}", path.display());
+    do_try_delete(path, status)
+        .map_err(|e| {
+            log::error!("Error deleting path: {}", path.display());
+            log::error!("{e}");
+            e
+        })
+        .is_ok()
 }
 
 fn create_etc_links<'a, E>(
