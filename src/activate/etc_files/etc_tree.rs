@@ -149,7 +149,7 @@ impl EtcTree {
 
     pub fn deactivate<F>(self, delete_action: &F) -> Option<EtcTree>
     where
-        F: Fn(&Path) -> bool,
+        F: Fn(&Path, &EtcFileStatus) -> bool,
     {
         let new_tree = self.nested.keys().fold(self.clone(), |mut new_tree, name| {
             new_tree.nested = new_tree.nested.alter(
@@ -165,7 +165,7 @@ impl EtcTree {
         // closure on their paths).
         if new_tree.nested.is_empty() {
             if let EtcFileStatus::Managed = new_tree.status {
-                if delete_action(&new_tree.path) {
+                if delete_action(&new_tree.path, &new_tree.status) {
                     None
                 } else {
                     Some(new_tree)
@@ -180,7 +180,7 @@ impl EtcTree {
 
     pub fn update_state<F>(self, other: Self, delete_action: &F) -> Option<Self>
     where
-        F: Fn(&Path) -> bool,
+        F: Fn(&Path, &EtcFileStatus) -> bool,
     {
         let to_deactivate = other
             .nested
@@ -235,7 +235,7 @@ mod tests {
     impl EtcTree {
         pub fn deactivate_managed_entry<F>(self, path: &Path, delete_action: &F) -> Self
         where
-            F: Fn(&Path) -> bool,
+            F: Fn(&Path, &EtcFileStatus) -> bool,
         {
             fn go<'a, C, F>(
                 mut tree: EtcTree,
@@ -245,7 +245,7 @@ mod tests {
             ) -> EtcTree
             where
                 C: Iterator<Item = path::Component<'a>>,
-                F: Fn(&Path) -> bool,
+                F: Fn(&Path, &EtcFileStatus) -> bool,
             {
                 log::debug!("Deactivating {}", path.display());
 
@@ -368,22 +368,25 @@ mod tests {
             .register_managed_entry(&PathBuf::from("/").join("foo5").join("baz").join("bar"));
         let tree2 = tree1
             .clone()
-            .deactivate_managed_entry(&PathBuf::from("/").join("foo4"), &|p| {
-                println!("Deactivating: {}", p.display());
+            .deactivate_managed_entry(&PathBuf::from("/").join("foo4"), &|path, _status| {
+                println!("Deactivating: {}", path.display());
                 false
             })
-            .deactivate_managed_entry(&PathBuf::from("/").join("foo2"), &|p| {
-                println!("Deactivating: {}", p.display());
+            .deactivate_managed_entry(&PathBuf::from("/").join("foo2"), &|path, _status| {
+                println!("Deactivating: {}", path.display());
                 true
             })
-            .deactivate_managed_entry(&PathBuf::from("/").join("foo3"), &|p| {
-                println!("Deactivating: {}", p.display());
+            .deactivate_managed_entry(&PathBuf::from("/").join("foo3"), &|path, _status| {
+                println!("Deactivating: {}", path.display());
                 true
             })
-            .deactivate_managed_entry(&PathBuf::from("/").join("foo5").join("baz"), &|p| {
-                println!("Deactivating: {}", p.display());
-                true
-            });
+            .deactivate_managed_entry(
+                &PathBuf::from("/").join("foo5").join("baz"),
+                &|path, _status| {
+                    println!("Deactivating: {}", path.display());
+                    true
+                },
+            );
         dbg!(&tree1);
         assert_eq!(
             tree2.nested.keys().sorted().collect::<Vec<_>>(),
@@ -424,7 +427,7 @@ mod tests {
             .register_managed_entry(&PathBuf::from("/").join("foo4").join("bar"))
             .register_managed_entry(&PathBuf::from("/").join("foo5"))
             .register_managed_entry(&PathBuf::from("/").join("foo5").join("bar"));
-        let new_tree = tree1.update_state(tree2, &|path| {
+        let new_tree = tree1.update_state(tree2, &|path, _status| {
             println!("Deactivating path: {}", path.display());
             path != PathBuf::from("/").join("foo5").join("bar").as_path()
         });
