@@ -429,7 +429,7 @@ mod tests {
             .register_managed_entry(&PathBuf::from("/").join("foo5").join("bar"));
         let new_tree = tree1.update_state(tree2, &|path, _status| {
             println!("Deactivating path: {}", path.display());
-            path != PathBuf::from("/").join("foo5").join("bar").as_path()
+            *path != PathBuf::from("/").join("foo5").join("bar")
         });
         assert_eq!(
             new_tree.unwrap().nested.keys().sorted().collect::<Vec<_>>(),

@@ -120,7 +120,7 @@ pub fn deactivate() -> Result<()> {
 fn unlink_services(services: &LinkedServices) -> Result<()> {
     services
         .values()
-        .try_for_each(|linked_service| remove_link(linked_service.linked_path().as_path()))
+        .try_for_each(|linked_service| remove_link(&linked_service.linked_path()))
 }
 
 fn link_services(services: Services, ephemeral: bool) -> Result<LinkedServices> {
@@ -129,7 +129,7 @@ fn link_services(services: Services, ephemeral: bool) -> Result<LinkedServices> 
         HashMap::with_capacity(services.len()),
         |mut linked_services, (name, service_config)| {
             let linked_path = systemd_system_dir.join(name);
-            match create_store_link(&service_config.store_path, linked_path.as_path()) {
+            match create_store_link(&service_config.store_path, &linked_path) {
                 Ok(_) => {
                     linked_services.insert(
                         name.to_owned(),

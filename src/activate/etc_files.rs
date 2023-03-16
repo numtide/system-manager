@@ -167,7 +167,7 @@ fn create_etc_static_link(
 ) -> (EtcTree, Result<()>) {
     let static_path = etc_dir.join(static_dir_name);
     let (new_state, status) = create_dir_recursively(static_path.parent().unwrap(), state);
-    match status.and_then(|_| create_store_link(store_path, static_path.as_path())) {
+    match status.and_then(|_| create_store_link(store_path, &static_path)) {
         Ok(_) => (new_state.register_managed_entry(&static_path), Ok(())),
         e => (new_state, e),
     }
@@ -179,12 +179,11 @@ fn create_etc_link(link_target: &OsStr, etc_dir: &Path, state: EtcTree) -> (EtcT
     let (new_state, status) = create_dir_recursively(link_path.parent().unwrap(), state);
     match status.and_then(|_| {
         create_link(
-            Path::new(".")
+            &Path::new(".")
                 .join(SYSTEM_MANAGER_STATIC_NAME)
                 .join("etc")
-                .join(link_target)
-                .as_path(),
-            link_path.as_path(),
+                .join(link_target),
+            &link_path,
         )
     }) {
         Ok(_) => (new_state.register_managed_entry(&link_path), Ok(())),
@@ -208,16 +207,11 @@ fn create_etc_entry(
             )
         }
     } else {
-        let target_path = etc_dir.join(entry.target.as_path());
+        let target_path = etc_dir.join(&entry.target);
         let (new_state, status) = create_dir_recursively(target_path.parent().unwrap(), state);
         match status.and_then(|_| {
             copy_file(
-                entry
-                    .source
-                    .store_path
-                    .join("etc")
-                    .join(&entry.target)
-                    .as_path(),
+                &entry.source.store_path.join("etc").join(&entry.target),
                 &target_path,
                 &entry.mode,
                 old_state,
@@ -244,7 +238,7 @@ fn create_dir_recursively(dir: &Path, state: EtcTree) -> (EtcTree, Result<()>) {
                     let new_path = path.join(dir);
                     if !new_path.exists() {
                         log::debug!("Creating path: {}", new_path.display());
-                        match dirbuilder.create(new_path.as_path()) {
+                        match dirbuilder.create(&new_path) {
                             Ok(_) => {
                                 let new_state = state.register_managed_entry(&new_path);
                                 Continue((new_state, new_path, Ok(())))
@@ -287,7 +281,7 @@ fn etc_dir(ephemeral: bool) -> PathBuf {
     if ephemeral {
         Path::new("/run").join("etc")
     } else {
-        Path::new("/etc").to_path_buf()
+        PathBuf::from("/etc")
     }
 }
 
