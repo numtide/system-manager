@@ -87,7 +87,13 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
     let new_state = create_etc_links(config.entries.values(), &etc_dir, state, &old_state)
         .update_state(old_state, &|path, status| {
             log::debug!("Deactivating: {}", path.display());
-            false
+            try_delete_path(path, status)
+                .map_err(|e| {
+                    log::error!("Error deleting path: {}", path.display());
+                    log::error!("{e}");
+                    e
+                })
+                .is_ok()
         });
 
     serialise_state(new_state)?;
@@ -193,8 +199,6 @@ fn create_etc_link(link_target: &OsStr, etc_dir: &Path, state: EtcTree) -> (EtcT
     }
 }
 
-// TODO split up this function, and treat symlinks and copied files the same in the state file (ie
-// include the root for both).
 fn create_etc_entry(
     entry: &EtcFile,
     etc_dir: &Path,
