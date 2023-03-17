@@ -57,13 +57,13 @@ in
           isManaged = name: lib.elem name nixosConfig.system-manager.etcFiles;
 
           addToStore = name: file: pkgs.runCommandLocal "${name}-etc-link" { } ''
-            mkdir -p "$out/etc/$(dirname "${file.target}")"
-            ln -s "${file.source}" "$out/etc/${file.target}"
+            mkdir -p "$out/$(dirname "${file.target}")"
+            ln -s "${file.source}" "$out/${file.target}"
 
             if [ "${file.mode}" != symlink ]; then
-              echo "${file.mode}" > "$out/etc/${file.target}.mode"
-              echo "${file.user}" > "$out/etc/${file.target}.uid"
-              echo "${file.group}" > "$out/etc/${file.target}.gid"
+              echo "${file.mode}" > "$out/${file.target}.mode"
+              echo "${file.user}" > "$out/${file.target}.uid"
+              echo "${file.group}" > "$out/${file.target}.gid"
             fi
           '';
 

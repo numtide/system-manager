@@ -181,7 +181,6 @@ fn create_etc_link(link_target: &OsStr, etc_dir: &Path, state: EtcTree) -> (EtcT
         create_link(
             &Path::new(".")
                 .join(SYSTEM_MANAGER_STATIC_NAME)
-                .join("etc")
                 .join(link_target),
             &link_path,
         )
@@ -211,7 +210,7 @@ fn create_etc_entry(
         let (new_state, status) = create_dir_recursively(target_path.parent().unwrap(), state);
         match status.and_then(|_| {
             copy_file(
-                &entry.source.store_path.join("etc").join(&entry.target),
+                &entry.source.store_path.join(&entry.target),
                 &target_path,
                 &entry.mode,
                 old_state,
@@ -266,8 +265,16 @@ fn create_dir_recursively(dir: &Path, state: EtcTree) -> (EtcTree, Result<()>) {
 fn copy_file(source: &Path, target: &Path, mode: &str, old_state: &EtcTree) -> Result<()> {
     let exists = target.try_exists()?;
     let old_status = old_state.get_status(target);
-    log::debug!("Status for target {}: {old_status:?}", target.display());
+    log::debug!(
+        "Status for target {} before copy: {old_status:?}",
+        target.display()
+    );
     if !exists || *old_status == EtcFileStatus::Managed {
+        log::debug!(
+            "Copying file {} to {}...",
+            source.display(),
+            target.display()
+        );
         fs::copy(source, target)?;
         let mode_int = u32::from_str_radix(mode, 8)?;
         fs::set_permissions(target, Permissions::from_mode(mode_int))?;
