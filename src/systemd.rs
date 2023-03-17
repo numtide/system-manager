@@ -15,9 +15,7 @@ use dbus::{
     Message, Path,
 };
 use std::{
-    collections::HashSet,
     hash::Hash,
-    rc::Rc,
     result::Result,
     sync::Arc,
     sync::{
@@ -31,7 +29,7 @@ const SD_DESTINATION: &str = "org.freedesktop.systemd1";
 const SD_PATH: &str = "/org/freedesktop/systemd1";
 
 pub struct ServiceManager {
-    proxy: Proxy<'static, Rc<Connection>>,
+    proxy: Proxy<'static, Box<Connection>>,
 }
 
 pub struct UnitManager<'a> {
@@ -78,8 +76,8 @@ pub struct Job<'a> {
 }
 
 pub struct JobMonitor {
-    job_names: Arc<Mutex<HashSet<String>>>,
-    tokens: HashSet<Token>,
+    job_names: Arc<Mutex<im::HashSet<String>>>,
+    tokens: im::HashSet<Token>,
 }
 
 impl Drop for ServiceManager {
@@ -95,7 +93,7 @@ impl ServiceManager {
             SD_DESTINATION,
             SD_PATH,
             Duration::from_secs(2),
-            Rc::new(conn),
+            Box::new(conn),
         );
 
         OrgFreedesktopSystemd1Manager::subscribe(&proxy)?;
@@ -149,7 +147,7 @@ impl ServiceManager {
     }
 
     pub fn monitor_jobs_init(&self) -> Result<JobMonitor, Error> {
-        let job_names: Arc<Mutex<HashSet<String>>> = Arc::new(Mutex::from(HashSet::new()));
+        let job_names: Arc<Mutex<im::HashSet<String>>> = Arc::new(Mutex::from(im::HashSet::new()));
 
         let job_names_clone = Arc::clone(&job_names);
         let token = self.proxy.match_signal(
@@ -166,7 +164,7 @@ impl ServiceManager {
 
         Ok(JobMonitor {
             job_names: Arc::clone(&job_names),
-            tokens: HashSet::from([token]),
+            tokens: im::HashSet::unit(token),
         })
     }
 
@@ -184,7 +182,7 @@ impl ServiceManager {
     {
         let start_time = Instant::now();
 
-        let mut waiting_for: HashSet<String> = services
+        let mut waiting_for: im::HashSet<String> = services
             .into_iter()
             .map(|n| String::from(n.as_ref()))
             .collect();
@@ -206,12 +204,8 @@ impl ServiceManager {
             {
                 let mut job_names = job_monitor.job_names.lock().unwrap();
                 if !job_names.is_empty() {
-                    waiting_for = waiting_for
-                        .difference(&job_names)
-                        // FIXME can we avoid copying here?
-                        .map(ToOwned::to_owned)
-                        .collect();
-                    *job_names = HashSet::new();
+                    waiting_for = waiting_for.difference(job_names.clone());
+                    *job_names = im::HashSet::new();
                     log::debug!(
                         "Waiting for jobs to finish... ({:?}/{:?})",
                         total_jobs - waiting_for.len(),
