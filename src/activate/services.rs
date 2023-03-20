@@ -1,6 +1,6 @@
 use anyhow::Result;
+use im::{HashMap, HashSet};
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
 use std::fs::DirBuilder;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -70,10 +70,7 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
     let linked_services = link_services(services, ephemeral)?;
     serialise_linked_services(&linked_services)?;
 
-    let services_to_stop = old_linked_services
-        .into_iter()
-        .filter(|(name, _)| !linked_services.contains_key(name))
-        .collect();
+    let services_to_stop = old_linked_services.relative_complement(linked_services.clone());
 
     let service_manager = systemd::ServiceManager::new_session()?;
     let timeout = Some(Duration::from_secs(30));
@@ -126,7 +123,7 @@ fn unlink_services(services: &LinkedServices) -> Result<()> {
 fn link_services(services: Services, ephemeral: bool) -> Result<LinkedServices> {
     let systemd_system_dir = systemd_system_dir(ephemeral);
     services.iter().try_fold(
-        HashMap::with_capacity(services.len()),
+        HashMap::new(),
         |mut linked_services, (name, service_config)| {
             let linked_path = systemd_system_dir.join(name);
             match create_store_link(&service_config.store_path, &linked_path) {
@@ -229,21 +226,26 @@ where
 {
     let job_monitor = service_manager.monitor_jobs_init()?;
 
-    let successful_services = services.keys().fold(
-        HashSet::with_capacity(services.len()),
-        |mut set, service| match action(service) {
-            Ok(_) => {
-                log::info!("Service {}: {}...", service, log_action);
-                set.insert(Box::new(service.to_owned()));
-                set
-            }
-            Err(e) => {
-                log::error!("Service {service}: error {log_action}, please consult the logs");
-                log::error!("{e}");
-                set
-            }
-        },
-    );
+    let successful_services: HashSet<String> =
+        services
+            .clone()
+            .into_iter()
+            .fold(HashSet::new(), |mut set, (service, _)| {
+                match action(&service) {
+                    Ok(_) => {
+                        log::info!("Service {}: {}...", service, log_action);
+                        set.insert(service);
+                        set
+                    }
+                    Err(e) => {
+                        log::error!(
+                            "Service {service}: error {log_action}, please consult the logs"
+                        );
+                        log::error!("{e}");
+                        set
+                    }
+                }
+            });
 
     if !service_manager.monitor_jobs_finish(job_monitor, timeout, successful_services)? {
         anyhow::bail!("Timeout waiting for systemd jobs");

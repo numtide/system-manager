@@ -178,14 +178,11 @@ impl ServiceManager {
     ) -> Result<bool, Error>
     where
         I: IntoIterator,
-        I::Item: AsRef<String> + Eq + Hash,
+        I::Item: Into<String> + Eq + Hash,
     {
         let start_time = Instant::now();
 
-        let mut waiting_for: im::HashSet<String> = services
-            .into_iter()
-            .map(|n| String::from(n.as_ref()))
-            .collect();
+        let mut waiting_for: im::HashSet<_> = services.into_iter().map(Into::into).collect();
         let total_jobs = waiting_for.len();
 
         if total_jobs > 0 {
