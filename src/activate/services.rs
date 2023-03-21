@@ -74,7 +74,7 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
         &service_manager,
         job_monitor,
         reload_services(&service_manager, &services_to_reload)?
-            + start_units(&service_manager, active_targets?)?,
+            + start_units(&service_manager, &active_targets?)?,
         &timeout,
     )?;
 
@@ -260,76 +260,67 @@ fn stop_services(
     service_manager: &systemd::ServiceManager,
     services: &Services,
 ) -> Result<HashSet<JobId>> {
-    for_each_service(|s| service_manager.stop_unit(s), services, "stopping")
+    for_each_unit(
+        |s| service_manager.stop_unit(s),
+        convert_services(services),
+        "stopping",
+    )
 }
 
 fn reload_services(
     service_manager: &systemd::ServiceManager,
     services: &Services,
 ) -> Result<HashSet<JobId>> {
-    for_each_service(|s| service_manager.reload_unit(s), services, "reloading")
-}
-
-fn for_each_service<F, R>(
-    action: F,
-    services: &Services,
-    log_action: &str,
-) -> Result<HashSet<JobId>>
-where
-    F: Fn(&str) -> Result<R>,
-{
-    let successful_services: HashSet<JobId> =
-        services
-            .clone()
-            .into_iter()
-            .fold(HashSet::new(), |mut set, (service, _)| {
-                match action(&service) {
-                    Ok(_) => {
-                        log::info!("Service {}: {}...", service, log_action);
-                        set.insert(JobId { id: service });
-                        set
-                    }
-                    Err(e) => {
-                        log::error!(
-                            "Service {service}: error {log_action}, please consult the logs"
-                        );
-                        log::error!("{e}");
-                        set
-                    }
-                }
-            });
-    // TODO: do we want to propagate unit failures here in some way?
-    Ok(successful_services)
+    for_each_unit(
+        |s| service_manager.reload_unit(s),
+        convert_services(services),
+        "reloading",
+    )
 }
 
 fn start_units(
     service_manager: &systemd::ServiceManager,
-    units: Vec<systemd::UnitStatus>,
+    units: &[systemd::UnitStatus],
 ) -> Result<HashSet<JobId>> {
-    for_each_unit(|s| service_manager.start_unit(&s.name), units, "restarting")
+    for_each_unit(
+        |unit| service_manager.start_unit(unit),
+        convert_units(units),
+        "restarting",
+    )
 }
 
-fn for_each_unit<F, R>(
-    action: F,
-    units: Vec<systemd::UnitStatus>,
-    log_action: &str,
-) -> Result<HashSet<JobId>>
+fn convert_services(services: &Services) -> Vec<&str> {
+    services.keys().map(AsRef::as_ref).collect::<Vec<&str>>()
+}
+
+fn convert_units(units: &[systemd::UnitStatus]) -> Vec<&str> {
+    units
+        .iter()
+        .map(|unit| unit.name.as_ref())
+        .collect::<Vec<&str>>()
+}
+
+fn for_each_unit<'a, F, R, S>(action: F, units: S, log_action: &str) -> Result<HashSet<JobId>>
 where
-    F: Fn(&systemd::UnitStatus) -> Result<R>,
+    F: Fn(&str) -> Result<R>,
+    S: AsRef<[&'a str]>,
 {
     let successful_services: HashSet<JobId> =
         units
-            .into_iter()
-            .fold(HashSet::new(), |mut set, unit| match action(&unit) {
+            .as_ref()
+            .iter()
+            .fold(HashSet::new(), |mut set, unit| match action(unit) {
                 Ok(_) => {
-                    log::info!("Unit {}: {}...", unit.name, log_action);
-                    set.insert(JobId { id: unit.name });
+                    log::info!("Unit {}: {}...", unit, log_action);
+                    set.insert(JobId {
+                        id: (*unit).to_owned(),
+                    });
                     set
                 }
                 Err(e) => {
                     log::error!(
                         "Service {}: error {log_action}, please consult the logs",
-                        unit.name
+                        unit
                     );
                     log::error!("{e}");
                     set
