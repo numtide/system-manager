@@ -18,7 +18,9 @@ in
 
       nixosConfig = (lib.nixosSystem {
         inherit system;
-        modules = [ ./modules/system-manager.nix ] ++ modules;
+        modules = [
+          ./modules/system-manager.nix
+        ] ++ modules;
         specialArgs = extraSpecialArgs;
       }).config;
 
@@ -36,10 +38,8 @@ in
             (name:
               let
                 serviceName = "${name}.service";
-                service = nixosConfig.systemd.services.${name};
               in
               lib.nameValuePair serviceName {
-                inherit (service) wantedBy requiredBy;
                 storePath =
                   ''${nixosConfig.systemd.units."${serviceName}".unit}/${serviceName}'';
               })

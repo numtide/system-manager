@@ -1,6 +1,6 @@
 { lib
-, pkgs
 , config
+, pkgs
 , ...
 }:
 {
@@ -33,5 +33,66 @@
         ];
       }
     );
+
+    # Add the system directory for systemd
+    system-manager.etcFiles = [ "systemd/system" ];
+
+    environment.etc =
+      let
+        allowCollisions = false;
+
+        enabledUnits =
+          lib.filterAttrs
+            (name: _: lib.elem
+              name
+              (map (name: "${name}.service") config.system-manager.services))
+            config.systemd.units;
+      in
+      {
+        "systemd/system".source = lib.mkForce (pkgs.runCommand "system-manager-units"
+          {
+            preferLocalBuild = true;
+            allowSubstitutes = false;
+          }
+          ''
+            mkdir -p $out
+
+            for i in ${toString (lib.mapAttrsToList (n: v: v.unit) enabledUnits)}; do
+              fn=$(basename $i/*)
+              if [ -e $out/$fn ]; then
+                if [ "$(readlink -f $i/$fn)" = /dev/null ]; then
+                  ln -sfn /dev/null $out/$fn
+                else
+                  ${if allowCollisions then ''
+                    mkdir -p $out/$fn.d
+                    ln -s $i/$fn $out/$fn.d/overrides.conf
+                  '' else ''
+                    echo "Found multiple derivations configuring $fn!"
+                    exit 1
+                  ''}
+                fi
+              else
+                ln -fs $i/$fn $out/
+              fi
+            done
+
+            ${lib.concatStrings (
+              lib.mapAttrsToList (name: unit:
+                lib.concatMapStrings (name2: ''
+                  mkdir -p $out/'${name2}.wants'
+                  ln -sfn '../${name}' $out/'${name2}.wants'/
+                '') (unit.wantedBy or [])
+              ) enabledUnits)}
+
+            ${lib.concatStrings (
+              lib.mapAttrsToList (name: unit:
+                lib.concatMapStrings (name2: ''
+                  mkdir -p $out/'${name2}.requires'
+                  ln -sfn '../${name}' $out/'${name2}.requires'/
+                '') (unit.requiredBy or [])
+              ) enabledUnits)}
+          ''
+        );
+      };
   };
 }

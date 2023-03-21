@@ -243,7 +243,12 @@ fn check_root() -> Result<()> {
 
 fn handle_toplevel_error<T>(r: Result<T>) -> ExitCode {
     if let Err(e) = r {
-        log::error!("{e}");
+        let out: String = itertools::intersperse(
+            e.chain().map(ToString::to_string),
+            "\nCaused by:\n  ".to_owned(),
+        )
+        .collect();
+        log::error!("{out}");
         return ExitCode::FAILURE;
     }
     ExitCode::SUCCESS

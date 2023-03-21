@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 use std::{fs, io};
 
 use crate::{
-    create_link, create_store_link, remove_dir, remove_file, remove_link, StorePath,
+    create_link, create_store_link, etc_dir, remove_dir, remove_file, remove_link, StorePath,
     ETC_STATE_FILE_NAME, SYSTEM_MANAGER_STATE_DIR, SYSTEM_MANAGER_STATIC_NAME,
 };
 use etc_tree::EtcTree;
@@ -42,16 +42,19 @@ struct EtcFilesConfig {
 
 impl std::fmt::Display for EtcFilesConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Files in config:")?;
-        self.entries.values().try_for_each(|entry| {
-            writeln!(
-                f,
-                "target: {}, source:{}, mode:{}",
-                entry.target.display(),
-                entry.source,
-                entry.mode
-            )
-        })
+        let out: String = itertools::intersperse(
+            self.entries.values().map(|entry| {
+                format!(
+                    "target: {}, source:{}, mode:{}",
+                    entry.target.display(),
+                    entry.source,
+                    entry.mode
+                )
+            }),
+            "\n".to_owned(),
+        )
+        .collect();
+        write!(f, "{out}")
     }
 }
 
@@ -281,14 +284,6 @@ fn copy_file(source: &Path, target: &Path, mode: &str, old_state: &EtcTree) -> R
         Ok(())
     } else {
         anyhow::bail!("File {} already exists, ignoring.", target.display());
-    }
-}
-
-fn etc_dir(ephemeral: bool) -> PathBuf {
-    if ephemeral {
-        Path::new("/run").join("etc")
-    } else {
-        PathBuf::from("/etc")
     }
 }
 

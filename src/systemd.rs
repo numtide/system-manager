@@ -152,7 +152,7 @@ impl ServiceManager {
         let job_names_clone = Arc::clone(&job_names);
         let token = self.proxy.match_signal(
             move |h: OrgFreedesktopSystemd1ManagerJobRemoved, _: &Connection, _: &Message| {
-                log::info!("Job for {} done", h.unit);
+                log::debug!("Job for {} done", h.unit);
                 {
                     // Insert a new name, and let the lock go out of scope immediately
                     job_names_clone.lock().unwrap().insert(h.unit);
@@ -170,6 +170,8 @@ impl ServiceManager {
 
     /// Waits for the monitored jobs to finish. Returns `true` if all jobs
     /// finished before the timeout, `false` otherwise.
+    /// It is important that we consume the job monitor, since we remove the signal handler at the
+    /// end of this call, and so the job monitor cannot be re-used.
     pub fn monitor_jobs_finish<I>(
         &self,
         job_monitor: JobMonitor,
@@ -186,7 +188,7 @@ impl ServiceManager {
         let total_jobs = waiting_for.len();
 
         if total_jobs > 0 {
-            log::info!("Waiting for jobs to finish...");
+            log::info!("Waiting for jobs to finish... (0/{})", total_jobs);
         }
 
         while !waiting_for.is_empty() {
@@ -198,13 +200,13 @@ impl ServiceManager {
             {
                 return Ok(false);
             }
-            {
-                let mut job_names = job_monitor.job_names.lock().unwrap();
-                if !job_names.is_empty() {
-                    waiting_for = waiting_for.difference(job_names.clone());
-                    *job_names = im::HashSet::new();
-                    log::debug!(
-                        "Waiting for jobs to finish... ({:?}/{:?})",
+            let mut job_names = job_monitor.job_names.lock().unwrap();
+            if !job_names.is_empty() {
+                waiting_for = waiting_for.relative_complement(job_names.clone());
+                *job_names = im::HashSet::new();
+                if !waiting_for.is_empty() {
+                    log::info!(
+                        "Waiting for jobs to finish... ({}/{})",
                         total_jobs - waiting_for.len(),
                         total_jobs
                     );

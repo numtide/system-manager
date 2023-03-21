@@ -1,6 +1,5 @@
 { lib
 , pkgs
-, config
 , ...
 }:
 let
@@ -23,11 +22,12 @@ let
             serviceConfig = {
               Type = "oneshot";
               RemainAfterExit = true;
-              ExecReload = "true";
+              ExecReload = "${lib.getBin pkgs.coreutils}/bin/true";
             };
             wantedBy = [ "multi-user.target" ];
+            requiredBy = lib.mkIf (ix > 5) [ "service-0.service" ];
             script = ''
-              sleep ${if ix > 5 then "3" else "1"}
+              sleep ${if ix > 5 then "2" else "1"}
             '';
           })
       );

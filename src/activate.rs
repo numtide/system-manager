@@ -13,7 +13,9 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
 
     // TODO we probably need to first deactivate left-over files and services
     // before we start putting in place the new ones.
+    log::info!("Activating etc files...");
     etc_files::activate(store_path, ephemeral)?;
+    log::info!("Activating systemd services...");
     services::activate(store_path, ephemeral)?;
     Ok(())
 }

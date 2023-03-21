@@ -17,7 +17,7 @@ const SERVICES_STATE_FILE_NAME: &str = "services.json";
 const ETC_STATE_FILE_NAME: &str = "etc-files.json";
 const SYSTEM_MANAGER_STATIC_NAME: &str = ".system-manager-static";
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 #[serde(from = "String", into = "String", rename_all = "camelCase")]
 pub struct StorePath {
     pub store_path: PathBuf,
@@ -90,6 +90,14 @@ fn remove_dir(from: &Path) -> Result<()> {
     log::info!("Removing directory: {}", from.display());
     fs::remove_dir(from)?;
     Ok(())
+}
+
+pub fn etc_dir(ephemeral: bool) -> PathBuf {
+    if ephemeral {
+        Path::new("/run").join("etc")
+    } else {
+        PathBuf::from("/etc")
+    }
 }
 
 pub fn compose<A, B, C, G, F>(f: F, g: G) -> impl Fn(A) -> C
