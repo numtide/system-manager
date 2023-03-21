@@ -178,20 +178,10 @@ fn verify_systemd_dir(ephemeral: bool) -> Result<()> {
 }
 
 pub fn deactivate() -> Result<()> {
+    restore_ephemeral_system_dir()?;
+
     let old_services = read_saved_services()?;
     log::debug!("{:?}", old_services);
-
-    // If we turned the ephemeral systemd system dir under /run into a symlink,
-    // then systemd crashes in a very difficult to understand way.
-    // To avoid this, we always check if this directory exists and is correct,
-    // and we recreate it if needed.
-    let ephemeral_systemd_system_dir = systemd_system_dir(true);
-    if !ephemeral_systemd_system_dir.exists() {
-        if ephemeral_systemd_system_dir.is_symlink() {
-            fs::remove_file(&ephemeral_systemd_system_dir)?;
-        }
-        fs::create_dir_all(&ephemeral_systemd_system_dir)?;
-    }
 
     let service_manager = systemd::ServiceManager::new_session()?;
     let job_monitor = service_manager.monitor_jobs_init()?;
@@ -214,6 +204,22 @@ pub fn deactivate() -> Result<()> {
     serialise_saved_services(&HashMap::new())?;
 
     log::info!("Done");
+    Ok(())
+}
+
+// If we turned the ephemeral systemd system dir under /run into a symlink,
+// then systemd crashes when that symlink goes broken.
+// To avoid this, we always check whether this directory exists and is correct,
+// and we recreate it if needed.
+// NOTE: We rely on the fact that the etc files get cleaned up first, before this runs!
+fn restore_ephemeral_system_dir() -> Result<()> {
+    let ephemeral_systemd_system_dir = systemd_system_dir(true);
+    if !ephemeral_systemd_system_dir.exists() {
+        if ephemeral_systemd_system_dir.is_symlink() {
+            fs::remove_file(&ephemeral_systemd_system_dir)?;
+        }
+        fs::create_dir_all(&ephemeral_systemd_system_dir)?;
+    }
     Ok(())
 }
 
