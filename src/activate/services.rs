@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use im::{HashMap, HashSet};
 use serde::{Deserialize, Serialize};
 use std::fs::DirBuilder;
-use std::path::{self, Path};
+use std::path::{self, Path, PathBuf};
 use std::time::Duration;
 use std::{fs, io, str};
 
@@ -121,12 +121,23 @@ fn get_services_to_reload(services: Services, old_services: Services) -> Service
     services_to_reload
 }
 
-fn verify_systemd_dir(ephemeral: bool) -> Result<()> {
+fn systemd_system_dir(ephemeral: bool) -> PathBuf {
     if ephemeral {
-        let system_dir = Path::new(path::MAIN_SEPARATOR_STR)
+        return Path::new(path::MAIN_SEPARATOR_STR)
             .join("run")
             .join("systemd")
             .join("system");
+    } else {
+        return Path::new(path::MAIN_SEPARATOR_STR)
+            .join("etc")
+            .join("systemd")
+            .join("system");
+    }
+}
+
+fn verify_systemd_dir(ephemeral: bool) -> Result<()> {
+    if ephemeral {
+        let system_dir = systemd_system_dir(ephemeral);
         if system_dir.exists()
             && !system_dir.is_symlink()
             && system_dir.is_dir()
@@ -169,6 +180,18 @@ fn verify_systemd_dir(ephemeral: bool) -> Result<()> {
 pub fn deactivate() -> Result<()> {
     let old_services = read_saved_services()?;
     log::debug!("{:?}", old_services);
+
+    // If we turned the ephemeral systemd system dir under /run into a symlink,
+    // then systemd crashes in a very difficult to understand way.
+    // To avoid this, we always check if this directory exists and is correct,
+    // and we recreate it if needed.
+    let ephemeral_systemd_system_dir = systemd_system_dir(true);
+    if !ephemeral_systemd_system_dir.exists() {
+        if ephemeral_systemd_system_dir.is_symlink() {
+            fs::remove_file(&ephemeral_systemd_system_dir)?;
+        }
+        fs::create_dir_all(&ephemeral_systemd_system_dir)?;
+    }
 
     let service_manager = systemd::ServiceManager::new_session()?;
     let job_monitor = service_manager.monitor_jobs_init()?;
