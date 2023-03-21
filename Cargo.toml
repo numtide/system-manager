@@ -2,12 +2,21 @@
 name = "system_manager"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+authors = [
+  "Ramses <ramses@well-founded.dev>"
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [[bin]]
 name = "system-manager"
 path = "src/main.rs"
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
 
 [dependencies]
 anyhow = "1.0.68"
