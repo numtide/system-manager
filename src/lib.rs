@@ -25,7 +25,7 @@ pub struct StorePath {
 
 impl From<String> for StorePath {
     fn from(path: String) -> Self {
-        // FIXME: handle this better
+        // TODO: handle this better
         if !path.starts_with("/nix/store/") {
             panic!("Error constructing store path, not in store: {path}");
         }

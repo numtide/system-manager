@@ -227,7 +227,7 @@ fn restore_ephemeral_system_dir() -> Result<()> {
     Ok(())
 }
 
-// FIXME: we should probably lock this file to avoid concurrent writes
+// TODO: we should probably lock this file to avoid concurrent writes
 fn serialise_saved_services(services: &Services) -> Result<()> {
     let state_file = Path::new(SYSTEM_MANAGER_STATE_DIR).join(SERVICES_STATE_FILE_NAME);
     DirBuilder::new()

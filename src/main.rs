@@ -75,7 +75,7 @@ enum Action {
 }
 
 fn main() -> ExitCode {
-    // FIXME: set default level to info
+    // TODO: set default level to info
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug")).init();
     handle_toplevel_error(go(Args::parse()))
 }
@@ -92,7 +92,6 @@ fn go(args: Args) -> Result<()> {
             store_path,
             activation_args: ActivationArgs { ephemeral },
         } => {
-            // FIXME handle target_host
             copy_closure(&store_path, &target_host)?;
             activate(&store_path, ephemeral, &target_host, use_remote_sudo)
         }
@@ -101,7 +100,7 @@ fn go(args: Args) -> Result<()> {
         } => build(&flake_uri, &target_host),
         Action::Deactivate => {
             check_root()?;
-            // FIXME handle target_host
+            // TODO handle target_host
             deactivate()
         }
         Action::Generate { generate_args } => {
