@@ -1,7 +1,7 @@
-use std::process::{self, ExitCode};
-
 use anyhow::Result;
 use clap::Parser;
+use std::ffi::OsString;
+use std::process::{self, ExitCode};
 
 use system_manager::StorePath;
 
@@ -227,7 +227,14 @@ fn invoke_remote_script(
         cmd.arg("sudo");
     }
     let status = cmd
-        .arg(format!("{store_path}/bin/{script_name}"))
+        .arg(OsString::from(
+            store_path
+                .store_path
+                .join("bin")
+                .join(script_name)
+                .to_string_lossy()
+                .into_owned(),
+        ))
         .stdout(process::Stdio::inherit())
         .stderr(process::Stdio::inherit())
         .status()?;
