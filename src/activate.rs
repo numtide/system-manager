@@ -2,6 +2,7 @@ mod etc_files;
 mod services;
 
 use anyhow::Result;
+use std::process;
 
 use crate::StorePath;
 
@@ -11,12 +12,17 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
         log::info!("Running in ephemeral mode");
     }
 
-    // TODO we probably need to first deactivate left-over files and services
-    // before we start putting in place the new ones.
+    log::info!("Running pre-activation assertions...");
+    if !run_preactivation_assertions(store_path)?.success() {
+        anyhow::bail!("Failure in pre-activation assertions.");
+    }
+
     log::info!("Activating etc files...");
     etc_files::activate(store_path, ephemeral)?;
+
     log::info!("Activating systemd services...");
     services::activate(store_path, ephemeral)?;
+
     Ok(())
 }
 
@@ -26,4 +32,17 @@ pub fn deactivate() -> Result<()> {
     etc_files::deactivate()?;
     services::deactivate()?;
     Ok(())
+}
+
+fn run_preactivation_assertions(store_path: &StorePath) -> Result<process::ExitStatus> {
+    let status = process::Command::new(
+        store_path
+            .store_path
+            .join("bin")
+            .join("preActivationAssertions"),
+    )
+    .stderr(process::Stdio::inherit())
+    .stdout(process::Stdio::inherit())
+    .status()?;
+    Ok(status)
 }

@@ -106,6 +106,50 @@ in
         ${system-manager}/bin/system-manager deactivate "$@"
       '';
 
+      preActivationAssertionScript =
+        let
+          mkAssertion = { name, script, ... }: ''
+            # ${name}
+
+            echo -e "Evaluating pre-activation assertion ${name}...\n"
+            (
+              set +e
+              ${script}
+            )
+            assertion_result=$?
+
+            if [ $assertion_result -ne 0 ]; then
+              failed_assertions+=${name}
+            fi
+          '';
+
+          mkAssertions = assertions:
+            lib.concatStringsSep "\n" (
+              lib.mapAttrsToList (name: mkAssertion) (
+                lib.filterAttrs (name: cfg: cfg.enable)
+                  assertions
+              )
+            );
+        in
+        pkgs.writeShellScript "preActivationAssertions" ''
+          set -ou pipefail
+
+          declare -a failed_assertions=()
+
+          ${mkAssertions nixosConfig.system-manager.preActivationAssertions}
+
+          if [ ''${#failed_assertions[@]} -ne 0 ]; then
+            for failed_assertion in ''${failed_assertions[@]}; do
+              echo "Pre-activation assertion $failed_assertion failed."
+            done
+            echo "See the output above for more details."
+            exit 1
+          else
+            echo "All pre-activation assertions succeeded."
+            exit 0
+          fi
+        '';
+
       linkFarmNestedEntryFromDrv = dirs: drv: {
         name = lib.concatStringsSep "/" (dirs ++ [ "${drv.name}" ]);
         path = drv;
@@ -120,6 +164,7 @@ in
         (linkFarmBinEntryFromDrv activationScript)
         (linkFarmBinEntryFromDrv deactivationScript)
         (linkFarmBinEntryFromDrv registerProfileScript)
+        (linkFarmBinEntryFromDrv preActivationAssertionScript)
       ]
     );
 }
