@@ -24,15 +24,27 @@
     };
     system.stateVersion = lib.mkDefault lib.trivial.release;
 
-    assertions = lib.flip map config.system-manager.etcFiles (entry:
-      {
-        assertion = lib.hasAttr entry config.environment.etc;
-        message = lib.concatStringsSep " " [
-          "The entry ${entry} that was passed to system-manager.etcFiles"
-          "is not present in environment.etc"
-        ];
-      }
-    );
+    assertions =
+      lib.flip map config.system-manager.etcFiles
+        (entry:
+          {
+            assertion = lib.hasAttr entry config.environment.etc;
+            message = lib.concatStringsSep " " [
+              "The entry ${entry} that was passed to system-manager.etcFiles"
+              "is not present in environment.etc"
+            ];
+          }
+        ) ++
+      lib.flip map config.system-manager.services
+        (entry:
+          {
+            assertion = lib.hasAttr entry config.systemd.services;
+            message = lib.concatStringsSep " " [
+              "The entry ${entry} that was passed to system-manager.services"
+              "is not present in systemd.services"
+            ];
+          }
+        );
 
     # Add the system directory for systemd
     system-manager.etcFiles = [ "systemd/system" ];
