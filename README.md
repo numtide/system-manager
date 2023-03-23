@@ -22,6 +22,8 @@ to install Nix, like [the official installer][official-installer] or this
 
 ## Usage with flakes
 
+### Defining the configuration
+
 A basic Nix flake using System Manager would look something like this:
 
 ```nix
@@ -86,6 +88,13 @@ in
     systemd = { inherit services; };
   };
 }
+```
+
+### Activating the configuration
+
+Once the configuration defined, you can activate it using the `system-manager` CLI:
+```sh
+nix run 'github:numtide/system-manager' -- switch --flake-uri '.'
 ```
 
 # Currently supported features
