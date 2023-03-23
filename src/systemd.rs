@@ -1,4 +1,4 @@
-// FIXME: Remove this
+// TODO: Remove this
 #![allow(dead_code)]
 
 mod manager;
@@ -75,9 +75,23 @@ pub struct Job<'a> {
     path: Path<'a>,
 }
 
-pub struct JobMonitor {
+pub struct JobMonitor<'a> {
     job_names: Arc<Mutex<im::HashSet<String>>>,
     tokens: im::HashSet<Token>,
+    service_manager: &'a ServiceManager,
+}
+
+impl Drop for JobMonitor<'_> {
+    fn drop(&mut self) {
+        self.tokens.iter().for_each(|t| {
+            self.service_manager
+                .proxy
+                .match_stop(*t, true)
+                .unwrap_or_else(|e|
+                    log::error!("Error while stopping match listener, memory might leak...\n  Caused by: {e}")
+                )
+        });
+    }
 }
 
 impl Drop for ServiceManager {
@@ -147,7 +161,7 @@ impl ServiceManager {
     }
 
     pub fn monitor_jobs_init(&self) -> Result<JobMonitor, Error> {
-        let job_names: Arc<Mutex<im::HashSet<String>>> = Arc::new(Mutex::from(im::HashSet::new()));
+        let job_names = Arc::new(Mutex::from(im::HashSet::<String>::new()));
 
         let job_names_clone = Arc::clone(&job_names);
         let token = self.proxy.match_signal(
@@ -165,16 +179,15 @@ impl ServiceManager {
         Ok(JobMonitor {
             job_names: Arc::clone(&job_names),
             tokens: im::HashSet::unit(token),
+            service_manager: self,
         })
     }
 
     /// Waits for the monitored jobs to finish. Returns `true` if all jobs
     /// finished before the timeout, `false` otherwise.
-    /// It is important that we consume the job monitor, since we remove the signal handler at the
-    /// end of this call, and so the job monitor cannot be re-used.
     pub fn monitor_jobs_finish<I>(
         &self,
-        job_monitor: JobMonitor,
+        job_monitor: &JobMonitor,
         timeout: &Option<Duration>,
         services: I,
     ) -> Result<bool, Error>
@@ -217,11 +230,6 @@ impl ServiceManager {
         if total_jobs > 0 {
             log::info!("All jobs finished.");
         }
-        // Remove the signal handling callback
-        job_monitor
-            .tokens
-            .into_iter()
-            .try_for_each(|t| self.proxy.match_stop(t, true))?;
         Ok(true)
     }
 

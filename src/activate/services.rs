@@ -56,7 +56,7 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
     // still knows about these units.
     wait_for_jobs(
         &service_manager,
-        job_monitor,
+        &job_monitor,
         stop_services(&service_manager, &services_to_stop)?,
         &timeout,
     )?;
@@ -69,10 +69,9 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
     let active_targets = get_active_targets(&service_manager);
     let services_to_reload = get_services_to_reload(services, old_services);
 
-    let job_monitor = service_manager.monitor_jobs_init()?;
     wait_for_jobs(
         &service_manager,
-        job_monitor,
+        &job_monitor,
         reload_services(&service_manager, &services_to_reload)?
             + start_units(&service_manager, &active_targets?)?,
         &timeout,
@@ -192,7 +191,7 @@ pub fn deactivate() -> Result<()> {
         // still knows about these units.
         wait_for_jobs(
             &service_manager,
-            job_monitor,
+            &job_monitor,
             stop_services(&service_manager, &old_services)?,
             &timeout,
         )?;
@@ -337,7 +336,7 @@ where
 
 fn wait_for_jobs(
     service_manager: &systemd::ServiceManager,
-    job_monitor: systemd::JobMonitor,
+    job_monitor: &systemd::JobMonitor,
     jobs: HashSet<JobId>,
     timeout: &Option<Duration>,
 ) -> Result<()> {
