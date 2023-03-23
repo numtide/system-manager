@@ -1,12 +1,18 @@
 use anyhow::Result;
 use clap::Parser;
 use std::ffi::OsString;
+use std::path::Path;
 use std::process::{self, ExitCode};
 
 use system_manager::StorePath;
 
 #[derive(clap::Parser, Debug)]
-#[command(author, version, about, long_about=None)]
+#[command(
+    author,
+    version,
+    about,
+    long_about = "System Manager -- Manage system configuration with Nix on any distro"
+)]
 struct Args {
     #[command(subcommand)]
     action: Action,
@@ -16,6 +22,8 @@ struct Args {
     target_host: Option<String>,
 
     #[arg(long, action)]
+    /// Whether to invoke the remove command with sudo.
+    /// Only useful in combination with
     use_remote_sudo: bool,
 }
 
@@ -44,6 +52,15 @@ struct ActivationArgs {
     ephemeral: bool,
 }
 
+#[derive(clap::Args, Debug)]
+struct DeactivationArgs {
+    #[arg(long)]
+    /// The store path for the system-manager profile.
+    /// You only need to specify this explicitly if it differs from the active
+    /// system-manager profile
+    store_path: Option<StorePath>,
+}
+
 #[derive(clap::Subcommand, Debug)]
 enum Action {
     /// Activate a given system-manager profile
@@ -54,18 +71,23 @@ enum Action {
         #[command(flatten)]
         activation_args: ActivationArgs,
     },
-    /// Build a new system-manager generation without registering it as a nix profile
+    /// Build a new system-manager profile without registering it as a nix profile
     Build {
         #[command(flatten)]
         build_args: BuildArgs,
     },
-    Deactivate,
-    /// Generate a new system-manager generation
+    /// Deactivate the active system-manager profile, removing all managed configuration
+    Deactivate {
+        #[command(flatten)]
+        deactivation_args: DeactivationArgs,
+    },
+    /// Generate a new system-manager profile and
+    /// register is as the active system-manager profile
     Generate {
         #[command(flatten)]
         generate_args: GenerateArgs,
     },
-    /// Generate a new system-manager generation and activate it
+    /// Generate a new system-manager profile and activate it
     Switch {
         #[command(flatten)]
         build_args: BuildArgs,
@@ -98,11 +120,9 @@ fn go(args: Args) -> Result<()> {
         Action::Build {
             build_args: BuildArgs { flake_uri },
         } => build(&flake_uri, &target_host),
-        Action::Deactivate => {
-            check_root()?;
-            // TODO handle target_host
-            deactivate()
-        }
+        Action::Deactivate {
+            deactivation_args: DeactivationArgs { store_path },
+        } => deactivate(store_path, &target_host, use_remote_sudo),
         Action::Generate { generate_args } => {
             generate(&generate_args, &target_host, use_remote_sudo)
         }
@@ -163,7 +183,12 @@ fn do_generate(
     use_remote_sudo: bool,
 ) -> Result<()> {
     if let Some(target_host) = target_host {
-        invoke_remote_script(store_path, "register-profile", target_host, use_remote_sudo)?;
+        invoke_remote_script(
+            &store_path.store_path,
+            "register-profile",
+            target_host,
+            use_remote_sudo,
+        )?;
         Ok(())
     } else {
         check_root()?;
@@ -178,7 +203,12 @@ fn activate(
     use_remote_sudo: bool,
 ) -> Result<()> {
     if let Some(target_host) = target_host {
-        invoke_remote_script(store_path, "activate", target_host, use_remote_sudo)?;
+        invoke_remote_script(
+            &store_path.store_path,
+            "activate",
+            target_host,
+            use_remote_sudo,
+        )?;
         Ok(())
     } else {
         check_root()?;
@@ -186,8 +216,26 @@ fn activate(
     }
 }
 
-fn deactivate() -> Result<()> {
-    system_manager::activate::deactivate()
+fn deactivate(
+    store_path: Option<StorePath>,
+    target_host: &Option<String>,
+    use_remote_sudo: bool,
+) -> Result<()> {
+    if let Some(target_host) = target_host {
+        invoke_remote_script(
+            &store_path.map_or_else(
+                || Path::new(system_manager::PROFILE_DIR).join("system-manager"),
+                |store_path| store_path.store_path,
+            ),
+            "deactivate",
+            target_host,
+            use_remote_sudo,
+        )?;
+        Ok(())
+    } else {
+        check_root()?;
+        system_manager::activate::deactivate()
+    }
 }
 
 fn copy_closure(store_path: &StorePath, target_host: &Option<String>) -> Result<()> {
@@ -215,7 +263,7 @@ fn do_copy_closure(store_path: &StorePath, target_host: &str) -> Result<()> {
 }
 
 fn invoke_remote_script(
-    store_path: &StorePath,
+    store_path: &Path,
     script_name: &str,
     target_host: &str,
     use_remote_sudo: bool,
@@ -228,7 +276,6 @@ fn invoke_remote_script(
     let status = cmd
         .arg(OsString::from(
             store_path
-                .store_path
                 .join("bin")
                 .join(script_name)
                 .to_string_lossy()
