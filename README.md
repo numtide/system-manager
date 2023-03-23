@@ -1,38 +1,94 @@
+# System Manager using Nix
 
-## Profile generation
+This project provides a basic method to manage system configuration using [Nix][nixos]
+on any Linux distribution.
+It builds on the many modules that already exist in [NixOS][nixos].
 
+*Warning*: System Manager is a work in progress, you can expect things not to work or to break.
 
-## Activation strategy
-The activation script calls `system-manager activate`,
-which will perform the following actions.
+[nixos]: https://nixos.org
 
-### Systemd services
-The info about services (name and store path of the service file) is found
-in a file called `services/services.json` in the system-manager configuration directory.
-The info about the services that were part of the previous generation is stored
-in a state file at `/var/lib/system-manager`.
-We then:
-1. Compare the list of services present in the current configuration with the
-   ones stored in the state file from the previous generation.
-1. For all services in the new generation,
-   create a symlink from `/etc/systemd/system/<service name>` to the service file
-   in the nix store.
-1. For all services present in the old generation but not in the new one:
-   1. Stop the service.
-   1. Remove the symlink from `/etc/systemd/system`.
-1. Perform a systemd daemon-reload
-1. Start the services that are present in this generation and not in the previous one
-1. Restart services that are present in both
+# Usage
 
-This approach basically ignores the `wantedBy` option.
-A future version might improve upon this, but one of the complexities is that
-NixOS does not encode the `wantedBy` option in the generated unit files, but
-rather produces `<unit name>.wants` directories in the directory that
-`/etc/systemd/system` gets linked to.
-Supporting this properly would mean that we need to find a way to register
-the `wantedBy` option on a non-NixOS system in a way such that we can use it.
+## Getting Nix
 
-### Udev rules
+In order to use System Manager, you will first need to install Nix.
+You can either use your distro's package manager, or use one of the different options
+to install Nix, like [the official installer][official-installer] or this
+[new installer][detsys-installer].
 
+[official-installer]: https://nixos.org/download.html
+[detsys-installer]: https://github.com/DeterminateSystems/nix-installer
 
-### Files under `/etc`
+## Usage with flakes
+
+A basic Nix flake using System Manager would look something like this:
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
+
+    system-manager = {
+      url = "github:numtide/system-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
+  };
+
+  outputs = { self, nixpkgs, system-manager }: {
+    systemConfigs.default = self.lib.makeSystemConfig {
+      system = flake-utils.lib.system.x86_64-linux;
+      modules = [
+        ./modules
+      ];
+    };
+  };
+}
+```
+
+And you would then put your System Manager modules in the `modules` directory,
+which should contain a `default.nix` file which functions as the entrance point.
+
+A simple System Manager module could look something like this:
+
+```nix
+{ config, lib, pkgs, ... }:
+let
+  etcFiles = {
+    "foo.conf".text = ''
+        launch_the_rockets = true
+    '';
+  };
+
+  services = {
+    foo = {
+      enable = true;
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+      };
+      wantedBy = [ "multi-user.target" ];
+      script = ''
+        echo "We launched the rockets!"
+      '';
+    };
+  };
+in
+{
+  config = {
+    system-manager = {
+      etcFiles = lib.attrNames etcFiles;
+      services = lib.attrNames services;
+    };
+    environment.etc = etcFiles;
+    systemd = { inherit services; };
+  };
+}
+```
+
+# Currently supported features
+
+Currently it is possible to configure files under `/etc/` and systemd services.
+More features may follow later.
