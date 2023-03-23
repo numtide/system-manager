@@ -15,6 +15,8 @@
       default = [ ];
     };
 
+    allowAnyDistro = lib.mkEnableOption "the usage of system-manager on untested distributions";
+
     preActivationAssertions = lib.mkOption {
       type = with lib.types; attrsOf (submodule ({ name, ... }: {
         options = {
@@ -70,7 +72,7 @@
           supportedIds = [ "nixos" "ubuntu" ];
         in
         {
-          enable = true;
+          enable = !config.system-manager.allowAnyDistro;
           script = ''
             source /etc/os-release
             ${lib.concatStringsSep "\n" (lib.flip map supportedIds (supportedId: ''
