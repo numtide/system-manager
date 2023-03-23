@@ -80,7 +80,7 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
 
     DirBuilder::new().recursive(true).create(&etc_dir)?;
 
-    let old_state = read_created_files()?;
+    let old_state = EtcTree::from_file(&get_state_file()?)?;
     let initial_state = EtcTree::root_node();
 
     let (state, status) = create_etc_static_link(
@@ -91,20 +91,24 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
     );
     status?;
 
-    let new_state = create_etc_links(config.entries.values(), &etc_dir, state, &old_state)
-        .update_state(old_state, &try_delete_path);
-
-    serialise_state(new_state)?;
+    // Create the rest of the links and serialise the resulting state
+    create_etc_links(config.entries.values(), &etc_dir, state, &old_state)
+        .update_state(old_state, &try_delete_path)
+        .unwrap_or_default()
+        .write_to_file(&get_state_file()?)?;
 
     log::info!("Done");
     Ok(())
 }
 
 pub fn deactivate() -> Result<()> {
-    let state = read_created_files()?;
+    let state = EtcTree::from_file(&get_state_file()?)?;
     log::debug!("{:?}", state);
 
-    serialise_state(state.deactivate(&try_delete_path))?;
+    state
+        .deactivate(&try_delete_path)
+        .unwrap_or_default()
+        .write_to_file(&get_state_file()?)?;
 
     log::info!("Done");
     Ok(())
@@ -291,42 +295,10 @@ fn copy_file(source: &Path, target: &Path, mode: &str, old_state: &EtcTree) -> R
     }
 }
 
-fn serialise_state<E>(created_files: Option<E>) -> Result<()>
-where
-    E: AsRef<EtcTree>,
-{
+fn get_state_file() -> Result<PathBuf> {
     let state_file = Path::new(SYSTEM_MANAGER_STATE_DIR).join(ETC_STATE_FILE_NAME);
     DirBuilder::new()
         .recursive(true)
         .create(SYSTEM_MANAGER_STATE_DIR)?;
-
-    log::info!("Writing state info into file: {}", state_file.display());
-    let writer = io::BufWriter::new(fs::File::create(state_file)?);
-
-    if let Some(e) = created_files {
-        serde_json::to_writer(writer, e.as_ref())?;
-    } else {
-        serde_json::to_writer(writer, &EtcTree::default())?;
-    }
-    Ok(())
-}
-
-fn read_created_files() -> Result<EtcTree> {
-    let state_file = Path::new(SYSTEM_MANAGER_STATE_DIR).join(ETC_STATE_FILE_NAME);
-    DirBuilder::new()
-        .recursive(true)
-        .create(SYSTEM_MANAGER_STATE_DIR)?;
-
-    if Path::new(&state_file).is_file() {
-        log::info!("Reading state info from {}", state_file.display());
-        let reader = io::BufReader::new(fs::File::open(state_file)?);
-        match serde_json::from_reader(reader) {
-            Ok(created_files) => return Ok(created_files),
-            Err(e) => {
-                log::error!("Error reading the state file, ignoring.");
-                log::error!("{:?}", e);
-            }
-        }
-    }
-    Ok(EtcTree::default())
+    Ok(state_file)
 }

@@ -1,9 +1,10 @@
+use anyhow::Result;
 use im::HashMap;
 use serde::{Deserialize, Serialize};
 use std::cmp::Eq;
 use std::iter::Peekable;
-use std::path;
 use std::path::{Path, PathBuf};
+use std::{fs, io, path};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -224,6 +225,29 @@ impl EtcTree {
         debug_assert!(!merged.nested.is_empty() || merged.status == EtcFileStatus::Managed);
 
         Some(merged)
+    }
+
+    pub fn write_to_file(&self, state_file: &Path) -> Result<()> {
+        log::info!("Writing state info into file: {}", state_file.display());
+        let writer = io::BufWriter::new(fs::File::create(state_file)?);
+
+        serde_json::to_writer(writer, self)?;
+        Ok(())
+    }
+
+    pub fn from_file(state_file: &Path) -> Result<Self> {
+        if state_file.is_file() {
+            log::info!("Reading state info from {}", state_file.display());
+            let reader = io::BufReader::new(fs::File::open(state_file)?);
+            match serde_json::from_reader(reader) {
+                Ok(created_files) => return Ok(created_files),
+                Err(e) => {
+                    log::error!("Error reading the state file, ignoring.");
+                    log::error!("{:?}", e);
+                }
+            }
+        }
+        Ok(Self::default())
     }
 }
 
