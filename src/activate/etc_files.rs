@@ -184,11 +184,23 @@ fn create_etc_static_link(
     }
 }
 
-// TODO: should we make sure that an existing file is managed before replacing it?
-fn create_etc_link(link_target: &OsStr, etc_dir: &Path, state: EtcTree) -> (EtcTree, Result<()>) {
+fn create_etc_link(
+    link_target: &OsStr,
+    etc_dir: &Path,
+    state: EtcTree,
+    old_state: &EtcTree,
+) -> (EtcTree, Result<()>) {
     let link_path = etc_dir.join(link_target);
     let (new_state, status) = create_dir_recursively(link_path.parent().unwrap(), state);
     match status.and_then(|_| {
+        if *old_state.get_status(&link_path) == EtcFileStatus::Unmanaged
+            && (link_path.exists() || link_path.is_symlink())
+        {
+            anyhow::bail!(
+                "Unmanaged file {} already exists, ignoring...",
+                link_path.display()
+            );
+        }
         create_link(
             &Path::new(".")
                 .join(SYSTEM_MANAGER_STATIC_NAME)
@@ -209,7 +221,7 @@ fn create_etc_entry(
 ) -> (EtcTree, Result<()>) {
     if entry.mode == "symlink" {
         if let Some(path::Component::Normal(link_target)) = entry.target.components().next() {
-            create_etc_link(link_target, etc_dir, state)
+            create_etc_link(link_target, etc_dir, state, old_state)
         } else {
             (
                 state,
