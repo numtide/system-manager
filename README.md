@@ -62,7 +62,7 @@ A simple System Manager module could look something like this:
 , ... }:
 
 {
-  config.system-manager = {
+  config = {
     environment.etc = {
       "foo.conf".text = ''
         launch_the_rockets = true
