@@ -22,21 +22,21 @@ struct Args {
     target_host: Option<String>,
 
     #[arg(long, action)]
-    /// Whether to invoke the remove command with sudo.
-    /// Only useful in combination with
+    /// Invoke the remote command with sudo.
+    /// Only useful in combination with --target-host
     use_remote_sudo: bool,
 }
 
 #[derive(clap::Args, Debug)]
 struct BuildArgs {
-    #[arg(long)]
+    #[arg(long = "flake", name = "FLAKE_URI")]
     /// The flake defining the system-manager profile
     flake_uri: String,
 }
 
 #[derive(clap::Args, Debug)]
 struct GenerateArgs {
-    #[arg(long)]
+    #[arg(long = "flake", name = "FLAKE_URI")]
     /// The flake defining the system-manager profile
     flake_uri: Option<String>,
 

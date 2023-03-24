@@ -89,7 +89,7 @@ A simple System Manager module could look something like this:
 
 Once the configuration defined, you can activate it using the `system-manager` CLI:
 ```sh
-nix run 'github:numtide/system-manager' -- switch --flake-uri '.'
+nix run 'github:numtide/system-manager' -- switch --flake '.'
 ```
 
 # Currently supported features
