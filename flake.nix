@@ -1,12 +1,6 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    # We re-use the systemd lib from NixOS, this input allows to import the needed modules.
-    # TODO: is there a better way to do this?
-    nixpkgs-nonflake = {
-      url = "github:NixOS/nixpkgs/nixos-unstable";
-      flake = false;
-    };
     flake-utils.url = "github:numtide/flake-utils";
     devshell = {
       url = "github:numtide/devshell";
@@ -47,7 +41,6 @@
   outputs =
     { self
     , nixpkgs
-    , nixpkgs-nonflake
     , flake-utils
     , rust-overlay
     , crane
@@ -189,7 +182,7 @@
     {
       lib = import ./nix/lib.nix {
         inherit nixpkgs self;
-        nixosModules = "${nixpkgs-nonflake}/nixos";
+        nixosModules = "${nixpkgs}/nixos";
       };
 
       systemConfigs.default = self.lib.makeSystemConfig {
