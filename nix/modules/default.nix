@@ -56,7 +56,6 @@
   };
 
   config = {
-
     system-manager.preActivationAssertions = {
       osVersion =
         let
