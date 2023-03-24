@@ -3,7 +3,7 @@
 , ...
 }:
 {
-  options.system-manager = {
+  options = {
     environment.etc = lib.mkOption {
       default = { };
       example = lib.literalExpression ''
@@ -100,7 +100,6 @@
                 Changing this option takes precedence over `gid`.
               '';
             };
-
           };
 
           config = {
@@ -110,7 +109,6 @@
               in lib.mkDerivedConfig options.text (pkgs.writeText name')
             );
           };
-
         }
       ));
     };

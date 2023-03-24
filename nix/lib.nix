@@ -1,5 +1,6 @@
-{ nixpkgs
-, self
+{ nixpkgs      # The nixpkgs flake
+, self         # The system-manager flake
+, nixosModules # The path to the nixos modules dir from nixpkgs
 ,
 }:
 let
@@ -16,22 +17,30 @@ in
       pkgs = nixpkgs.legacyPackages.${system};
       inherit (self.packages.${system}) system-manager;
 
-      # TODO can we call lib.evalModules directly instead of building a NixOS system?
-      nixosConfig = (lib.nixosSystem {
-        inherit system;
+      # Module that sets additional module arguments
+      extraArgsModule = { lib, config, pkgs, ... }: {
+        _module.args = {
+          pkgs = nixpkgs.legacyPackages.${system};
+          utils = import "${nixosModules}/lib/utils.nix" {
+            inherit lib config pkgs;
+          };
+        };
+      };
+
+      config = (lib.evalModules {
         modules = [
+          extraArgsModule
           ./modules/system-manager.nix
         ] ++ modules;
-        specialArgs = extraSpecialArgs;
       }).config;
 
       returnIfNoAssertions = drv:
         let
-          failedAssertions = map (x: x.message) (lib.filter (x: !x.assertion) nixosConfig.assertions);
+          failedAssertions = map (x: x.message) (lib.filter (x: !x.assertion) config.assertions);
         in
         if failedAssertions != [ ]
         then throw "\nFailed assertions:\n${lib.concatStringsSep "\n" (map (x: "- ${x}") failedAssertions)}"
-        else lib.showWarnings nixosConfig.warnings drv;
+        else lib.showWarnings config.warnings drv;
 
       services =
         lib.mapAttrs'
@@ -40,7 +49,7 @@ in
               storePath =
                 ''${unit.unit}/${unitName}'';
             })
-          nixosConfig.system-manager.systemd.units;
+          config.systemd.units;
 
       servicesPath = pkgs.writeTextFile {
         name = "services";
@@ -64,7 +73,7 @@ in
 
           filteredEntries = lib.filterAttrs
             (_name: etcFile: etcFile.enable)
-            nixosConfig.system-manager.environment.etc;
+            config.environment.etc;
 
           srcDrvs = lib.mapAttrs addToStore filteredEntries;
 
@@ -131,7 +140,7 @@ in
 
           declare -a failed_assertions=()
 
-          ${mkAssertions nixosConfig.system-manager.preActivationAssertions}
+          ${mkAssertions config.system-manager.preActivationAssertions}
 
           if [ ''${#failed_assertions[@]} -ne 0 ]; then
             for failed_assertion in ''${failed_assertions[@]}; do

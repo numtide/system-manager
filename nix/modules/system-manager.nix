@@ -8,35 +8,54 @@
     ./systemd.nix
   ];
 
-  options.system-manager = {
-    allowAnyDistro = lib.mkEnableOption "the usage of system-manager on untested distributions";
+  options = {
+    assertions = lib.mkOption {
+      type = lib.types.listOf lib.types.unspecified;
+      internal = true;
+      default = [ ];
+      example = [{ assertion = false; message = "you can't enable this for that reason"; }];
+      description = lib.mdDoc ''
+        This option allows modules to express conditions that must
+        hold for the evaluation of the system configuration to
+        succeed, along with associated error messages for the user.
+      '';
+    };
 
-    preActivationAssertions = lib.mkOption {
-      type = with lib.types; attrsOf (submodule ({ name, ... }: {
-        options = {
-          enable = lib.mkEnableOption "the assertion";
+    warnings = lib.mkOption {
+      internal = true;
+      default = [ ];
+      type = lib.types.listOf lib.types.str;
+      example = [ "The `foo' service is deprecated and will go away soon!" ];
+      description = lib.mdDoc ''
+        This option allows modules to show warnings to users during
+        the evaluation of the system configuration.
+      '';
+    };
 
-          name = lib.mkOption {
-            type = lib.types.str;
-            default = name;
+    system-manager = {
+      allowAnyDistro = lib.mkEnableOption "the usage of system-manager on untested distributions";
+
+      preActivationAssertions = lib.mkOption {
+        type = with lib.types; attrsOf (submodule ({ name, ... }: {
+          options = {
+            enable = lib.mkEnableOption "the assertion";
+
+            name = lib.mkOption {
+              type = lib.types.str;
+              default = name;
+            };
+
+            script = lib.mkOption {
+              type = lib.types.str;
+            };
           };
-
-          script = lib.mkOption {
-            type = lib.types.str;
-          };
-        };
-      }));
-      default = { };
+        }));
+        default = { };
+      };
     };
   };
 
   config = {
-    # Avoid some standard NixOS assertions
-    boot = {
-      loader.grub.enable = false;
-      initrd.enable = false;
-    };
-    system.stateVersion = lib.mkDefault lib.trivial.release;
 
     system-manager.preActivationAssertions = {
       osVersion =
