@@ -16,6 +16,7 @@ in
       pkgs = nixpkgs.legacyPackages.${system};
       inherit (self.packages.${system}) system-manager;
 
+      # TODO can we call lib.evalModules directly instead of building a NixOS system?
       nixosConfig = (lib.nixosSystem {
         inherit system;
         modules = [
@@ -33,17 +34,13 @@ in
         else lib.showWarnings nixosConfig.warnings drv;
 
       services =
-        lib.listToAttrs
-          (map
-            (name:
-              let
-                serviceName = "${name}.service";
-              in
-              lib.nameValuePair serviceName {
-                storePath =
-                  ''${nixosConfig.systemd.units."${serviceName}".unit}/${serviceName}'';
-              })
-            nixosConfig.system-manager.services);
+        lib.mapAttrs'
+          (unitName: unit:
+            lib.nameValuePair unitName {
+              storePath =
+                ''${unit.unit}/${unitName}'';
+            })
+          nixosConfig.system-manager.systemd.units;
 
       servicesPath = pkgs.writeTextFile {
         name = "services";
@@ -54,8 +51,6 @@ in
       # TODO: handle globbing
       etcFiles =
         let
-          isManaged = name: lib.elem name nixosConfig.system-manager.etcFiles;
-
           addToStore = name: file: pkgs.runCommandLocal "${name}-etc-link" { } ''
             mkdir -p "$out/$(dirname "${file.target}")"
             ln -s "${file.source}" "$out/${file.target}"
@@ -68,8 +63,8 @@ in
           '';
 
           filteredEntries = lib.filterAttrs
-            (name: etcFile: etcFile.enable && isManaged name)
-            nixosConfig.environment.etc;
+            (_name: etcFile: etcFile.enable)
+            nixosConfig.system-manager.environment.etc;
 
           srcDrvs = lib.mapAttrs addToStore filteredEntries;
 

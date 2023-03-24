@@ -56,36 +56,31 @@ which should contain a `default.nix` file which functions as the entrance point.
 A simple System Manager module could look something like this:
 
 ```nix
-{ config, lib, pkgs, ... }:
-let
-  etcFiles = {
-    "foo.conf".text = ''
-        launch_the_rockets = true
-    '';
-  };
+{ config
+, lib
+, pkgs
+, ... }:
 
-  services = {
-    foo = {
-      enable = true;
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-      };
-      wantedBy = [ "multi-user.target" ];
-      script = ''
-        echo "We launched the rockets!"
+{
+  config.system-manager = {
+    environment.etc = {
+      "foo.conf".text = ''
+        launch_the_rockets = true
       '';
     };
-  };
-in
-{
-  config = {
-    system-manager = {
-      etcFiles = lib.attrNames etcFiles;
-      services = lib.attrNames services;
+    systemd.services = {
+      foo = {
+        enable = true;
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+        };
+        wantedBy = [ "multi-user.target" ];
+        script = ''
+          echo "We launched the rockets!"
+        '';
+      };
     };
-    environment.etc = etcFiles;
-    systemd = { inherit services; };
   };
 }
 ```
