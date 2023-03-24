@@ -50,7 +50,10 @@
     ,
     }:
     (flake-utils.lib.eachSystem
-      (with flake-utils.lib.system; [ x86_64-linux aarch64-linux ])
+      [
+        flake-utils.lib.system.x86_64-linux
+        flake-utils.lib.system.aarch64-linux
+      ]
       (system:
       let
         pkgs = import nixpkgs {
