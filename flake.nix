@@ -195,7 +195,7 @@
       systemConfigs.default = self.lib.makeSystemConfig {
         system = flake-utils.lib.system.x86_64-linux;
         modules = [
-          ./nix/modules
+          ./test/nix/modules
         ];
       };
     };

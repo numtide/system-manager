@@ -30,7 +30,7 @@ in
       config = (lib.evalModules {
         modules = [
           extraArgsModule
-          ./modules/system-manager.nix
+          ./modules
         ] ++ modules;
       }).config;
 

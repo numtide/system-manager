@@ -95,6 +95,8 @@ fn find_flake_attr(flake_uri: &str) -> Result<Cow<'_, str>> {
     anyhow::bail!("No suitable flake attribute found, giving up.");
 }
 
+// TODO handle errors better.
+// E.g. when we refer to an unexisting module in the systemConfig definition.
 fn try_flake_attr(flake_uri: &str) -> Result<bool> {
     log::info!("Trying flake URI: {flake_uri}...");
     let status = try_nix_eval(flake_uri)?;
