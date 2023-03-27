@@ -4,7 +4,7 @@
     flake-utils.url = "github:numtide/flake-utils";
 
     system-manager = {
-      url = "sourcehut:~r-vdp/system-manager";
+      url = "github:numtide/system-manager";
 
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";

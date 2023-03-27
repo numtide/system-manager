@@ -219,17 +219,17 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1679923241,
-        "narHash": "sha256-08uac4MB/upXRzfHVg05FumimJqPPDUbRJzORw7533g=",
-        "owner": "~r-vdp",
+        "lastModified": 1679927326,
+        "narHash": "sha256-oc07+8bhj2X/RQvwG/N98ZEzDwkDet5Fo/04Q4XnH8I=",
+        "owner": "numtide",
         "repo": "system-manager",
-        "rev": "d9d770da7a24345a90988b421c4397b82e169c97",
-        "type": "sourcehut"
+        "rev": "c9c203b39d8fc10adcd227605799a6a45a05db50",
+        "type": "github"
       },
       "original": {
-        "owner": "~r-vdp",
+        "owner": "numtide",
         "repo": "system-manager",
-        "type": "sourcehut"
+        "type": "github"
       }
     },
     "treefmt-nix": {
