@@ -16,7 +16,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - uses: cachix/install-nix-action@vlatest
+      with:
+        github_access_token: ${{ secrets.GITHUB_TOKEN }}
     - name: Build
-      run: cargo build --verbose
+      run: nix build '.#system-manager'
     - name: Run tests
-      run: cargo test --verbose
+      run: nix flake check
