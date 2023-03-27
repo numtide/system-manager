@@ -49,6 +49,13 @@
     , pre-commit-hooks
     ,
     }:
+    {
+      lib = import ./nix/lib.nix {
+        inherit nixpkgs self;
+        nixosModules = "${nixpkgs}/nixos";
+      };
+    }
+    //
     (flake-utils.lib.eachSystem
       [
         flake-utils.lib.system.x86_64-linux
@@ -180,19 +187,5 @@
             system-manager
             system-manager-clippy;
         };
-      }))
-    //
-    {
-      lib = import ./nix/lib.nix {
-        inherit nixpkgs self;
-        nixosModules = "${nixpkgs}/nixos";
-      };
-
-      systemConfigs.default = self.lib.makeSystemConfig {
-        system = flake-utils.lib.system.x86_64-linux;
-        modules = [
-          ./test/nix/modules
-        ];
-      };
-    };
+      }));
 }
