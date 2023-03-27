@@ -59,7 +59,8 @@ A simple System Manager module could look something like this:
 { config
 , lib
 , pkgs
-, ... }:
+, ...
+}:
 
 {
   config = {
