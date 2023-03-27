@@ -99,6 +99,10 @@
           cargoClippyExtraArgs = "--all-targets -- --deny warnings";
         });
 
+        system-manager-test = craneLib.cargoTest (commonArgs // {
+          inherit cargoArtifacts;
+        });
+
         # treefmt-nix configuration
         treefmt.config = {
           projectRootFile = "flake.nix";
@@ -185,7 +189,8 @@
           inherit
             # Build the crate as part of `nix flake check` for convenience
             system-manager
-            system-manager-clippy;
+            system-manager-clippy
+            system-manager-test;
         };
       }));
 }
