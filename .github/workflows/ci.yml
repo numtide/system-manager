@@ -16,7 +16,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - uses: cachix/install-nix-action@vlatest
+    - uses: cachix/install-nix-action@latest
       with:
         github_access_token: ${{ secrets.GITHUB_TOKEN }}
     - name: Build
