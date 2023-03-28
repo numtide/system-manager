@@ -8,8 +8,7 @@ let
 in
 {
   makeSystemConfig =
-    { system
-    , modules
+    { modules
     , extraSpecialArgs ? { }
     ,
     }:
@@ -33,6 +32,8 @@ in
           ./modules
         ] ++ modules;
       }).config;
+
+      system = config.nixpkgs.hostPlatform;
 
       returnIfNoAssertions = drv:
         let

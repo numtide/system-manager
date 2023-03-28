@@ -1,24 +1,16 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
 
     system-manager = {
       url = "github:numtide/system-manager";
-
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
     };
   };
 
-  outputs =
-    { flake-utils
-    , system-manager
-    , ...
-    }:
+  outputs = { system-manager, ... }:
     {
       systemConfigs.default = system-manager.lib.makeSystemConfig {
-        system = flake-utils.lib.system.x86_64-linux;
         modules = [
           ./modules
         ];

@@ -9,6 +9,15 @@
   ];
 
   options = {
+
+    nixpkgs = {
+      # TODO: switch to lib.systems.parsedPlatform
+      hostPlatform = lib.mkOption {
+        type = lib.types.str;
+        example = "x86_64-linux";
+      };
+    };
+
     assertions = lib.mkOption {
       type = lib.types.listOf lib.types.unspecified;
       internal = true;

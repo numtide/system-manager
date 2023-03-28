@@ -4,6 +4,8 @@
 }:
 {
   config = {
+    nixpkgs.hostPlatform = "x86_64-linux";
+
     environment.etc = {
       foo = {
         text = ''
