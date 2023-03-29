@@ -157,13 +157,13 @@ fn try_nix_eval(flake_uri: &str) -> Result<bool> {
         .arg("--json")
         .arg("--apply")
         .arg("a: a ? outPath")
-        .stderr(process::Stdio::null())
         .output()?;
     if output.status.success() {
         let stdout = String::from_utf8(output.stdout)?;
         let parsed_output: bool = serde_json::from_str(&stdout)?;
         Ok(parsed_output)
     } else {
+        log::debug!("{}", String::from_utf8_lossy(output.stderr.as_ref()));
         Ok(false)
     }
 }
