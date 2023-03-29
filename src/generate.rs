@@ -138,7 +138,7 @@ fn parse_nix_build_output(output: String) -> Result<StorePath> {
 }
 
 fn run_nix_build(flake_uri: &str) -> Result<process::Output> {
-    let output = process::Command::new("nix")
+    let output = nix_cmd()
         .arg("build")
         .arg(flake_uri)
         .arg("--json")
@@ -151,7 +151,7 @@ fn run_nix_build(flake_uri: &str) -> Result<process::Output> {
 }
 
 fn try_nix_eval(flake_uri: &str) -> Result<bool> {
-    let output = process::Command::new("nix")
+    let output = nix_cmd()
         .arg("eval")
         .arg(flake_uri)
         .arg("--json")
@@ -166,4 +166,11 @@ fn try_nix_eval(flake_uri: &str) -> Result<bool> {
         log::debug!("{}", String::from_utf8_lossy(output.stderr.as_ref()));
         Ok(false)
     }
+}
+
+fn nix_cmd() -> process::Command {
+    let mut cmd = process::Command::new("nix");
+    cmd.arg("--extra-experimental-features")
+        .arg("nix-command flakes");
+    cmd
 }
