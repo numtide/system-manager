@@ -97,8 +97,7 @@ enum Action {
 }
 
 fn main() -> ExitCode {
-    // TODO: set default level to info
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug")).init();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
     handle_toplevel_error(go(Args::parse()))
 }
 
