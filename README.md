@@ -56,11 +56,7 @@ which should contain a `default.nix` file which functions as the entrance point.
 A simple System Manager module could look something like this:
 
 ```nix
-{ config
-, lib
-, pkgs
-, ...
-}:
+{ config, lib, pkgs, ... }:
 
 {
   config = {
@@ -78,6 +74,7 @@ A simple System Manager module could look something like this:
         };
         wantedBy = [ "multi-user.target" ];
         script = ''
+          ${lib.getBin pkgs.foo}/bin/foo
           echo "We launched the rockets!"
         '';
       };
