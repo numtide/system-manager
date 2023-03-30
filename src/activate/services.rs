@@ -54,6 +54,7 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
 
     // We need to do this before we reload the systemd daemon, so that the daemon
     // still knows about these units.
+    // TODO: handle jobs that were not running, this throws an error now.
     wait_for_jobs(
         &service_manager,
         &job_monitor,
@@ -182,8 +183,8 @@ pub fn deactivate() -> Result<()> {
     let old_services = read_saved_services()?;
     log::debug!("{:?}", old_services);
 
+    let service_manager = systemd::ServiceManager::new_session()?;
     if !old_services.is_empty() {
-        let service_manager = systemd::ServiceManager::new_session()?;
         let job_monitor = service_manager.monitor_jobs_init()?;
         let timeout = Some(Duration::from_secs(30));
 
@@ -195,14 +196,11 @@ pub fn deactivate() -> Result<()> {
             stop_services(&service_manager, &old_services)?,
             &timeout,
         )?;
-
-        // We removed all old services, so let's reload the units so that
-        // the systemd daemon is up-to-date
-        log::info!("Reloading the systemd daemon...");
-        service_manager.daemon_reload()?;
     } else {
         log::info!("No services to deactivate.");
     }
+    log::info!("Reloading the systemd daemon...");
+    service_manager.daemon_reload()?;
 
     serialise_saved_services(&HashMap::new())?;
 
