@@ -4,7 +4,6 @@ use anyhow::{anyhow, Result};
 use im::HashMap;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use std::ffi::OsStr;
 use std::fs::{DirBuilder, Permissions};
 use std::os::unix::prelude::PermissionsExt;
 use std::path;
@@ -184,33 +183,121 @@ fn create_etc_static_link(
     }
 }
 
-fn create_etc_link(
-    link_target: &OsStr,
+fn create_etc_link<P>(
+    link_target: &P,
     etc_dir: &Path,
     state: EtcTree,
     old_state: &EtcTree,
-) -> (EtcTree, Result<()>) {
-    let link_path = etc_dir.join(link_target);
-    let (new_state, status) = create_dir_recursively(link_path.parent().unwrap(), state);
-    match status.and_then(|_| {
-        if *old_state.get_status(&link_path) == EtcFileStatus::Unmanaged
-            && (link_path.exists() || link_path.is_symlink())
-        {
-            anyhow::bail!(
-                "Unmanaged file {} already exists, ignoring...",
-                link_path.display()
-            );
+) -> (EtcTree, Result<()>)
+where
+    P: AsRef<Path>,
+{
+    fn link_dir_contents(
+        link_target: &Path,
+        absolute_target: &Path,
+        etc_dir: &Path,
+        state: EtcTree,
+        old_state: &EtcTree,
+        upwards_path: &Path,
+    ) -> (EtcTree, Result<()>) {
+        let link_path = etc_dir.join(link_target);
+        if link_path.is_dir() && absolute_target.is_dir() {
+            log::info!("Entering into directory...");
+            (
+                absolute_target
+                    .read_dir()
+                    .expect("Error reading the directory.")
+                    .fold(state, |state, entry| {
+                        let (new_state, status) = go(
+                            &link_target.join(
+                                entry
+                                    .expect("Error reading the directory entry.")
+                                    .file_name(),
+                            ),
+                            etc_dir,
+                            state,
+                            old_state,
+                            &upwards_path.join(".."),
+                        );
+                        if let Err(e) = status {
+                            log::error!(
+                                "Error while trying to link directory {}: {:?}",
+                                absolute_target.display(),
+                                e
+                            );
+                        }
+                        new_state
+                    }),
+                // TODO better error handling
+                Ok(()),
+            )
+        } else {
+            (
+                state,
+                Err(anyhow!(
+                    "Unmanaged file or directory {} already exists, ignoring...",
+                    link_path.display()
+                )),
+            )
         }
-        create_link(
-            &Path::new(".")
-                .join(SYSTEM_MANAGER_STATIC_NAME)
-                .join(link_target),
-            &link_path,
-        )
-    }) {
-        Ok(_) => (new_state.register_managed_entry(&link_path), Ok(())),
-        e => (new_state, e),
     }
+
+    fn go(
+        link_target: &Path,
+        etc_dir: &Path,
+        state: EtcTree,
+        old_state: &EtcTree,
+        upwards_path: &Path,
+    ) -> (EtcTree, Result<()>) {
+        let link_path = etc_dir.join(link_target);
+        match create_dir_recursively(link_path.parent().unwrap(), state) {
+            (dir_state, Ok(_)) => {
+                let target = upwards_path
+                    .join(SYSTEM_MANAGER_STATIC_NAME)
+                    .join(link_target);
+                let absolute_target = etc_dir.join(SYSTEM_MANAGER_STATIC_NAME).join(link_target);
+                if link_path.exists() && !old_state.is_managed(&link_path) {
+                    link_dir_contents(
+                        link_target,
+                        &absolute_target,
+                        etc_dir,
+                        dir_state,
+                        old_state,
+                        upwards_path,
+                    )
+                } else if link_path.is_symlink()
+                    && link_path.read_link().expect("Error reading link.") == target
+                {
+                    (dir_state.register_managed_entry(&link_path), Ok(()))
+                } else {
+                    let result = if link_path.exists() {
+                        assert!(old_state.is_managed(&link_path));
+                        fs::remove_file(&link_path).map_err(anyhow::Error::from)
+                    } else {
+                        Ok(())
+                    };
+
+                    match result.and_then(|_| create_link(&target, &link_path)) {
+                        Ok(_) => (dir_state.register_managed_entry(&link_path), Ok(())),
+                        Err(e) => (
+                            dir_state,
+                            Err(anyhow!(e)
+                                .context(format!("Error creating link: {}", link_path.display()))),
+                        ),
+                    }
+                }
+            }
+            (new_state, e) => (new_state, e),
+        }
+    }
+
+    go(
+        link_target.as_ref(),
+        etc_dir,
+        state,
+        old_state,
+        Path::new("."),
+    )
 }
 
 fn create_etc_entry(
@@ -221,7 +308,7 @@ fn create_etc_entry(
 ) -> (EtcTree, Result<()>) {
     if entry.mode == "symlink" {
         if let Some(path::Component::Normal(link_target)) = entry.target.components().next() {
-            create_etc_link(link_target, etc_dir, state, old_state)
+            create_etc_link(&link_target, etc_dir, state, old_state)
         } else {
             (
                 state,
@@ -287,12 +374,7 @@ fn create_dir_recursively(dir: &Path, state: EtcTree) -> (EtcTree, Result<()>) {
 
 fn copy_file(source: &Path, target: &Path, mode: &str, old_state: &EtcTree) -> Result<()> {
     let exists = target.try_exists()?;
-    let old_status = old_state.get_status(target);
-    log::debug!(
-        "Status for target {} before copy: {old_status:?}",
-        target.display()
-    );
-    if !exists || *old_status == EtcFileStatus::Managed {
+    if !exists || old_state.is_managed(target) {
         log::debug!(
             "Copying file {} to {}...",
             source.display(),

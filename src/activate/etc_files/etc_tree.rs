@@ -97,6 +97,10 @@ impl EtcTree {
         go(self, path.components(), path)
     }
 
+    pub fn is_managed(&self, path: &Path) -> bool {
+        *self.get_status(path) == EtcFileStatus::Managed
+    }
+
     // TODO is recursion OK here?
     // Should we convert to CPS and use a crate like tramp to TCO this?
     pub fn register_managed_entry(self, path: &Path) -> Self {
@@ -333,18 +337,9 @@ mod tests {
             .register_managed_entry(&PathBuf::from("/").join("foo5").join("baz2"))
             .register_managed_entry(&PathBuf::from("/").join("foo5").join("baz").join("bar"));
 
-        assert_eq!(
-            tree1.get_status(&PathBuf::from("/").join("foo5").join("baz").join("bar")),
-            &EtcFileStatus::Managed
-        );
-        assert_eq!(
-            tree1.get_status(&PathBuf::from("/").join("foo")),
-            &EtcFileStatus::Unmanaged
-        );
-        assert_eq!(
-            tree1.get_status(&PathBuf::from("/").join("foo").join("nonexistent")),
-            &EtcFileStatus::Unmanaged
-        );
+        assert!(tree1.is_managed(&PathBuf::from("/").join("foo5").join("baz").join("bar")));
+        assert!(!tree1.is_managed(&PathBuf::from("/").join("foo")));
+        assert!(!tree1.is_managed(&PathBuf::from("/").join("foo").join("nonexistent")));
     }
 
     #[test]
