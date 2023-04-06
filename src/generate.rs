@@ -1,6 +1,5 @@
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
-use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fs::DirBuilder;
 use std::path::Path;
@@ -62,48 +61,53 @@ pub fn build(flake_uri: &str) -> Result<StorePath> {
     Ok(store_path)
 }
 
-fn find_flake_attr(flake_uri: &str) -> Result<Cow<'_, str>> {
-    let flake_uri = flake_uri.trim_end_matches('#');
-    let hash_count = flake_uri.match_indices('#').count();
-
-    if hash_count > 1 {
-        anyhow::bail!("Invalid flake URI!");
+fn find_flake_attr(flake_uri: &str) -> Result<String> {
+    fn full_uri(flake: &str, attr: &str) -> String {
+        format!("{flake}#{FLAKE_ATTR}.{attr}")
     }
 
-    if hash_count == 1 {
-        return if try_flake_attr(flake_uri)? {
-            Ok(flake_uri.into())
+    let flake_uri = flake_uri.trim_end_matches('#');
+    let mut splitted = flake_uri.split('#');
+    let flake = splitted
+        .next()
+        .ok_or_else(|| anyhow!("Invalid flake URI: {flake_uri}"))?;
+    let attr = splitted.next();
+
+    if splitted.next().is_some() {
+        anyhow::bail!("Invalid flake URI, too many '#'s: {flake_uri}");
+    }
+
+    if let Some(attr) = attr {
+        if try_flake_attr(flake, attr)? {
+            return Ok(full_uri(flake, attr));
         } else {
             anyhow::bail!(
-                "Explicitly provided flake URI {} does not seem to point to a valid system-manager configuration.",
-                flake_uri
+                "Explicitly provided flake URI does not point to a valid system-manager configuration: {}",
+                format!("{flake}#{attr}")
             )
-        };
+        }
     }
 
-    let hostname = nix::unistd::gethostname()?;
-    let full_uri = format!("{flake_uri}#{FLAKE_ATTR}.{}", hostname.to_string_lossy());
+    let hostname_os = nix::unistd::gethostname()?;
+    let hostname = hostname_os.to_string_lossy();
+    let default = "default";
 
-    if try_flake_attr(&full_uri)? {
-        return Ok(full_uri.into());
-    } else {
-        let full_uri = format!("{flake_uri}#{FLAKE_ATTR}.default");
-        if try_flake_attr(&full_uri)? {
-            return Ok(full_uri.into());
-        };
+    if try_flake_attr(flake, &hostname)? {
+        return Ok(full_uri(flake, &hostname));
+    } else if try_flake_attr(flake, default)? {
+        return Ok(full_uri(flake, default));
     };
     anyhow::bail!("No suitable flake attribute found, giving up.");
 }
 
-// TODO handle errors better.
-// E.g. when we refer to an unexisting module in the systemConfig definition.
-fn try_flake_attr(flake_uri: &str) -> Result<bool> {
-    log::info!("Trying flake URI: {flake_uri}...");
-    let status = try_nix_eval(flake_uri)?;
+fn try_flake_attr(flake: &str, attr: &str) -> Result<bool> {
+    let full_uri = format!("{flake}#{FLAKE_ATTR}.{attr}");
+    log::info!("Trying flake URI: {full_uri}...");
+    let status = try_nix_eval(flake, attr)?;
     if status {
-        log::info!("Success, using {flake_uri}");
+        log::info!("Success, using {full_uri}");
     } else {
-        log::info!("Attribute {flake_uri} not found in flake.");
+        log::info!("Attribute {full_uri} not found in flake.");
     };
     Ok(status)
 }
@@ -150,13 +154,13 @@ fn run_nix_build(flake_uri: &str) -> Result<process::Output> {
     Ok(output)
 }
 
-fn try_nix_eval(flake_uri: &str) -> Result<bool> {
+fn try_nix_eval(flake: &str, attr: &str) -> Result<bool> {
     let output = nix_cmd()
         .arg("eval")
-        .arg(flake_uri)
+        .arg(format!("{flake}#{FLAKE_ATTR}"))
         .arg("--json")
         .arg("--apply")
-        .arg("a: a ? outPath")
+        .arg(format!("a: a ? {attr}"))
         .output()?;
     if output.status.success() {
         let stdout = String::from_utf8(output.stdout)?;
