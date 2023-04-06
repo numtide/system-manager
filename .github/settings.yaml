@@ -1,0 +1,43 @@
+# See https://developer.github.com/v3/repos/#edit for all available settings.
+repository:
+  name: "system-manager"
+  description: "Manage system config using nix on any distro "
+  topics: "nix, nix-modules"
+
+  private: false
+  default_branch: "main"
+
+  has_issues: true
+  has_projects: false
+  has_wiki: false
+  has_downloads: false
+
+  allow_squash_merge: true
+  allow_merge_commit: false
+  allow_rebase_merge: true
+  delete_branch_on_merge: true
+
+  enable_automated_security_fixes: true
+  enable_vulnerability_alerts: true
+
+  lables:
+  milestones:
+
+  collaborators:
+    - username: "R-VdP"
+      permission: "admin"
+
+#  branches:
+#    - name: "main"
+#      protection:
+#        allow_force_pushes: false
+#        allow_deletion: false
+#        required_pull_request_reviews:
+#        required_conversation_resolution: true
+#        required_status_checks:
+#          strict: false
+#          checks:
+#            - context: "CI"
+#        enforce_admins: false
+#        required_linear_history: true
+#        restrictions:
