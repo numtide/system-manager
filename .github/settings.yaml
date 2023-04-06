@@ -20,9 +20,6 @@ repository:
   enable_automated_security_fixes: true
   enable_vulnerability_alerts: true
 
-  lables:
-  milestones:
-
   collaborators:
     - username: "R-VdP"
       permission: "admin"
