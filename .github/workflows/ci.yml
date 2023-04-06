@@ -12,14 +12,16 @@ env:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: "nix"
 
     steps:
-    - uses: actions/checkout@v3
-    - uses: cachix/install-nix-action@master
+    - uses: "actions/checkout@v3"
+    - uses: "cachix/install-nix-action@master"
       with:
-        github_access_token: ${{ secrets.GITHUB_TOKEN }}
-    - name: Build
-      run: nix build '.#system-manager'
-    - name: Run tests
-      run: nix flake check
+        github_access_token: "${{ secrets.GITHUB_TOKEN }}"
+    - name: "Build"
+      run: |
+        nix build '.#system-manager'
+    - name: "Run tests"
+      run: |
+        nix flake check
