@@ -223,6 +223,7 @@ impl ServiceManager {
                         total_jobs - waiting_for.len(),
                         total_jobs
                     );
+                    log::debug!("Waiting for: {waiting_for:?}")
                 }
             }
         }
