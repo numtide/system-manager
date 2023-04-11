@@ -96,6 +96,7 @@ enum Action {
     },
 }
 
+// TODO: create a general lock while we are running to avoid running system-manager concurrently
 fn main() -> ExitCode {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
     handle_toplevel_error(go(Args::parse()))
