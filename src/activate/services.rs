@@ -1,24 +1,25 @@
-use anyhow::{Context, Result};
+use anyhow::Context;
 use im::{HashMap, HashSet};
 use serde::{Deserialize, Serialize};
-use std::fs::DirBuilder;
 use std::path::{self, Path, PathBuf};
 use std::time::Duration;
 use std::{fs, io, str};
 
-use crate::{
-    create_link, etc_dir, systemd, StorePath, SERVICES_STATE_FILE_NAME, SYSTEM_MANAGER_STATE_DIR,
-};
+use super::ActivationResult;
+use crate::activate::ActivationError;
+use crate::{create_link, etc_dir, systemd, StorePath};
+
+type ServiceActivationResult = ActivationResult<Services>;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct ServiceConfig {
+pub struct ServiceConfig {
     store_path: StorePath,
 }
 
-type Services = HashMap<String, ServiceConfig>;
+pub type Services = HashMap<String, ServiceConfig>;
 
-fn print_services(services: &Services) -> Result<String> {
+fn print_services(services: &Services) -> String {
     let out = itertools::intersperse(
         services
             .iter()
@@ -26,30 +27,39 @@ fn print_services(services: &Services) -> Result<String> {
         "\n".to_owned(),
     )
     .collect();
-    Ok(out)
+    out
 }
 
-pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
-    verify_systemd_dir(ephemeral)?;
-
-    let old_services = read_saved_services()?;
+pub fn activate(
+    store_path: &StorePath,
+    old_services: Services,
+    ephemeral: bool,
+) -> ServiceActivationResult {
+    verify_systemd_dir(ephemeral)
+        .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
 
     log::info!("Reading new service definitions...");
     let file = fs::File::open(
         Path::new(&store_path.store_path)
             .join("services")
             .join("services.json"),
-    )?;
+    )
+    .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
     let reader = io::BufReader::new(file);
-    let services: Services = serde_json::from_reader(reader)?;
-    log::debug!("{}", print_services(&services)?);
+    let services: Services = serde_json::from_reader(reader)
+        .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
+    log::debug!("{}", print_services(&services));
 
-    serialise_saved_services(&services)?;
+    //serialise_saved_services(&services)?;
 
     let services_to_stop = old_services.clone().relative_complement(services.clone());
+    let services_to_reload = get_services_to_reload(services.clone(), old_services.clone());
 
-    let service_manager = systemd::ServiceManager::new_session()?;
-    let job_monitor = service_manager.monitor_jobs_init()?;
+    let service_manager = systemd::ServiceManager::new_session()
+        .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
+    let job_monitor = service_manager
+        .monitor_jobs_init()
+        .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
     let timeout = Some(Duration::from_secs(30));
 
     // We need to do this before we reload the systemd daemon, so that the daemon
@@ -58,33 +68,37 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
     wait_for_jobs(
         &service_manager,
         &job_monitor,
-        stop_services(&service_manager, &services_to_stop)?,
+        stop_services(&service_manager, &services_to_stop),
         &timeout,
-    )?;
+    )
+    .map_err(|e| ActivationError::with_partial_result(services.clone(), e))?;
 
     // We added all new services and removed old ones, so let's reload the units
     // to tell systemd about them.
     log::info!("Reloading the systemd daemon...");
-    service_manager.daemon_reload()?;
+    service_manager
+        .daemon_reload()
+        .map_err(|e| ActivationError::with_partial_result(services.clone(), e))?;
 
-    let active_targets = get_active_targets(&service_manager);
-    let services_to_reload = get_services_to_reload(services, old_services);
+    let active_targets = get_active_targets(&service_manager)
+        .map_err(|e| ActivationError::with_partial_result(services.clone(), e))?;
 
     wait_for_jobs(
         &service_manager,
         &job_monitor,
-        reload_services(&service_manager, &services_to_reload)?
-            + start_units(&service_manager, &active_targets?)?,
+        reload_services(&service_manager, &services_to_reload)
+            + start_units(&service_manager, &active_targets),
         &timeout,
-    )?;
+    )
+    .map_err(|e| ActivationError::with_partial_result(services.clone(), e))?;
 
     log::info!("Done");
-    Ok(())
+    Ok(services)
 }
 
 fn get_active_targets(
     service_manager: &systemd::ServiceManager,
-) -> Result<Vec<systemd::UnitStatus>> {
+) -> anyhow::Result<Vec<systemd::UnitStatus>> {
     // We exclude some targets that we do not want to start
     let excluded_targets: HashSet<String> =
         ["suspend.target", "hibernate.target", "hybrid-sleep.target"]
@@ -135,7 +149,7 @@ fn systemd_system_dir(ephemeral: bool) -> PathBuf {
     }
 }
 
-fn verify_systemd_dir(ephemeral: bool) -> Result<()> {
+fn verify_systemd_dir(ephemeral: bool) -> anyhow::Result<()> {
     if ephemeral {
         let system_dir = systemd_system_dir(ephemeral);
         if system_dir.exists()
@@ -177,15 +191,18 @@ fn verify_systemd_dir(ephemeral: bool) -> Result<()> {
     Ok(())
 }
 
-pub fn deactivate() -> Result<()> {
-    restore_ephemeral_system_dir()?;
-
-    let old_services = read_saved_services()?;
+pub fn deactivate(old_services: Services) -> ServiceActivationResult {
     log::debug!("{:?}", old_services);
 
-    let service_manager = systemd::ServiceManager::new_session()?;
+    restore_ephemeral_system_dir()
+        .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
+
+    let service_manager = systemd::ServiceManager::new_session()
+        .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
     if !old_services.is_empty() {
-        let job_monitor = service_manager.monitor_jobs_init()?;
+        let job_monitor = service_manager
+            .monitor_jobs_init()
+            .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
         let timeout = Some(Duration::from_secs(30));
 
         // We need to do this before we reload the systemd daemon, so that the daemon
@@ -193,19 +210,21 @@ pub fn deactivate() -> Result<()> {
         wait_for_jobs(
             &service_manager,
             &job_monitor,
-            stop_services(&service_manager, &old_services)?,
+            stop_services(&service_manager, &old_services),
             &timeout,
-        )?;
+        )
+        // We consider all jobs stopped now..
+        .map_err(|e| ActivationError::with_partial_result(im::HashMap::new(), e))?;
     } else {
         log::info!("No services to deactivate.");
     }
     log::info!("Reloading the systemd daemon...");
-    service_manager.daemon_reload()?;
-
-    serialise_saved_services(&HashMap::new())?;
+    service_manager
+        .daemon_reload()
+        .map_err(|e| ActivationError::with_partial_result(im::HashMap::new(), e))?;
 
     log::info!("Done");
-    Ok(())
+    Ok(im::HashMap::new())
 }
 
 // If we turned the ephemeral systemd system dir under /run into a symlink,
@@ -213,7 +232,7 @@ pub fn deactivate() -> Result<()> {
 // To avoid this, we always check whether this directory exists and is correct,
 // and we recreate it if needed.
 // NOTE: We rely on the fact that the etc files get cleaned up first, before this runs!
-fn restore_ephemeral_system_dir() -> Result<()> {
+fn restore_ephemeral_system_dir() -> anyhow::Result<()> {
     let ephemeral_systemd_system_dir = systemd_system_dir(true);
     if !ephemeral_systemd_system_dir.exists() {
         if ephemeral_systemd_system_dir.is_symlink() {
@@ -224,43 +243,7 @@ fn restore_ephemeral_system_dir() -> Result<()> {
     Ok(())
 }
 
-// TODO: we should probably lock this file to avoid concurrent writes
-fn serialise_saved_services(services: &Services) -> Result<()> {
-    let state_file = Path::new(SYSTEM_MANAGER_STATE_DIR).join(SERVICES_STATE_FILE_NAME);
-    DirBuilder::new()
-        .recursive(true)
-        .create(SYSTEM_MANAGER_STATE_DIR)?;
-
-    log::info!("Writing state info into file: {}", state_file.display());
-    let writer = io::BufWriter::new(fs::File::create(state_file)?);
-    serde_json::to_writer(writer, services)?;
-    Ok(())
-}
-
-fn read_saved_services() -> Result<Services> {
-    let state_file = Path::new(SYSTEM_MANAGER_STATE_DIR).join(SERVICES_STATE_FILE_NAME);
-    DirBuilder::new()
-        .recursive(true)
-        .create(SYSTEM_MANAGER_STATE_DIR)?;
-
-    if Path::new(&state_file).is_file() {
-        log::info!("Reading state info from {}", state_file.display());
-        let reader = io::BufReader::new(fs::File::open(state_file)?);
-        match serde_json::from_reader(reader) {
-            Ok(linked_services) => return Ok(linked_services),
-            Err(e) => {
-                log::error!("Error reading the state file, ignoring.");
-                log::error!("{:?}", e);
-            }
-        }
-    }
-    Ok(HashMap::default())
-}
-
-fn stop_services(
-    service_manager: &systemd::ServiceManager,
-    services: &Services,
-) -> Result<HashSet<JobId>> {
+fn stop_services(service_manager: &systemd::ServiceManager, services: &Services) -> HashSet<JobId> {
     for_each_unit(
         |s| service_manager.stop_unit(s),
         convert_services(services),
@@ -271,7 +254,7 @@ fn stop_services(
 fn reload_services(
     service_manager: &systemd::ServiceManager,
     services: &Services,
-) -> Result<HashSet<JobId>> {
+) -> HashSet<JobId> {
     for_each_unit(
         |s| service_manager.reload_unit(s),
         convert_services(services),
@@ -282,7 +265,7 @@ fn reload_services(
 fn start_units(
     service_manager: &systemd::ServiceManager,
     units: &[systemd::UnitStatus],
-) -> Result<HashSet<JobId>> {
+) -> HashSet<JobId> {
     for_each_unit(
         |unit| service_manager.start_unit(unit),
         convert_units(units),
@@ -301,35 +284,32 @@ fn convert_units(units: &[systemd::UnitStatus]) -> Vec<&str> {
         .collect::<Vec<&str>>()
 }
 
-fn for_each_unit<'a, F, R, S>(action: F, units: S, log_action: &str) -> Result<HashSet<JobId>>
+fn for_each_unit<'a, F, R, S>(action: F, units: S, log_action: &str) -> HashSet<JobId>
 where
-    F: Fn(&str) -> Result<R>,
+    F: Fn(&str) -> anyhow::Result<R>,
     S: AsRef<[&'a str]>,
 {
-    let successful_services: HashSet<JobId> =
-        units
-            .as_ref()
-            .iter()
-            .fold(HashSet::new(), |mut set, unit| match action(unit) {
-                Ok(_) => {
-                    log::info!("Unit {}: {}...", unit, log_action);
-                    set.insert(JobId {
-                        id: (*unit).to_owned(),
-                    });
-                    set
-                }
-                Err(e) => {
-                    log::error!(
-                        "Service {}: error {log_action}, please consult the logs",
-                        unit
-                    );
-                    log::error!("{e}");
-                    set
-                }
-            });
-
     // TODO: do we want to propagate unit failures here in some way?
-    Ok(successful_services)
+    units
+        .as_ref()
+        .iter()
+        .fold(HashSet::new(), |mut set, unit| match action(unit) {
+            Ok(_) => {
+                log::info!("Unit {}: {}...", unit, log_action);
+                set.insert(JobId {
+                    id: (*unit).to_owned(),
+                });
+                set
+            }
+            Err(e) => {
+                log::error!(
+                    "Service {}: error {log_action}, please consult the logs",
+                    unit
+                );
+                log::error!("{e}");
+                set
+            }
+        })
 }
 
 fn wait_for_jobs(
@@ -337,7 +317,7 @@ fn wait_for_jobs(
     job_monitor: &systemd::JobMonitor,
     jobs: HashSet<JobId>,
     timeout: &Option<Duration>,
-) -> Result<()> {
+) -> anyhow::Result<()> {
     if !service_manager.monitor_jobs_finish(job_monitor, timeout, jobs)? {
         anyhow::bail!("Timeout waiting for systemd jobs");
     }

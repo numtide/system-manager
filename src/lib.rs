@@ -13,8 +13,7 @@ pub const PROFILE_DIR: &str = "/nix/var/nix/profiles/system-manager-profiles";
 pub const PROFILE_NAME: &str = "system-manager";
 pub const GCROOT_PATH: &str = "/nix/var/nix/gcroots/system-manager-current";
 pub const SYSTEM_MANAGER_STATE_DIR: &str = "/var/lib/system-manager/state";
-pub const SERVICES_STATE_FILE_NAME: &str = "services.json";
-pub const ETC_STATE_FILE_NAME: &str = "etc-files.json";
+pub const STATE_FILE_NAME: &str = "system-manager-state.json";
 pub const SYSTEM_MANAGER_STATIC_NAME: &str = ".system-manager-static";
 
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]

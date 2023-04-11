@@ -294,8 +294,8 @@ fn check_root() -> Result<()> {
 }
 
 fn handle_toplevel_error<T>(r: Result<T>) -> ExitCode {
-    if r.is_err() {
-        log::error!("{:?}", r);
+    if let Err(e) = r {
+        log::error!("{:?}", e);
         return ExitCode::FAILURE;
     }
     ExitCode::SUCCESS

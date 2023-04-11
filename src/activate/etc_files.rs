@@ -1,6 +1,5 @@
 mod etc_tree;
 
-use anyhow::{anyhow, Result};
 use im::HashMap;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
@@ -10,13 +9,17 @@ use std::path;
 use std::path::{Path, PathBuf};
 use std::{fs, io};
 
+use self::etc_tree::EtcFileStatus;
+use super::ActivationResult;
+use crate::activate::ActivationError;
 use crate::{
     create_link, create_store_link, etc_dir, remove_dir, remove_file, remove_link, StorePath,
-    ETC_STATE_FILE_NAME, SYSTEM_MANAGER_STATE_DIR, SYSTEM_MANAGER_STATIC_NAME,
+    SYSTEM_MANAGER_STATIC_NAME,
 };
-use etc_tree::EtcTree;
 
-use self::etc_tree::EtcFileStatus;
+pub use etc_tree::EtcTree;
+
+type EtcActivationResult = ActivationResult<EtcTree>;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -63,7 +66,7 @@ struct CreatedEtcFile {
     path: PathBuf,
 }
 
-pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
+fn read_config(store_path: &StorePath) -> anyhow::Result<EtcFilesConfig> {
     log::info!("Reading etc file definitions...");
     let file = fs::File::open(
         Path::new(&store_path.store_path)
@@ -73,48 +76,47 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
     let reader = io::BufReader::new(file);
     let config: EtcFilesConfig = serde_json::from_reader(reader)?;
     log::debug!("{config}");
+    Ok(config)
+}
+
+pub fn activate(
+    store_path: &StorePath,
+    old_state: EtcTree,
+    ephemeral: bool,
+) -> EtcActivationResult {
+    let config = read_config(store_path)
+        .map_err(|e| ActivationError::with_partial_result(old_state.clone(), e))?;
 
     let etc_dir = etc_dir(ephemeral);
     log::info!("Creating /etc entries in {}", etc_dir.display());
 
-    DirBuilder::new().recursive(true).create(&etc_dir)?;
-
-    let old_state = EtcTree::from_file(&get_state_file()?)?;
     let initial_state = EtcTree::root_node();
 
-    let (state, status) = create_etc_static_link(
+    let state = create_etc_static_link(
         SYSTEM_MANAGER_STATIC_NAME,
         &config.static_env,
         &etc_dir,
         initial_state,
-    );
-    status?;
+    )?;
 
-    // Create the rest of the links and serialise the resulting state
-    create_etc_links(config.entries.values(), &etc_dir, state, &old_state)
+    // Create the rest of the links
+    let final_state = create_etc_links(config.entries.values(), &etc_dir, state, &old_state)
         .update_state(old_state, &try_delete_path)
-        .unwrap_or_default()
-        .write_to_file(&get_state_file()?)?;
+        .unwrap_or_default();
 
     log::info!("Done");
-    Ok(())
+    Ok(final_state)
 }
 
-pub fn deactivate() -> Result<()> {
-    let state = EtcTree::from_file(&get_state_file()?)?;
-    log::debug!("{:?}", state);
-
-    state
-        .deactivate(&try_delete_path)
-        .unwrap_or_default()
-        .write_to_file(&get_state_file()?)?;
+pub fn deactivate(old_state: EtcTree) -> EtcActivationResult {
+    let final_state = old_state.deactivate(&try_delete_path).unwrap_or_default();
 
     log::info!("Done");
-    Ok(())
+    Ok(final_state)
 }
 
 fn try_delete_path(path: &Path, status: &EtcFileStatus) -> bool {
-    fn do_try_delete(path: &Path, status: &EtcFileStatus) -> Result<()> {
+    fn do_try_delete(path: &Path, status: &EtcFileStatus) -> anyhow::Result<()> {
         // exists() returns false for broken symlinks
         if path.exists() || path.is_symlink() {
             if path.is_symlink() {
@@ -158,12 +160,15 @@ where
     E: Iterator<Item = &'a EtcFile>,
 {
     entries.fold(state, |state, entry| {
-        let (new_state, status) = create_etc_entry(entry, etc_dir, state, old_state);
-        match status {
-            Ok(_) => new_state,
-            Err(e) => {
-                log::error!("Error while creating file in {}: {e}", etc_dir.display());
-                new_state
+        let new_state = create_etc_entry(entry, etc_dir, state, old_state);
+        match new_state {
+            Ok(new_state) => new_state,
+            Err(ActivationError::WithPartialResult { result, source }) => {
+                log::error!(
+                    "Error while creating file in {}: {source:?}",
+                    etc_dir.display()
+                );
+                result
             }
         }
     })
@@ -174,13 +179,15 @@ fn create_etc_static_link(
     store_path: &StorePath,
     etc_dir: &Path,
     state: EtcTree,
-) -> (EtcTree, Result<()>) {
+) -> EtcActivationResult {
     let static_path = etc_dir.join(static_dir_name);
-    let (new_state, status) = create_dir_recursively(static_path.parent().unwrap(), state);
-    match status.and_then(|_| create_store_link(store_path, &static_path)) {
-        Ok(_) => (new_state.register_managed_entry(&static_path), Ok(())),
-        e => (new_state, e),
-    }
+    let new_state = create_dir_recursively(static_path.parent().unwrap(), state);
+    new_state.and_then(|new_state| {
+        create_store_link(store_path, &static_path).map_or_else(
+            |e| Err(ActivationError::with_partial_result(new_state.clone(), e)),
+            |_| Ok(new_state.clone().register_managed_entry(&static_path)),
+        )
+    })
 }
 
 fn create_etc_link<P>(
@@ -188,7 +195,7 @@ fn create_etc_link<P>(
     etc_dir: &Path,
     state: EtcTree,
     old_state: &EtcTree,
-) -> (EtcTree, Result<()>)
+) -> EtcActivationResult
 where
     P: AsRef<Path>,
 {
@@ -199,46 +206,44 @@ where
         state: EtcTree,
         old_state: &EtcTree,
         upwards_path: &Path,
-    ) -> (EtcTree, Result<()>) {
+    ) -> EtcActivationResult {
         let link_path = etc_dir.join(link_target);
         if link_path.is_dir() && absolute_target.is_dir() {
             log::info!("Entering into directory...");
-            (
-                absolute_target
-                    .read_dir()
-                    .expect("Error reading the directory.")
-                    .fold(state, |state, entry| {
-                        let (new_state, status) = go(
-                            &link_target.join(
-                                entry
-                                    .expect("Error reading the directory entry.")
-                                    .file_name(),
-                            ),
-                            etc_dir,
-                            state,
-                            old_state,
-                            &upwards_path.join(".."),
-                        );
-                        if let Err(e) = status {
+            Ok(absolute_target
+                .read_dir()
+                .expect("Error reading the directory.")
+                .fold(state, |state, entry| {
+                    let new_state = go(
+                        &link_target.join(
+                            entry
+                                .expect("Error reading the directory entry.")
+                                .file_name(),
+                        ),
+                        etc_dir,
+                        state,
+                        old_state,
+                        &upwards_path.join(".."),
+                    );
+                    match new_state {
+                        Ok(new_state) => new_state,
+                        Err(ActivationError::WithPartialResult { result, source }) => {
                             log::error!(
-                                "Error while trying to link directory {}: {:?}",
-                                absolute_target.display(),
-                                e
+                                "Error while trying to link directory {}: {source:?}",
+                                absolute_target.display()
                             );
+                            result
                         }
-                        new_state
-                    }),
-                // TODO better error handling
-                Ok(()),
-            )
+                    }
+                }))
         } else {
-            (
+            Err(ActivationError::with_partial_result(
                 state,
-                Err(anyhow!(
+                anyhow::anyhow!(
                     "Unmanaged file or directory {} already exists, ignoring...",
                     link_path.display()
-                )),
-            )
+                ),
+            ))
         }
     }
 
@@ -248,46 +253,42 @@ where
         state: EtcTree,
         old_state: &EtcTree,
         upwards_path: &Path,
-    ) -> (EtcTree, Result<()>) {
+    ) -> EtcActivationResult {
         let link_path = etc_dir.join(link_target);
-        match create_dir_recursively(link_path.parent().unwrap(), state) {
-            (dir_state, Ok(_)) => {
-                let target = upwards_path
-                    .join(SYSTEM_MANAGER_STATIC_NAME)
-                    .join(link_target);
-                let absolute_target = etc_dir.join(SYSTEM_MANAGER_STATIC_NAME).join(link_target);
-                if link_path.exists() && !old_state.is_managed(&link_path) {
-                    link_dir_contents(
-                        link_target,
-                        &absolute_target,
-                        etc_dir,
-                        dir_state,
-                        old_state,
-                        upwards_path,
-                    )
-                } else if link_path.is_symlink()
-                    && link_path.read_link().expect("Error reading link.") == target
-                {
-                    (dir_state.register_managed_entry(&link_path), Ok(()))
-                } else {
-                    let result = if link_path.exists() {
-                        assert!(old_state.is_managed(&link_path));
-                        fs::remove_file(&link_path).map_err(anyhow::Error::from)
-                    } else {
-                        Ok(())
-                    };
+        let dir_state = create_dir_recursively(link_path.parent().unwrap(), state)?;
+        let target = upwards_path
+            .join(SYSTEM_MANAGER_STATIC_NAME)
+            .join(link_target);
+        let absolute_target = etc_dir.join(SYSTEM_MANAGER_STATIC_NAME).join(link_target);
+        if link_path.exists() && !old_state.is_managed(&link_path) {
+            link_dir_contents(
+                link_target,
+                &absolute_target,
+                etc_dir,
+                dir_state,
+                old_state,
+                upwards_path,
+            )
+        } else if link_path.is_symlink()
+            && link_path.read_link().expect("Error reading link.") == target
+        {
+            Ok(dir_state.register_managed_entry(&link_path))
+        } else {
+            let result = if link_path.exists() {
+                assert!(old_state.is_managed(&link_path));
+                fs::remove_file(&link_path)
+                    .map_err(|e| ActivationError::with_partial_result(dir_state.clone(), e))
+            } else {
+                Ok(())
+            };
 
-                    match result.and_then(|_| create_link(&target, &link_path)) {
-                        Ok(_) => (dir_state.register_managed_entry(&link_path), Ok(())),
-                        Err(e) => (
-                            dir_state,
-                            Err(anyhow!(e)
-                                .context(format!("Error creating link: {}", link_path.display()))),
-                        ),
-                    }
-                }
+            match result.and_then(|_| {
+                create_link(&target, &link_path)
+                    .map_err(|e| ActivationError::with_partial_result(dir_state.clone(), e))
+            }) {
+                Ok(_) => Ok(dir_state.register_managed_entry(&link_path)),
+                Err(e) => Err(e),
             }
-            (new_state, e) => (new_state, e),
         }
     }
 
@@ -305,74 +306,83 @@ fn create_etc_entry(
     etc_dir: &Path,
     state: EtcTree,
     old_state: &EtcTree,
-) -> (EtcTree, Result<()>) {
+) -> EtcActivationResult {
     if entry.mode == "symlink" {
         if let Some(path::Component::Normal(link_target)) = entry.target.components().next() {
             create_etc_link(&link_target, etc_dir, state, old_state)
         } else {
-            (
+            Err(ActivationError::with_partial_result(
                 state,
-                Err(anyhow!("Cannot create link: {}", entry.target.display(),)),
-            )
+                anyhow::anyhow!("Cannot create link: {}", entry.target.display()),
+            ))
         }
     } else {
         let target_path = etc_dir.join(&entry.target);
-        let (new_state, status) = create_dir_recursively(target_path.parent().unwrap(), state);
-        match status.and_then(|_| {
-            copy_file(
-                &entry.source.store_path.join(&entry.target),
-                &target_path,
-                &entry.mode,
-                old_state,
-            )
-        }) {
-            Ok(_) => (new_state.register_managed_entry(&target_path), Ok(())),
-            e => (new_state, e),
+        let new_state = create_dir_recursively(target_path.parent().unwrap(), state)?;
+        match copy_file(
+            &entry.source.store_path.join(&entry.target),
+            &target_path,
+            &entry.mode,
+            old_state,
+        ) {
+            Ok(_) => Ok(new_state.register_managed_entry(&target_path)),
+            Err(e) => Err(ActivationError::with_partial_result(new_state, e)),
         }
     }
 }
 
-fn create_dir_recursively(dir: &Path, state: EtcTree) -> (EtcTree, Result<()>) {
+fn create_dir_recursively(dir: &Path, state: EtcTree) -> EtcActivationResult {
     use itertools::FoldWhile::{Continue, Done};
     use path::Component;
 
     let dirbuilder = DirBuilder::new();
-    let (new_state, _, status) = dir
+    let (new_state, _) = dir
         .components()
         .fold_while(
-            (state, PathBuf::from(path::MAIN_SEPARATOR_STR), Ok(())),
-            |(state, path, _), component| match component {
-                Component::RootDir => Continue((state, path, Ok(()))),
-                Component::Normal(dir) => {
+            (Ok(state), PathBuf::from(path::MAIN_SEPARATOR_STR)),
+            |(state, path), component| match (state, component) {
+                (Ok(state), Component::RootDir) => Continue((Ok(state), path)),
+                (Ok(state), Component::Normal(dir)) => {
                     let new_path = path.join(dir);
                     if !new_path.exists() {
                         log::debug!("Creating path: {}", new_path.display());
                         match dirbuilder.create(&new_path) {
                             Ok(_) => {
                                 let new_state = state.register_managed_entry(&new_path);
-                                Continue((new_state, new_path, Ok(())))
+                                Continue((Ok(new_state), new_path))
                             }
-                            Err(e) => Done((state, path, Err(anyhow!(e)))),
+                            Err(e) => Done((
+                                Err(ActivationError::with_partial_result(
+                                    state,
+                                    anyhow::anyhow!(e).context(format!(
+                                        "Error creating directory {}",
+                                        new_path.display()
+                                    )),
+                                )),
+                                path,
+                            )),
                         }
                     } else {
-                        Continue((state, new_path, Ok(())))
+                        Continue((Ok(state), new_path))
                     }
                 }
-                otherwise => Done((
-                    state,
-                    path,
-                    Err(anyhow!(
-                        "Unexpected path component encountered: {:?}",
-                        otherwise
+                (Ok(state), otherwise) => Done((
+                    Err(ActivationError::with_partial_result(
+                        state,
+                        anyhow::anyhow!("Unexpected path component encountered: {:?}", otherwise),
                     )),
+                    path,
                 )),
+                (Err(e), _) => {
+                    panic!("Something went horribly wrong! We should not get here: {e:?}.")
+                }
             },
         )
         .into_inner();
-    (new_state, status)
+    new_state
 }
 
-fn copy_file(source: &Path, target: &Path, mode: &str, old_state: &EtcTree) -> Result<()> {
+fn copy_file(source: &Path, target: &Path, mode: &str, old_state: &EtcTree) -> anyhow::Result<()> {
     let exists = target.try_exists()?;
     if !exists || old_state.is_managed(target) {
         log::debug!(
@@ -387,12 +397,4 @@ fn copy_file(source: &Path, target: &Path, mode: &str, old_state: &EtcTree) -> R
     } else {
         anyhow::bail!("File {} already exists, ignoring.", target.display());
     }
-}
-
-fn get_state_file() -> Result<PathBuf> {
-    let state_file = Path::new(SYSTEM_MANAGER_STATE_DIR).join(ETC_STATE_FILE_NAME);
-    DirBuilder::new()
-        .recursive(true)
-        .create(SYSTEM_MANAGER_STATE_DIR)?;
-    Ok(state_file)
 }
