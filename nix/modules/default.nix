@@ -6,63 +6,109 @@
   imports = [
     ./etc.nix
     ./systemd.nix
+    ./upstream/nixpkgs
   ];
 
-  options = {
+  options =
+    let
+      inherit (lib) types;
+    in
+    {
 
-    nixpkgs = {
-      # TODO: switch to lib.systems.parsedPlatform
-      hostPlatform = lib.mkOption {
-        type = lib.types.str;
-        example = "x86_64-linux";
+      nixpkgs = {
+        # TODO: switch to lib.systems.parsedPlatform
+        hostPlatform = lib.mkOption {
+          type = types.str;
+          example = "x86_64-linux";
+        };
       };
-    };
 
-    assertions = lib.mkOption {
-      type = lib.types.listOf lib.types.unspecified;
-      internal = true;
-      default = [ ];
-      example = [{ assertion = false; message = "you can't enable this for that reason"; }];
-      description = lib.mdDoc ''
-        This option allows modules to express conditions that must
-        hold for the evaluation of the system configuration to
-        succeed, along with associated error messages for the user.
-      '';
-    };
+      assertions = lib.mkOption {
+        type = types.listOf types.unspecified;
+        internal = true;
+        default = [ ];
+        example = [{ assertion = false; message = "you can't enable this for that reason"; }];
+        description = lib.mdDoc ''
+          This option allows modules to express conditions that must
+          hold for the evaluation of the system configuration to
+          succeed, along with associated error messages for the user.
+        '';
+      };
 
-    warnings = lib.mkOption {
-      internal = true;
-      default = [ ];
-      type = lib.types.listOf lib.types.str;
-      example = [ "The `foo' service is deprecated and will go away soon!" ];
-      description = lib.mdDoc ''
-        This option allows modules to show warnings to users during
-        the evaluation of the system configuration.
-      '';
-    };
+      warnings = lib.mkOption {
+        internal = true;
+        default = [ ];
+        type = types.listOf types.str;
+        example = [ "The `foo' service is deprecated and will go away soon!" ];
+        description = lib.mdDoc ''
+          This option allows modules to show warnings to users during
+          the evaluation of the system configuration.
+        '';
+      };
 
-    system-manager = {
-      allowAnyDistro = lib.mkEnableOption "the usage of system-manager on untested distributions";
+      # Statically assigned UIDs and GIDs.
+      # Ideally we use DynamicUser as much as possible to avoid the need for these.
+      ids = {
+        uids = lib.mkOption {
+          internal = true;
+          description = lib.mdDoc ''
+            The user IDs used by system-manager.
+          '';
+          type = types.attrsOf types.int;
+        };
 
-      preActivationAssertions = lib.mkOption {
-        type = with lib.types; attrsOf (submodule ({ name, ... }: {
-          options = {
-            enable = lib.mkEnableOption "the assertion";
+        gids = lib.mkOption {
+          internal = true;
+          description = lib.mdDoc ''
+            The group IDs used by system-manager.
+          '';
+          type = types.attrsOf types.int;
+        };
+      };
 
-            name = lib.mkOption {
-              type = lib.types.str;
-              default = name;
-            };
-
-            script = lib.mkOption {
-              type = lib.types.str;
-            };
-          };
-        }));
+      # No-op option for now.
+      # TODO: should we include the settings in /etc/logrotate.d ?
+      services.logrotate = lib.mkOption {
+        internal = true;
         default = { };
+        type = types.freeform;
+      };
+
+      # No-op option for now.
+      users = lib.mkOption {
+        internal = true;
+        default = { };
+        type = types.freeform;
+      };
+
+      networking = {
+        enableIPv6 = lib.mkEnableOption "IPv6" // {
+          default = true;
+        };
+      };
+
+      system-manager = {
+        allowAnyDistro = lib.mkEnableOption "the usage of system-manager on untested distributions";
+
+        preActivationAssertions = lib.mkOption {
+          type = with lib.types; attrsOf (submodule ({ name, ... }: {
+            options = {
+              enable = lib.mkEnableOption "the assertion";
+
+              name = lib.mkOption {
+                type = types.str;
+                default = name;
+              };
+
+              script = lib.mkOption {
+                type = types.str;
+              };
+            };
+          }));
+          default = { };
+        };
       };
     };
-  };
 
   config = {
     system-manager.preActivationAssertions = {
