@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use std::{fs, io, process};
 use thiserror::Error;
 
-use crate::activate::etc_files::EtcTree;
+use crate::activate::etc_files::FileTree;
 use crate::{StorePath, STATE_FILE_NAME, SYSTEM_MANAGER_STATE_DIR};
 
 #[derive(Error, Debug)]
@@ -34,7 +34,7 @@ pub type ActivationResult<R> = Result<R, ActivationError<R>>;
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct State {
-    etc_tree: EtcTree,
+    file_tree: FileTree,
     services: services::Services,
 }
 
@@ -78,15 +78,18 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
 
     log::info!("Activating etc files...");
 
-    match etc_files::activate(store_path, old_state.etc_tree, ephemeral) {
+    match etc_files::activate(store_path, old_state.file_tree, ephemeral) {
         Ok(etc_tree) => {
             log::info!("Activating systemd services...");
             match services::activate(store_path, old_state.services, ephemeral) {
-                Ok(services) => State { etc_tree, services },
+                Ok(services) => State {
+                    file_tree: etc_tree,
+                    services,
+                },
                 Err(ActivationError::WithPartialResult { result, source }) => {
                     log::error!("Error during activation: {source:?}");
                     State {
-                        etc_tree,
+                        file_tree: etc_tree,
                         services: result,
                     }
                 }
@@ -95,7 +98,7 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
         Err(ActivationError::WithPartialResult { result, source }) => {
             log::error!("Error during activation: {source:?}");
             State {
-                etc_tree: result,
+                file_tree: result,
                 ..old_state
             }
         }
@@ -111,15 +114,18 @@ pub fn deactivate() -> Result<()> {
     let old_state = State::from_file(state_file)?;
     log::debug!("{old_state:?}");
 
-    match etc_files::deactivate(old_state.etc_tree) {
+    match etc_files::deactivate(old_state.file_tree) {
         Ok(etc_tree) => {
             log::info!("Deactivating systemd services...");
             match services::deactivate(old_state.services) {
-                Ok(services) => State { etc_tree, services },
+                Ok(services) => State {
+                    file_tree: etc_tree,
+                    services,
+                },
                 Err(ActivationError::WithPartialResult { result, source }) => {
                     log::error!("Error during deactivation: {source:?}");
                     State {
-                        etc_tree,
+                        file_tree: etc_tree,
                         services: result,
                     }
                 }
@@ -128,7 +134,7 @@ pub fn deactivate() -> Result<()> {
         Err(ActivationError::WithPartialResult { result, source }) => {
             log::error!("Error during deactivation: {source:?}");
             State {
-                etc_tree: result,
+                file_tree: result,
                 ..old_state
             }
         }

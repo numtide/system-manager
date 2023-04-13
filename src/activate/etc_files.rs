@@ -9,7 +9,7 @@ use std::path;
 use std::path::{Path, PathBuf};
 use std::{fs, io};
 
-use self::etc_tree::EtcFileStatus;
+use self::etc_tree::FileStatus;
 use super::ActivationResult;
 use crate::activate::ActivationError;
 use crate::{
@@ -17,9 +17,9 @@ use crate::{
     SYSTEM_MANAGER_STATIC_NAME,
 };
 
-pub use etc_tree::EtcTree;
+pub use etc_tree::FileTree;
 
-type EtcActivationResult = ActivationResult<EtcTree>;
+type EtcActivationResult = ActivationResult<FileTree>;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -81,7 +81,7 @@ fn read_config(store_path: &StorePath) -> anyhow::Result<EtcFilesConfig> {
 
 pub fn activate(
     store_path: &StorePath,
-    old_state: EtcTree,
+    old_state: FileTree,
     ephemeral: bool,
 ) -> EtcActivationResult {
     let config = read_config(store_path)
@@ -90,7 +90,7 @@ pub fn activate(
     let etc_dir = etc_dir(ephemeral);
     log::info!("Creating /etc entries in {}", etc_dir.display());
 
-    let initial_state = EtcTree::root_node();
+    let initial_state = FileTree::root_node();
 
     let state = create_etc_static_link(
         SYSTEM_MANAGER_STATIC_NAME,
@@ -108,15 +108,15 @@ pub fn activate(
     Ok(final_state)
 }
 
-pub fn deactivate(old_state: EtcTree) -> EtcActivationResult {
+pub fn deactivate(old_state: FileTree) -> EtcActivationResult {
     let final_state = old_state.deactivate(&try_delete_path).unwrap_or_default();
 
     log::info!("Done");
     Ok(final_state)
 }
 
-fn try_delete_path(path: &Path, status: &EtcFileStatus) -> bool {
-    fn do_try_delete(path: &Path, status: &EtcFileStatus) -> anyhow::Result<()> {
+fn try_delete_path(path: &Path, status: &FileStatus) -> bool {
+    fn do_try_delete(path: &Path, status: &FileStatus) -> anyhow::Result<()> {
         // exists() returns false for broken symlinks
         if path.exists() || path.is_symlink() {
             if path.is_symlink() {
@@ -127,7 +127,7 @@ fn try_delete_path(path: &Path, status: &EtcFileStatus) -> bool {
                 if path.read_dir()?.next().is_none() {
                     remove_dir(path)
                 } else {
-                    if let EtcFileStatus::Managed = status {
+                    if let FileStatus::Managed = status {
                         log::warn!("Managed directory not empty, ignoring: {}", path.display());
                     }
                     Ok(())
@@ -153,9 +153,9 @@ fn try_delete_path(path: &Path, status: &EtcFileStatus) -> bool {
 fn create_etc_links<'a, E>(
     entries: E,
     etc_dir: &Path,
-    state: EtcTree,
-    old_state: &EtcTree,
-) -> EtcTree
+    state: FileTree,
+    old_state: &FileTree,
+) -> FileTree
 where
     E: Iterator<Item = &'a EtcFile>,
 {
@@ -178,7 +178,7 @@ fn create_etc_static_link(
     static_dir_name: &str,
     store_path: &StorePath,
     etc_dir: &Path,
-    state: EtcTree,
+    state: FileTree,
 ) -> EtcActivationResult {
     let static_path = etc_dir.join(static_dir_name);
     let new_state = create_dir_recursively(static_path.parent().unwrap(), state);
@@ -193,8 +193,8 @@ fn create_etc_static_link(
 fn create_etc_link<P>(
     link_target: &P,
     etc_dir: &Path,
-    state: EtcTree,
-    old_state: &EtcTree,
+    state: FileTree,
+    old_state: &FileTree,
 ) -> EtcActivationResult
 where
     P: AsRef<Path>,
@@ -203,13 +203,13 @@ where
         link_target: &Path,
         absolute_target: &Path,
         etc_dir: &Path,
-        state: EtcTree,
-        old_state: &EtcTree,
+        state: FileTree,
+        old_state: &FileTree,
         upwards_path: &Path,
     ) -> EtcActivationResult {
         let link_path = etc_dir.join(link_target);
         if link_path.is_dir() && absolute_target.is_dir() {
-            log::info!("Entering into directory...");
+            log::debug!("Entering into directory {}...", link_path.display());
             Ok(absolute_target
                 .read_dir()
                 .expect("Error reading the directory.")
@@ -250,8 +250,8 @@ where
     fn go(
         link_target: &Path,
         etc_dir: &Path,
-        state: EtcTree,
-        old_state: &EtcTree,
+        state: FileTree,
+        old_state: &FileTree,
         upwards_path: &Path,
     ) -> EtcActivationResult {
         let link_path = etc_dir.join(link_target);
@@ -272,6 +272,7 @@ where
         } else if link_path.is_symlink()
             && link_path.read_link().expect("Error reading link.") == target
         {
+            log::debug!("Link {} up to date.", link_path.display());
             Ok(dir_state.register_managed_entry(&link_path))
         } else {
             let result = if link_path.exists() {
@@ -304,8 +305,8 @@ where
 fn create_etc_entry(
     entry: &EtcFile,
     etc_dir: &Path,
-    state: EtcTree,
-    old_state: &EtcTree,
+    state: FileTree,
+    old_state: &FileTree,
 ) -> EtcActivationResult {
     if entry.mode == "symlink" {
         if let Some(path::Component::Normal(link_target)) = entry.target.components().next() {
@@ -331,7 +332,7 @@ fn create_etc_entry(
     }
 }
 
-fn create_dir_recursively(dir: &Path, state: EtcTree) -> EtcActivationResult {
+fn create_dir_recursively(dir: &Path, state: FileTree) -> EtcActivationResult {
     use itertools::FoldWhile::{Continue, Done};
     use path::Component;
 
@@ -382,7 +383,7 @@ fn create_dir_recursively(dir: &Path, state: EtcTree) -> EtcActivationResult {
     new_state
 }
 
-fn copy_file(source: &Path, target: &Path, mode: &str, old_state: &EtcTree) -> anyhow::Result<()> {
+fn copy_file(source: &Path, target: &Path, mode: &str, old_state: &FileTree) -> anyhow::Result<()> {
     let exists = target.try_exists()?;
     if !exists || old_state.is_managed(target) {
         log::debug!(

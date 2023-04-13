@@ -201,7 +201,8 @@ impl ServiceManager {
         let total_jobs = waiting_for.len();
 
         if total_jobs > 0 {
-            log::info!("Waiting for jobs to finish... (0/{})", total_jobs);
+            log::info!("Waiting for jobs to finish...");
+            log::debug!("Waiting for jobs to finish... (0/{})", total_jobs);
         }
 
         while !waiting_for.is_empty() {
@@ -218,7 +219,7 @@ impl ServiceManager {
                 waiting_for = waiting_for.relative_complement(job_names.clone());
                 *job_names = im::HashSet::new();
                 if !waiting_for.is_empty() {
-                    log::info!(
+                    log::debug!(
                         "Waiting for jobs to finish... ({}/{})",
                         total_jobs - waiting_for.len(),
                         total_jobs

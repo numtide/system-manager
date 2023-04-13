@@ -295,7 +295,7 @@ where
         .iter()
         .fold(HashSet::new(), |mut set, unit| match action(unit) {
             Ok(_) => {
-                log::info!("Unit {}: {}...", unit, log_action);
+                log::debug!("Unit {}: {}...", unit, log_action);
                 set.insert(JobId {
                     id: (*unit).to_owned(),
                 });

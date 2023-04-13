@@ -7,14 +7,14 @@ use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub enum EtcFileStatus {
+pub enum FileStatus {
     Managed,
     Unmanaged,
 }
 
-impl EtcFileStatus {
+impl FileStatus {
     fn merge(&self, other: &Self) -> Self {
-        use EtcFileStatus::*;
+        use FileStatus::*;
 
         match (self, other) {
             (Unmanaged, Unmanaged) => Unmanaged,
@@ -25,22 +25,22 @@ impl EtcFileStatus {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct EtcTree {
-    status: EtcFileStatus,
+pub struct FileTree {
+    status: FileStatus,
     path: PathBuf,
     // TODO directories and files are now both represented as a string associated with a nested
     // map. For files the nested map is simple empty.
     // We could potentially optimise this.
-    nested: HashMap<String, EtcTree>,
+    nested: HashMap<String, FileTree>,
 }
 
-impl AsRef<EtcTree> for EtcTree {
-    fn as_ref(&self) -> &EtcTree {
+impl AsRef<FileTree> for FileTree {
+    fn as_ref(&self) -> &FileTree {
         self
     }
 }
 
-impl Default for EtcTree {
+impl Default for FileTree {
     fn default() -> Self {
         Self::root_node()
     }
@@ -56,12 +56,12 @@ impl Default for EtcTree {
 /// 3. Import from a file
 /// 4. Add a path to the tree, that will from then on be considered as managed
 /// 5.
-impl EtcTree {
+impl FileTree {
     fn new(path: PathBuf) -> Self {
-        Self::with_status(path, EtcFileStatus::Unmanaged)
+        Self::with_status(path, FileStatus::Unmanaged)
     }
 
-    fn with_status(path: PathBuf, status: EtcFileStatus) -> Self {
+    fn with_status(path: PathBuf, status: FileStatus) -> Self {
         Self {
             status,
             path,
@@ -73,8 +73,8 @@ impl EtcTree {
         Self::new(PathBuf::from(path::MAIN_SEPARATOR_STR))
     }
 
-    pub fn get_status<'a>(&'a self, path: &Path) -> &'a EtcFileStatus {
-        fn go<'a, 'b, C>(tree: &'a EtcTree, mut components: C, path: &Path) -> &'a EtcFileStatus
+    pub fn get_status<'a>(&'a self, path: &Path) -> &'a FileStatus {
+        fn go<'a, 'b, C>(tree: &'a FileTree, mut components: C, path: &Path) -> &'a FileStatus
         where
             C: Iterator<Item = path::Component<'b>>,
         {
@@ -84,7 +84,7 @@ impl EtcTree {
                         .nested
                         .get(name.to_string_lossy().as_ref())
                         .map(|subtree| go(subtree, components, path))
-                        .unwrap_or(&EtcFileStatus::Unmanaged),
+                        .unwrap_or(&FileStatus::Unmanaged),
                     path::Component::RootDir => go(tree, components, path),
                     _ => todo!(),
                 }
@@ -97,13 +97,13 @@ impl EtcTree {
     }
 
     pub fn is_managed(&self, path: &Path) -> bool {
-        *self.get_status(path) == EtcFileStatus::Managed
+        *self.get_status(path) == FileStatus::Managed
     }
 
     // TODO is recursion OK here?
     // Should we convert to CPS and use a crate like tramp to TCO this?
     pub fn register_managed_entry(self, path: &Path) -> Self {
-        fn go<'a, C>(mut tree: EtcTree, mut components: Peekable<C>, path: PathBuf) -> EtcTree
+        fn go<'a, C>(mut tree: FileTree, mut components: Peekable<C>, path: PathBuf) -> FileTree
         where
             C: Iterator<Item = path::Component<'a>>,
         {
@@ -115,16 +115,14 @@ impl EtcTree {
                             |maybe_subtree| {
                                 Some(go(
                                     maybe_subtree.unwrap_or_else(|| {
-                                        EtcTree::with_status(
+                                        FileTree::with_status(
                                             new_path.to_owned(),
                                             // We only label as managed the final path entry,
                                             // to label intermediate nodes as managed, we should
                                             // call this function for every one of them separately.
-                                            components
-                                                .peek()
-                                                .map_or(EtcFileStatus::Managed, |_| {
-                                                    EtcFileStatus::Unmanaged
-                                                }),
+                                            components.peek().map_or(FileStatus::Managed, |_| {
+                                                FileStatus::Unmanaged
+                                            }),
                                         )
                                     }),
                                     components,
@@ -151,9 +149,9 @@ impl EtcTree {
         go(self, path.components().peekable(), PathBuf::new())
     }
 
-    pub fn deactivate<F>(self, delete_action: &F) -> Option<EtcTree>
+    pub fn deactivate<F>(self, delete_action: &F) -> Option<FileTree>
     where
-        F: Fn(&Path, &EtcFileStatus) -> bool,
+        F: Fn(&Path, &FileStatus) -> bool,
     {
         let new_tree = self.nested.keys().fold(self.clone(), |mut new_tree, name| {
             new_tree.nested = new_tree.nested.alter(
@@ -168,7 +166,7 @@ impl EtcTree {
         // are not responsible for cleaning them up (we don't run the delete_action
         // closure on their paths).
         if new_tree.nested.is_empty() {
-            if let EtcFileStatus::Managed = new_tree.status {
+            if let FileStatus::Managed = new_tree.status {
                 if delete_action(&new_tree.path, &new_tree.status) {
                     None
                 } else {
@@ -184,7 +182,7 @@ impl EtcTree {
 
     pub fn update_state<F>(self, other: Self, delete_action: &F) -> Option<Self>
     where
-        F: Fn(&Path, &EtcFileStatus) -> bool,
+        F: Fn(&Path, &FileStatus) -> bool,
     {
         let to_deactivate = other
             .nested
@@ -225,7 +223,7 @@ impl EtcTree {
 
         // If our invariants are properly maintained, then we should never end up
         // here with dangling unmanaged nodes.
-        debug_assert!(!merged.nested.is_empty() || merged.status == EtcFileStatus::Managed);
+        debug_assert!(!merged.nested.is_empty() || merged.status == FileStatus::Managed);
 
         Some(merged)
     }
@@ -236,20 +234,20 @@ mod tests {
     use super::*;
     use itertools::Itertools;
 
-    impl EtcTree {
+    impl FileTree {
         pub fn deactivate_managed_entry<F>(self, path: &Path, delete_action: &F) -> Self
         where
-            F: Fn(&Path, &EtcFileStatus) -> bool,
+            F: Fn(&Path, &FileStatus) -> bool,
         {
             fn go<'a, C, F>(
-                mut tree: EtcTree,
+                mut tree: FileTree,
                 path: PathBuf,
                 mut components: Peekable<C>,
                 delete_action: &F,
-            ) -> EtcTree
+            ) -> FileTree
             where
                 C: Iterator<Item = path::Component<'a>>,
-                F: Fn(&Path, &EtcFileStatus) -> bool,
+                F: Fn(&Path, &FileStatus) -> bool,
             {
                 log::debug!("Deactivating {}", path.display());
 
@@ -296,8 +294,8 @@ mod tests {
     }
 
     #[test]
-    fn etc_tree_get_status() {
-        let tree1 = EtcTree::root_node()
+    fn get_status() {
+        let tree1 = FileTree::root_node()
             .register_managed_entry(&PathBuf::from("/").join("foo").join("bar"))
             .register_managed_entry(&PathBuf::from("/").join("foo2"))
             .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz"))
@@ -319,8 +317,8 @@ mod tests {
     }
 
     #[test]
-    fn etc_tree_register() {
-        let tree = EtcTree::root_node()
+    fn register() {
+        let tree = FileTree::root_node()
             .register_managed_entry(&PathBuf::from("/").join("foo").join("bar"))
             .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz").join("bar"))
             .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz2").join("bar"));
@@ -345,8 +343,8 @@ mod tests {
     }
 
     #[test]
-    fn etc_tree_deactivate() {
-        let tree1 = EtcTree::root_node()
+    fn deactivate() {
+        let tree1 = FileTree::root_node()
             .register_managed_entry(&PathBuf::from("/").join("foo").join("bar"))
             .register_managed_entry(&PathBuf::from("/").join("foo2"))
             .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz"))
@@ -406,8 +404,8 @@ mod tests {
     }
 
     #[test]
-    fn etc_tree_update_state() {
-        let tree1 = EtcTree::root_node()
+    fn update_state() {
+        let tree1 = FileTree::root_node()
             .register_managed_entry(&PathBuf::from("/").join("foo").join("bar"))
             .register_managed_entry(&PathBuf::from("/").join("foo2"))
             .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz"))
@@ -415,7 +413,7 @@ mod tests {
             .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz2"))
             .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz2").join("bar"))
             .register_managed_entry(&PathBuf::from("/").join("foo3").join("baz2").join("bar"));
-        let tree2 = EtcTree::root_node()
+        let tree2 = FileTree::root_node()
             .register_managed_entry(&PathBuf::from("/").join("foo").join("bar"))
             .register_managed_entry(&PathBuf::from("/").join("foo3").join("bar"))
             .register_managed_entry(&PathBuf::from("/").join("foo4"))
