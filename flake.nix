@@ -52,7 +52,7 @@
     {
       lib = import ./nix/lib.nix {
         inherit nixpkgs self;
-        nixosModules = "${nixpkgs}/nixos";
+        nixos = "${nixpkgs}/nixos";
       };
     }
     //

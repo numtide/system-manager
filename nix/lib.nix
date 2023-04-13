@@ -1,6 +1,6 @@
-{ nixpkgs      # The nixpkgs flake
-, self         # The system-manager flake
-, nixosModules # The path to the nixos modules dir from nixpkgs
+{ nixpkgs   # The nixpkgs flake
+, self      # The system-manager flake
+, nixos     # The path to the nixos dir from nixpkgs
 ,
 }:
 let
@@ -20,13 +20,14 @@ in
       extraArgsModule = { lib, config, pkgs, ... }: {
         _module.args = {
           pkgs = nixpkgs.legacyPackages.${system};
-          utils = import "${nixosModules}/lib/utils.nix" {
+          utils = import "${nixos}/lib/utils.nix" {
             inherit lib config pkgs;
           };
         };
       };
 
       config = (lib.evalModules {
+        specialArgs = { nixosModulesPath = "${nixos}/modules"; } // extraSpecialArgs;
         modules = [
           extraArgsModule
           ./modules
