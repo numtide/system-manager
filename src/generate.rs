@@ -115,15 +115,12 @@ fn try_flake_attr(flake: &str, attr: &str) -> Result<bool> {
 fn get_store_path(nix_build_result: process::Output) -> Result<StorePath> {
     if nix_build_result.status.success() {
         String::from_utf8(nix_build_result.stdout)
-            .map_err(anyhow::Error::from)
+            .map_err(|e| anyhow::anyhow!(e).context("Error reading nix build output."))
             .and_then(parse_nix_build_output)
     } else {
         String::from_utf8(nix_build_result.stderr)
             .map_err(anyhow::Error::from)
-            .and_then(|e| {
-                log::error!("{e}");
-                anyhow::bail!("Nix build failed.")
-            })
+            .and_then(|e| Err(anyhow::anyhow!(e).context("Nix build failed.")))
     }
 }
 

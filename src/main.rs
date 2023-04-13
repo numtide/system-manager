@@ -183,13 +183,22 @@ fn do_generate(
     use_remote_sudo: bool,
 ) -> Result<()> {
     if let Some(target_host) = target_host {
-        invoke_remote_script(
+        let status = invoke_remote_script(
             &store_path.store_path,
             "register-profile",
             target_host,
             use_remote_sudo,
         )?;
-        Ok(())
+        if status.success() {
+            Ok(())
+        } else {
+            anyhow::bail!(
+                "Remote command exited with exit status {}",
+                status
+                    .code()
+                    .map_or("unknown".to_string(), |c| c.to_string())
+            )
+        }
     } else {
         check_root()?;
         system_manager::generate::generate(store_path)
@@ -256,10 +265,10 @@ fn do_copy_closure(store_path: &StorePath, target_host: &str) -> Result<()> {
         .status()?;
     if status.success() {
         log::info!("Successfully copied closure to target host");
+        Ok(())
     } else {
-        log::error!("Error copying closure, {}", status);
+        anyhow::bail!("Error copying closure, {}", status);
     }
-    Ok(())
 }
 
 fn invoke_remote_script(
