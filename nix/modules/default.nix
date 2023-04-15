@@ -6,6 +6,7 @@
   imports = [
     ./etc.nix
     ./systemd.nix
+    ./tmpfiles.nix
     ./upstream/nixpkgs
   ];
 
