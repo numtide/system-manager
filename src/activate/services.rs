@@ -66,7 +66,7 @@ pub fn activate(
     wait_for_jobs(
         &service_manager,
         &job_monitor,
-        stop_services(&service_manager, &services_to_stop),
+        stop_services(&service_manager, convert_services(&services_to_stop)),
         &timeout,
     )
     .map_err(|e| ActivationError::with_partial_result(services.clone(), e))?;
@@ -78,46 +78,17 @@ pub fn activate(
         .daemon_reload()
         .map_err(|e| ActivationError::with_partial_result(services.clone(), e))?;
 
-    let active_targets = get_active_targets(&service_manager)
-        .map_err(|e| ActivationError::with_partial_result(services.clone(), e))?;
-
     wait_for_jobs(
         &service_manager,
         &job_monitor,
-        reload_services(&service_manager, &services_to_reload)
-            + start_units(&service_manager, &active_targets),
+        reload_units(&service_manager, convert_services(&services_to_reload))
+            + start_units(&service_manager, ["system-manager.target"]),
         &timeout,
     )
     .map_err(|e| ActivationError::with_partial_result(services.clone(), e))?;
 
     log::info!("Done");
     Ok(services)
-}
-
-fn get_active_targets(
-    service_manager: &systemd::ServiceManager,
-) -> anyhow::Result<Vec<systemd::UnitStatus>> {
-    // We exclude some targets that we do not want to start
-    let excluded_targets: HashSet<String> =
-        ["suspend.target", "hibernate.target", "hybrid-sleep.target"]
-            .iter()
-            .map(ToOwned::to_owned)
-            .collect();
-    Ok(service_manager
-        .list_units_by_patterns(&["active", "activating"], &[])?
-        .into_iter()
-        .filter(|unit| {
-            unit.name.ends_with(".target")
-                && !excluded_targets.contains(&unit.name)
-                && !service_manager
-                    .unit_manager(unit)
-                    .refuse_manual_start()
-                    .unwrap_or_else(|e| {
-                        log::error!("Error communicating with DBus: {}", e);
-                        true
-                    })
-        })
-        .collect())
 }
 
 fn get_services_to_reload(services: Services, old_services: Services) -> Services {
@@ -203,12 +174,14 @@ pub fn deactivate(old_services: Services) -> ServiceActivationResult {
             .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
         let timeout = Some(Duration::from_secs(30));
 
+        let mut units_to_stop = convert_services(&old_services);
+        units_to_stop.push("system-manager.target");
         // We need to do this before we reload the systemd daemon, so that the daemon
         // still knows about these units.
         wait_for_jobs(
             &service_manager,
             &job_monitor,
-            stop_services(&service_manager, &old_services),
+            stop_services(&service_manager, units_to_stop),
             &timeout,
         )
         // We consider all jobs stopped now..
@@ -241,45 +214,37 @@ fn restore_ephemeral_system_dir() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn stop_services(service_manager: &systemd::ServiceManager, services: &Services) -> HashSet<JobId> {
-    for_each_unit(
-        |s| service_manager.stop_unit(s),
-        convert_services(services),
-        "stopping",
-    )
+fn stop_services<'a, U>(service_manager: &systemd::ServiceManager, units: U) -> HashSet<JobId>
+where
+    U: AsRef<[&'a str]>,
+{
+    for_each_unit(|s| service_manager.stop_unit(s), units.as_ref(), "stopping")
 }
 
-fn reload_services(
-    service_manager: &systemd::ServiceManager,
-    services: &Services,
-) -> HashSet<JobId> {
+fn reload_units<'a, U>(service_manager: &systemd::ServiceManager, units: U) -> HashSet<JobId>
+where
+    U: AsRef<[&'a str]>,
+{
     for_each_unit(
         |s| service_manager.reload_unit(s),
-        convert_services(services),
+        units.as_ref(),
         "reloading",
     )
 }
 
-fn start_units(
-    service_manager: &systemd::ServiceManager,
-    units: &[systemd::UnitStatus],
-) -> HashSet<JobId> {
+fn start_units<'a, U>(service_manager: &systemd::ServiceManager, units: U) -> HashSet<JobId>
+where
+    U: AsRef<[&'a str]>,
+{
     for_each_unit(
         |unit| service_manager.start_unit(unit),
-        convert_units(units),
-        "restarting",
+        units.as_ref(),
+        "starting",
     )
 }
 
 fn convert_services(services: &Services) -> Vec<&str> {
     services.keys().map(AsRef::as_ref).collect::<Vec<&str>>()
-}
-
-fn convert_units(units: &[systemd::UnitStatus]) -> Vec<&str> {
-    units
-        .iter()
-        .map(|unit| unit.name.as_ref())
-        .collect::<Vec<&str>>()
 }
 
 fn for_each_unit<'a, F, R, S>(action: F, units: S, log_action: &str) -> HashSet<JobId>

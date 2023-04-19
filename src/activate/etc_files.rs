@@ -208,43 +208,35 @@ where
         upwards_path: &Path,
     ) -> EtcActivationResult {
         let link_path = etc_dir.join(link_target);
-        if link_path.is_dir() && absolute_target.is_dir() {
-            log::debug!("Entering into directory {}...", link_path.display());
-            Ok(absolute_target
-                .read_dir()
-                .expect("Error reading the directory.")
-                .fold(state, |state, entry| {
-                    let new_state = go(
-                        &link_target.join(
-                            entry
-                                .expect("Error reading the directory entry.")
-                                .file_name(),
-                        ),
-                        etc_dir,
-                        state,
-                        old_state,
-                        &upwards_path.join(".."),
-                    );
-                    match new_state {
-                        Ok(new_state) => new_state,
-                        Err(ActivationError::WithPartialResult { result, source }) => {
-                            log::error!(
-                                "Error while trying to link directory {}: {source:?}",
-                                absolute_target.display()
-                            );
-                            result
-                        }
+        // Create the dir if it doesn't exist yet
+        let dir_state = create_dir_recursively(&link_path, state)?;
+        log::debug!("Entering into directory {}...", link_path.display());
+        Ok(absolute_target
+            .read_dir()
+            .expect("Error reading the directory.")
+            .fold(dir_state, |state, entry| {
+                let new_state = go(
+                    &link_target.join(
+                        entry
+                            .expect("Error reading the directory entry.")
+                            .file_name(),
+                    ),
+                    etc_dir,
+                    state,
+                    old_state,
+                    &upwards_path.join(".."),
+                );
+                match new_state {
+                    Ok(new_state) => new_state,
+                    Err(ActivationError::WithPartialResult { result, source }) => {
+                        log::error!(
+                            "Error while trying to link directory {}: {source:?}",
+                            absolute_target.display()
+                        );
+                        result
                     }
-                }))
-        } else {
-            Err(ActivationError::with_partial_result(
-                state,
-                anyhow::anyhow!(
-                    "Unmanaged file or directory {} already exists, ignoring...",
-                    link_path.display()
-                ),
-            ))
-        }
+                }
+            }))
     }
 
     fn go(
@@ -260,15 +252,40 @@ where
             .join(SYSTEM_MANAGER_STATIC_NAME)
             .join(link_target);
         let absolute_target = etc_dir.join(SYSTEM_MANAGER_STATIC_NAME).join(link_target);
-        if link_path.exists() && !old_state.is_managed(&link_path) {
-            link_dir_contents(
-                link_target,
-                &absolute_target,
-                etc_dir,
-                dir_state,
-                old_state,
-                upwards_path,
-            )
+
+        // Some versions of systemd ignore .wants and .requires directories when they are symlinks.
+        // We therefore create them as actual directories and link their contents instead.
+        let is_systemd_dependency_dir = absolute_target.is_dir()
+            && absolute_target
+                .parent()
+                .map(|p| p.ends_with("systemd/system"))
+                .unwrap_or(false)
+            && link_target
+                .extension()
+                .filter(|ext| ["wants", "requires"].iter().any(|other| other == ext))
+                .is_some();
+
+        if (link_path.exists() && link_path.is_dir() && !old_state.is_managed(&link_path))
+            || is_systemd_dependency_dir
+        {
+            if absolute_target.is_dir() {
+                link_dir_contents(
+                    link_target,
+                    &absolute_target,
+                    etc_dir,
+                    dir_state,
+                    old_state,
+                    upwards_path,
+                )
+            } else {
+                Err(ActivationError::with_partial_result(
+                    dir_state,
+                    anyhow::anyhow!(
+                        "Unmanaged file or directory {} already exists, ignoring...",
+                        link_path.display()
+                    ),
+                ))
+            }
         } else if link_path.is_symlink()
             && link_path.read_link().expect("Error reading link.") == target
         {
