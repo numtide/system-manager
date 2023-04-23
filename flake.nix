@@ -118,6 +118,7 @@
       {
         packages = {
           inherit system-manager;
+
           default = self.packages.${system}.system-manager;
         };
 
@@ -191,6 +192,10 @@
             system-manager
             system-manager-clippy
             system-manager-test;
+          basicTest = import ./test/nix/modules {
+            inherit system;
+            system-manager = self;
+          };
         };
       }));
 }
