@@ -125,6 +125,10 @@ in
 
   config = {
     systemd = {
+      targets.system-manager = {
+        wantedBy = [ "default.target" ];
+      };
+
       timers =
         lib.mapAttrs
           (name: service:
