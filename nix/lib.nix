@@ -364,9 +364,16 @@ in
           ]};
         '';
 
-      # We vendor the test-driver until github.com/NixOS/nixpkgs#228220 gets merged
-      #test-driver = pkgs.callPackage "${nixpkgs}/nixos/lib/test-driver" { };
-      test-driver = hostPkgs.callPackage ../test/nixos-test-driver { };
+      test-driver =
+        let
+          upstream = hostPkgs.callPackage "${nixpkgs}/nixos/lib/test-driver" { };
+        in
+        upstream.overrideAttrs (_: {
+          # github.com/NixOS/nixpkgs#228220 gets merged
+          patches = [
+            ../test/0001-nixos-test-driver-include-a-timeout-for-the-recv-cal.patch
+          ];
+        });
 
       runTest = { nodes, vlans, testScript, extraDriverArgs }: ''
         ${lib.getBin test-driver}/bin/nixos-test-driver \
