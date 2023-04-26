@@ -50,8 +50,6 @@ pub fn activate(
         .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
     log::debug!("{}", print_services(&services));
 
-    //serialise_saved_services(&services)?;
-
     let services_to_stop = old_services.clone().relative_complement(services.clone());
     let services_to_reload = get_services_to_reload(services.clone(), old_services.clone());
 
