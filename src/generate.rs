@@ -118,9 +118,7 @@ fn get_store_path(nix_build_result: process::Output) -> Result<StorePath> {
             .map_err(|e| anyhow::anyhow!(e).context("Error reading nix build output."))
             .and_then(parse_nix_build_output)
     } else {
-        String::from_utf8(nix_build_result.stderr)
-            .map_err(anyhow::Error::from)
-            .and_then(|e| Err(anyhow::anyhow!(e).context("Nix build failed.")))
+        anyhow::bail!("Nix build failed, see console output for details.")
     }
 }
 
@@ -158,6 +156,7 @@ fn try_nix_eval(flake: &str, attr: &str) -> Result<bool> {
         .arg("--json")
         .arg("--apply")
         .arg(format!("a: a ? {attr}"))
+        .stderr(process::Stdio::inherit())
         .output()?;
     if output.status.success() {
         let stdout = String::from_utf8(output.stdout)?;

@@ -209,7 +209,11 @@ where
     ) -> EtcActivationResult {
         let link_path = etc_dir.join(link_target);
         // Create the dir if it doesn't exist yet
-        let dir_state = create_dir_recursively(&link_path, state)?;
+        let dir_state = if !link_path.exists() {
+            create_dir_recursively(&link_path, state)?
+        } else {
+            state
+        };
         log::debug!("Entering into directory {}...", link_path.display());
         Ok(absolute_target
             .read_dir()
