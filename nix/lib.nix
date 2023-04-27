@@ -305,7 +305,7 @@ in
       cp ${self.lib.mount_store { inherit pkgs; }} mount-store.service
 
       ${lib.concatStringsSep "  \\\n" [
-        "${pkgs.guestfs-tools}/bin/virt-customize"
+        "${pkgs.guestfs-tools.overrideAttrs (_: { doCheck = false; })}/bin/virt-customize"
         "-a ./img.qcow2"
         "--smp 2"
         "--memsize 256"
