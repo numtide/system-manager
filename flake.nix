@@ -186,23 +186,18 @@
           }).shellHook;
         };
 
-        checks =
-          let
-            # The Aarch64 VM tests seem to hang on garnix, we disable them for now
-            enableVmTests = system != flake-utils.lib.system.aarch64-linux;
-          in
-          {
-            inherit
-              # Build the crate as part of `nix flake check` for convenience
-              system-manager
-              system-manager-clippy
-              system-manager-test;
-          } //
-          pkgs.lib.optionalAttrs enableVmTests (import ./test/nix/modules {
-            inherit system;
-            inherit (pkgs) lib;
-            system-manager = self;
-          });
+        checks = {
+          inherit
+            # Build the crate as part of `nix flake check` for convenience
+            system-manager
+            system-manager-clippy
+            system-manager-test;
+        } //
+        import ./test/nix/modules {
+          inherit system;
+          inherit (pkgs) lib;
+          system-manager = self;
+        };
       })
     );
 }
