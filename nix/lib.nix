@@ -175,17 +175,51 @@ in
       ]
     );
 
-  images = {
-    ubuntu_22_10_cloudimg = {
-      name = "ubuntu-22.10-server-cloudimg-amd64.img";
-      release = "20230302";
-      hash = "sha256-9hjGjlUQoXZfAYTwsEjHE3Zawd6qqrVc6VXshthNS44=";
-    };
+  # TODO: put these in an external JSON file that we can automatically update
+  images.ubuntu = {
+    x86_64-linux = {
+      ubuntu_22_10_cloudimg = {
+        name = "kinetic-server-cloudimg-amd64.img";
+        releaseName = "kinetic";
+        releaseTimeStamp = "20230424";
+        hash = "sha256-54LucfgXtNAxKKQKmvHCk8EzPRlULGq/IfUjAvUaOXk=";
+      };
 
-    ubuntu_20_04_cloudimg = {
-      name = "ubuntu-20.04-server-cloudimg-amd64.img";
-      release = "";
-      hash = "";
+      ubuntu_22_04_cloudimg = {
+        name = "jammy-server-cloudimg-amd64.img";
+        releaseName = "jammy";
+        releaseTimeStamp = "20230427";
+        hash = "sha256-m76TZOKYnBzOLBZpt6kcK70TkFKHaoyBzVLA+q77ZHQ=";
+      };
+
+      ubuntu_20_04_cloudimg = {
+        name = "focal-server-cloudimg-amd64.img";
+        releaseName = "focal";
+        releaseTimeStamp = "20230420";
+        hash = "sha256-XFUVWvk8O1IHfp+sAiOSCU5ASk/qJG2JIF4WH0ex12U=";
+      };
+    };
+    aarch64-linux = {
+      ubuntu_22_10_cloudimg = {
+        name = "kinetic-server-cloudimg-arm64.img";
+        releaseName = "kinetic";
+        releaseTimeStamp = "20230424";
+        hash = "sha256-AS8bXXqWwJdlKUYxI1MO48AyWR++Ttf1+C7ahicKiks=";
+      };
+
+      ubuntu_22_04_cloudimg = {
+        name = "jammy-server-cloudimg-arm64.img";
+        releaseName = "jammy";
+        releaseTimeStamp = "20230427";
+        hash = "sha256-9vkeg5VumVBxj4TaLd0SgJEWjw11pcP7SBz5zd1V0EE=";
+      };
+
+      ubuntu_20_04_cloudimg = {
+        name = "focal-server-cloudimg-arm64.img";
+        releaseName = "focal";
+        releaseTimeStamp = "20230420";
+        hash = "sha256-YUtW3oMHz4Hw7WeIu6ksx+/mUfxp7cCSSETvY6KGwU4=";
+      };
     };
   };
 
@@ -197,7 +231,7 @@ in
       [Service]
       Type = oneshot
       ExecStart = mkdir -p /nix/.ro-store
-      ExecStart = mount -t 9p -o defaults,trans=virtio,version=9p2000.L,cache=loose nix-store /nix/.ro-store
+      ExecStart = mount -t 9p -o defaults,trans=virtio,version=9p2000.L,cache=loose,msize=${toString (256 * 1024 * 1024)} nix-store /nix/.ro-store
       ExecStart = mkdir -p -m 0755 /nix/.rw-store/ /nix/store
       ExecStart = mount -t tmpfs tmpfs /nix/.rw-store
       ExecStart = mkdir -p -m 0755 /nix/.rw-store/store /nix/.rw-store/work
@@ -258,7 +292,7 @@ in
 
       img = pkgs.fetchurl {
         inherit (image) hash;
-        url = "https://cloud-images.ubuntu.com/releases/kinetic/release-${image.release}/${image.name}";
+        url = "https://cloud-images.ubuntu.com/${image.releaseName}/${image.releaseTimeStamp}/${image.name}";
       };
     in
     pkgs.runCommand "configure-vm" { } ''
