@@ -378,7 +378,7 @@ in
 
           # Create a directory for storing temporary data of the running VM.
           if [ -z "$TMPDIR" ] || [ -z "$USE_TMPDIR" ]; then
-              TMPDIR=$(mktemp -d nix-vm.XXXXXXXXXX --tmpdir)
+            TMPDIR=$(mktemp -d nix-vm.XXXXXXXXXX --tmpdir)
           fi
 
           # Create a directory for exchanging data with the VM.
@@ -417,7 +417,7 @@ in
           upstream = hostPkgs.callPackage "${nixpkgs}/nixos/lib/test-driver" { };
         in
         upstream.overrideAttrs (_: {
-          # github.com/NixOS/nixpkgs#228220 gets merged
+          # Until github.com/NixOS/nixpkgs#228220 gets merged
           patches = [
             ../test/0001-nixos-test-driver-include-a-timeout-for-the-recv-cal.patch
           ];
