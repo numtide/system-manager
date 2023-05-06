@@ -178,44 +178,58 @@ in
   # TODO: put these in an external JSON file that we can automatically update
   images.ubuntu = {
     x86_64-linux = {
+      ubuntu_23_04_cloudimg = {
+        name = "ubuntu-23.04-server-cloudimg-amd64.img";
+        releaseName = "lunar";
+        releaseTimeStamp = "20230502";
+        hash = "sha256-E5ZchMZcurCzQyasNKwMR6iAMPnf+A5jkeVsuQd8rdA=";
+      };
+
       ubuntu_22_10_cloudimg = {
-        name = "kinetic-server-cloudimg-amd64.img";
+        name = "ubuntu-22.10-server-cloudimg-amd64.img";
         releaseName = "kinetic";
-        releaseTimeStamp = "20230424";
-        hash = "sha256-54LucfgXtNAxKKQKmvHCk8EzPRlULGq/IfUjAvUaOXk=";
+        releaseTimeStamp = "20230428";
+        hash = "sha256-HYgpm243gfJgY3zK2lVVlSLfW3a/Vhdop/zJErIt6r4=";
       };
 
       ubuntu_22_04_cloudimg = {
-        name = "jammy-server-cloudimg-amd64.img";
+        name = "ubuntu-22.04-server-cloudimg-amd64.img";
         releaseName = "jammy";
         releaseTimeStamp = "20230427";
         hash = "sha256-m76TZOKYnBzOLBZpt6kcK70TkFKHaoyBzVLA+q77ZHQ=";
       };
 
       ubuntu_20_04_cloudimg = {
-        name = "focal-server-cloudimg-amd64.img";
+        name = "ubuntu-20.04-server-cloudimg-amd64.img";
         releaseName = "focal";
         releaseTimeStamp = "20230420";
         hash = "sha256-XFUVWvk8O1IHfp+sAiOSCU5ASk/qJG2JIF4WH0ex12U=";
       };
     };
     aarch64-linux = {
+      ubuntu_23_04_cloudimg = {
+        name = "ubuntu-23.04-server-cloudimg-arm64.img";
+        releaseName = "lunar";
+        releaseTimeStamp = "20230502";
+        hash = "";
+      };
+
       ubuntu_22_10_cloudimg = {
-        name = "kinetic-server-cloudimg-arm64.img";
+        name = "ubuntu-22.10-server-cloudimg-arm64.img";
         releaseName = "kinetic";
-        releaseTimeStamp = "20230424";
-        hash = "sha256-AS8bXXqWwJdlKUYxI1MO48AyWR++Ttf1+C7ahicKiks=";
+        releaseTimeStamp = "20230428";
+        hash = "";
       };
 
       ubuntu_22_04_cloudimg = {
-        name = "jammy-server-cloudimg-arm64.img";
+        name = "ubuntu-22.04-server-cloudimg-arm64.img";
         releaseName = "jammy";
         releaseTimeStamp = "20230427";
         hash = "sha256-9vkeg5VumVBxj4TaLd0SgJEWjw11pcP7SBz5zd1V0EE=";
       };
 
       ubuntu_20_04_cloudimg = {
-        name = "focal-server-cloudimg-arm64.img";
+        name = "ubuntu-20.04-server-cloudimg-arm64.img";
         releaseName = "focal";
         releaseTimeStamp = "20230420";
         hash = "sha256-YUtW3oMHz4Hw7WeIu6ksx+/mUfxp7cCSSETvY6KGwU4=";
@@ -292,7 +306,7 @@ in
 
       img = pkgs.fetchurl {
         inherit (image) hash;
-        url = "https://cloud-images.ubuntu.com/${image.releaseName}/${image.releaseTimeStamp}/${image.name}";
+        url = "https://cloud-images.ubuntu.com/releases/${image.releaseName}/release-${image.releaseTimeStamp}/${image.name}";
       };
     in
     pkgs.runCommand "configure-vm" { } ''
