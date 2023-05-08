@@ -45,6 +45,8 @@ let
           default = 2;
         };
 
+        # TODO: implement this properly, or remove the option
+        # See: nixos/lib/testing/network.nix
         vlans = lib.mkOption {
           type = types.ints.between 1 1024;
           default = 1;
