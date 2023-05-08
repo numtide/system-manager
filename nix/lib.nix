@@ -262,6 +262,8 @@ in
       [Unit]
       Requires = dev-hvc0.device dev-ttyS0.device mount-store.service
       After = dev-hvc0.device dev-ttyS0.device mount-store.service
+      # Keep this unit active when we switch to rescue mode for instance
+      IgnoreOnIsolate = true
 
       [Service]
       ExecStart = ${pkgs.writeShellScript "backdoor-start-script" ''
