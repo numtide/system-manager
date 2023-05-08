@@ -52,7 +52,8 @@ in
               storePath =
                 ''${unit.unit}/${unitName}'';
             })
-          config.systemd.units;
+          (lib.filterAttrs (_: unit: unit.enable)
+            config.systemd.units);
 
       servicesPath = pkgs.writeTextFile {
         name = "services";
