@@ -30,14 +30,14 @@ struct Args {
 #[derive(clap::Args, Debug)]
 struct BuildArgs {
     #[arg(long = "flake", name = "FLAKE_URI")]
-    /// The flake defining the system-manager profile
+    /// The flake URI defining the system-manager profile
     flake_uri: String,
 }
 
 #[derive(clap::Args, Debug)]
 struct GenerateArgs {
     #[arg(long = "flake", name = "FLAKE_URI")]
-    /// The flake defining the system-manager profile
+    /// The flake URI defining the system-manager profile
     flake_uri: Option<String>,
 
     #[arg(long)]
@@ -65,6 +65,13 @@ struct DeactivationArgs {
 enum Action {
     /// Activate a given system-manager profile
     Activate {
+        #[arg(long)]
+        /// The store path containing the system-manager profile to activate
+        store_path: StorePath,
+        #[command(flatten)]
+        activation_args: ActivationArgs,
+    },
+    PrePopulate {
         #[arg(long)]
         /// The store path containing the system-manager profile to activate
         store_path: StorePath,
@@ -116,6 +123,13 @@ fn go(args: Args) -> Result<()> {
         } => {
             copy_closure(&store_path, &target_host)?;
             activate(&store_path, ephemeral, &target_host, use_remote_sudo)
+        }
+        Action::PrePopulate {
+            store_path,
+            activation_args: ActivationArgs { ephemeral },
+        } => {
+            copy_closure(&store_path, &target_host)?;
+            prepopulate(&store_path, ephemeral, &target_host, use_remote_sudo)
         }
         Action::Build {
             build_args: BuildArgs { flake_uri },
@@ -222,6 +236,26 @@ fn activate(
     } else {
         check_root()?;
         system_manager::activate::activate(store_path, ephemeral)
+    }
+}
+
+fn prepopulate(
+    store_path: &StorePath,
+    ephemeral: bool,
+    target_host: &Option<String>,
+    use_remote_sudo: bool,
+) -> Result<()> {
+    if let Some(target_host) = target_host {
+        invoke_remote_script(
+            &store_path.store_path,
+            "pre-populate",
+            target_host,
+            use_remote_sudo,
+        )?;
+        Ok(())
+    } else {
+        check_root()?;
+        system_manager::activate::prepopulate(store_path, ephemeral)
     }
 }
 

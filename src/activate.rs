@@ -104,7 +104,51 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
         }
     }
     .write_to_file(state_file)?;
+    Ok(())
+}
 
+pub fn prepopulate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
+    log::info!("Pre-populating system-manager profile: {store_path}");
+    if ephemeral {
+        log::info!("Running in ephemeral mode");
+    }
+
+    log::info!("Running pre-activation assertions...");
+    if !run_preactivation_assertions(store_path)?.success() {
+        anyhow::bail!("Failure in pre-activation assertions.");
+    }
+
+    let state_file = &get_state_file()?;
+    let old_state = State::from_file(state_file)?;
+
+    log::info!("Activating etc files...");
+
+    match etc_files::activate(store_path, old_state.file_tree, ephemeral) {
+        Ok(etc_tree) => {
+            log::info!("Registering systemd services...");
+            match services::get_active_services(store_path, old_state.services) {
+                Ok(services) => State {
+                    file_tree: etc_tree,
+                    services,
+                },
+                Err(ActivationError::WithPartialResult { result, source }) => {
+                    log::error!("Error during activation: {source:?}");
+                    State {
+                        file_tree: etc_tree,
+                        services: result,
+                    }
+                }
+            }
+        }
+        Err(ActivationError::WithPartialResult { result, source }) => {
+            log::error!("Error during activation: {source:?}");
+            State {
+                file_tree: result,
+                ..old_state
+            }
+        }
+    }
+    .write_to_file(state_file)?;
     Ok(())
 }
 
