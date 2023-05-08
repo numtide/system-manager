@@ -110,6 +110,12 @@ in
           "$@"
       '';
 
+      prepopulateScript = pkgs.writeShellScript "prepopulate" ''
+        ${system-manager}/bin/system-manager pre-populate \
+          --store-path "$(dirname $(realpath $(dirname ''${0})))" \
+          "$@"
+      '';
+
       deactivationScript = pkgs.writeShellScript "deactivate" ''
         ${system-manager}/bin/system-manager deactivate "$@"
       '';
@@ -170,6 +176,7 @@ in
         (linkFarmEntryFromDrv servicesPath)
         (linkFarmEntryFromDrv etcPath)
         (linkFarmBinEntryFromDrv activationScript)
+        (linkFarmBinEntryFromDrv prepopulateScript)
         (linkFarmBinEntryFromDrv deactivationScript)
         (linkFarmBinEntryFromDrv registerProfileScript)
         (linkFarmBinEntryFromDrv preActivationAssertionScript)
@@ -311,19 +318,22 @@ in
         inherit (image) hash;
         url = "https://cloud-images.ubuntu.com/releases/${image.releaseName}/release-${image.releaseTimeStamp}/${image.name}";
       };
+
+      resultImg = "./image.qcow2";
     in
-    pkgs.runCommand "configure-vm" { } ''
+    pkgs.runCommand "vm-image.qcow2" { } ''
       # We will modify the VM image, so we need a mutable copy
-      install -m777 ${img} ./img.qcow2
+      install -m777 ${img} ${resultImg}
 
       # Copy the service files here, since otherwise they end up in the VM
-      # wwith their paths including the nix hash
+      # with their paths including the nix hash
       cp ${self.lib.backdoor { inherit pkgs; }} backdoor.service
       cp ${self.lib.mount_store { inherit pkgs; }} mount-store.service
 
+      #export LIBGUESTFS_DEBUG=1 LIBGUESTFS_TRACE=1
       ${lib.concatStringsSep "  \\\n" [
         "${pkgs.guestfs-tools}/bin/virt-customize"
-        "-a ./img.qcow2"
+        "-a ${resultImg}"
         "--smp 2"
         "--memsize 256"
         "--no-network"
@@ -347,7 +357,7 @@ in
         '')
       ]};
 
-      cp ./img.qcow2 $out
+      cp ${resultImg} $out
     '';
 
   make-vm-test =

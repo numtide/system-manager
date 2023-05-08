@@ -30,14 +30,10 @@ fn print_services(services: &Services) -> String {
     out
 }
 
-pub fn activate(
+pub fn get_active_services(
     store_path: &StorePath,
     old_services: Services,
-    ephemeral: bool,
 ) -> ServiceActivationResult {
-    verify_systemd_dir(ephemeral)
-        .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
-
     log::info!("Reading new service definitions...");
     let file = fs::File::open(
         Path::new(&store_path.store_path)
@@ -49,6 +45,18 @@ pub fn activate(
     let services: Services = serde_json::from_reader(reader)
         .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
     log::debug!("{}", print_services(&services));
+    Ok(services)
+}
+
+pub fn activate(
+    store_path: &StorePath,
+    old_services: Services,
+    ephemeral: bool,
+) -> ServiceActivationResult {
+    verify_systemd_dir(ephemeral)
+        .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
+
+    let services = get_active_services(store_path, old_services.clone())?;
 
     let services_to_stop = old_services.clone().relative_complement(services.clone());
     let services_to_reload = get_services_to_reload(services.clone(), old_services.clone());
