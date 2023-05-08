@@ -105,6 +105,8 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
     }
     .write_to_file(state_file)?;
 
+    // TODO: execute systemd-tmpfiles
+
     Ok(())
 }
 
