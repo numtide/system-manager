@@ -17,22 +17,18 @@ let
       };
 
       modules = lib.mkOption {
-        # TODO: can we give a better type here?
-        # We want a list of system-manager modules
-        type = types.listOf types.raw;
+        type = types.listOf types.deferredModule;
       };
 
       systemConfig = lib.mkOption {
-        # TODO figure out correct type
-        type = types.raw;
+        type = types.package;
         internal = true;
         readOnly = true;
       };
 
       virtualisation = {
         rootImage = lib.mkOption {
-          # TODO: figure out the correct type.
-          type = types.raw;
+          type = types.package;
         };
 
         memorySize = lib.mkOption {
@@ -92,7 +88,6 @@ in
 
 {
   options = {
-    # TODO: figure out correct type
     hostPkgs = lib.mkOption {
       type = pkgsType;
     };
