@@ -7,6 +7,12 @@ let
   inherit (nixpkgs) lib;
 in
 {
+  # Function that can be used when defining inline modules to get better location
+  # reporting in module-system errors.
+  # Usage example:
+  #   { _file = "${printAttrPos (builtins.unsafeGetAttrPos "a" { a = null; })}: inline module"; }
+  printAttrPos = { file, line, column }: "${file}:${toString line}:${toString column}";
+
   makeSystemConfig =
     { modules
     , extraSpecialArgs ? { }
@@ -15,7 +21,7 @@ in
     let
       # Module that sets additional module arguments
       extraArgsModule = { lib, config, pkgs, ... }: {
-        _file = "lib.nix: extraArgsModule";
+        _file = "${self.lib.printAttrPos (builtins.unsafeGetAttrPos "a" { a = null; })}: inline module";
         _module.args = {
           pkgs = nixpkgs.legacyPackages.${config.nixpkgs.hostPlatform};
           utils = import "${nixos}/lib/utils.nix" {
@@ -321,7 +327,7 @@ in
 
       resultImg = "./image.qcow2";
     in
-    pkgs.runCommand "vm-image.qcow2" { } ''
+    pkgs.runCommand "${image.name}-system-manager-vm-test.qcow2" { } ''
       # We will modify the VM image, so we need a mutable copy
       install -m777 ${img} ${resultImg}
 
@@ -353,6 +359,10 @@ in
           systemctl mask snapd.socket
           systemctl mask snapd.seeded.service
 
+          # We have no network in the test VMs, avoid an error on bootup
+          systemctl mask ssh.service
+          systemctl mask ssh.socket
+
           systemctl enable backdoor.service
         '')
       ]};
@@ -361,6 +371,7 @@ in
     '';
 
   make-vm-test =
+    name:
     { system
     , modules
     }:
@@ -372,7 +383,7 @@ in
         modules = [
           ../test/nix/test-driver/modules
           {
-            _file = "inline module in lib.nix";
+            _file = "${self.lib.printAttrPos (builtins.unsafeGetAttrPos "a" { a = null; })}: inline module";
             inherit hostPkgs;
           }
         ] ++ modules;
@@ -451,7 +462,7 @@ in
       };
     in
     hostPkgs.stdenv.mkDerivation (finalAttrs: {
-      name = "system-manager-vm-test";
+      inherit name;
 
       requiredSystemFeatures = [ "kvm" "nixos-test" ];
 

@@ -43,8 +43,8 @@ in
 
 forEachUbuntuImage
   (imgName: image: lib.nameValuePair
-    "example-${imgName}"
-    (system-manager.lib.make-vm-test {
+    "vm-test-example-${imgName}"
+    (system-manager.lib.make-vm-test "vm-test-example-${imgName}" {
       inherit system;
       modules = [
         ({ config, ... }:
@@ -117,8 +117,8 @@ forEachUbuntuImage
 
 forEachUbuntuImage
   (imgName: image: lib.nameValuePair
-    "prepopulate-${imgName}"
-    (system-manager.lib.make-vm-test {
+    "vm-test-prepopulate-${imgName}"
+    (system-manager.lib.make-vm-test "vm-test-prepopulate-${imgName}" {
       inherit system;
       modules = [
         ({ config, ... }:
