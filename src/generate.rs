@@ -155,7 +155,7 @@ fn try_nix_eval(flake: &str, attr: &str) -> Result<bool> {
         .arg(format!("{flake}#{FLAKE_ATTR}"))
         .arg("--json")
         .arg("--apply")
-        .arg(format!("a: a ? {attr}"))
+        .arg(format!("a: a ? \"{attr}\""))
         .stderr(process::Stdio::inherit())
         .output()?;
     if output.status.success() {
