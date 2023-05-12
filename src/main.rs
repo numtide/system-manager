@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::Parser;
 use std::ffi::OsString;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{self, ExitCode};
 
 use system_manager::StorePath;
@@ -53,12 +53,12 @@ struct ActivationArgs {
 }
 
 #[derive(clap::Args, Debug)]
-struct DeactivationArgs {
-    #[arg(long)]
+struct OptionalStorePathArgs {
+    #[arg(long = "store-path", name = "STORE_PATH")]
     /// The store path for the system-manager profile.
     /// You only need to specify this explicitly if it differs from the active
-    /// system-manager profile
-    store_path: Option<StorePath>,
+    /// system-manager profile.
+    maybe_store_path: Option<StorePath>,
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -71,10 +71,11 @@ enum Action {
         #[command(flatten)]
         activation_args: ActivationArgs,
     },
+    /// Put all files defined by the given generation in place, but do not start
+    /// services. Useful in build scripts.
     PrePopulate {
-        #[arg(long)]
-        /// The store path containing the system-manager profile to activate
-        store_path: StorePath,
+        #[command(flatten)]
+        optional_store_path_args: OptionalStorePathArgs,
         #[command(flatten)]
         activation_args: ActivationArgs,
     },
@@ -86,7 +87,7 @@ enum Action {
     /// Deactivate the active system-manager profile, removing all managed configuration
     Deactivate {
         #[command(flatten)]
-        deactivation_args: DeactivationArgs,
+        optional_store_path_args: OptionalStorePathArgs,
     },
     /// Generate a new system-manager profile and
     /// register is as the active system-manager profile
@@ -125,9 +126,10 @@ fn go(args: Args) -> Result<()> {
             activate(&store_path, ephemeral, &target_host, use_remote_sudo)
         }
         Action::PrePopulate {
-            store_path,
+            optional_store_path_args: OptionalStorePathArgs { maybe_store_path },
             activation_args: ActivationArgs { ephemeral },
         } => {
+            let store_path = store_path_or_active_profile(maybe_store_path).try_into()?;
             copy_closure(&store_path, &target_host)?;
             prepopulate(&store_path, ephemeral, &target_host, use_remote_sudo)
         }
@@ -135,8 +137,8 @@ fn go(args: Args) -> Result<()> {
             build_args: BuildArgs { flake_uri },
         } => build(&flake_uri, &target_host),
         Action::Deactivate {
-            deactivation_args: DeactivationArgs { store_path },
-        } => deactivate(store_path, &target_host, use_remote_sudo),
+            optional_store_path_args: OptionalStorePathArgs { maybe_store_path },
+        } => deactivate(maybe_store_path, &target_host, use_remote_sudo),
         Action::Generate { generate_args } => {
             generate(&generate_args, &target_host, use_remote_sudo)
         }
@@ -260,20 +262,13 @@ fn prepopulate(
 }
 
 fn deactivate(
-    store_path: Option<StorePath>,
+    maybe_store_path: Option<StorePath>,
     target_host: &Option<String>,
     use_remote_sudo: bool,
 ) -> Result<()> {
     if let Some(target_host) = target_host {
-        invoke_remote_script(
-            &store_path.map_or_else(
-                || Path::new(system_manager::PROFILE_DIR).join("system-manager"),
-                |store_path| store_path.store_path,
-            ),
-            "deactivate",
-            target_host,
-            use_remote_sudo,
-        )?;
+        let store_path = store_path_or_active_profile(maybe_store_path);
+        invoke_remote_script(&store_path, "deactivate", target_host, use_remote_sudo)?;
         Ok(())
     } else {
         check_root()?;
@@ -306,7 +301,7 @@ fn do_copy_closure(store_path: &StorePath, target_host: &str) -> Result<()> {
 }
 
 fn invoke_remote_script(
-    store_path: &Path,
+    path: &Path,
     script_name: &str,
     target_host: &str,
     use_remote_sudo: bool,
@@ -318,8 +313,7 @@ fn invoke_remote_script(
     }
     let status = cmd
         .arg(OsString::from(
-            store_path
-                .join("bin")
+            path.join("bin")
                 .join(script_name)
                 .to_string_lossy()
                 .into_owned(),
@@ -335,6 +329,17 @@ fn check_root() -> Result<()> {
         anyhow::bail!("We need root permissions.")
     }
     Ok(())
+}
+
+fn store_path_or_active_profile(maybe_store_path: Option<StorePath>) -> PathBuf {
+    maybe_store_path.map_or_else(
+        || {
+            let path = Path::new(system_manager::PROFILE_DIR).join("system-manager");
+            log::info!("No store path provided, using {}", path.display());
+            path
+        },
+        |store_path| store_path.store_path,
+    )
 }
 
 fn handle_toplevel_error<T>(r: Result<T>) -> ExitCode {

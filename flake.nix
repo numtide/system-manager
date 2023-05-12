@@ -53,6 +53,11 @@
         inherit nixpkgs self;
         nixos = "${nixpkgs}/nixos";
       };
+
+      # Only useful for quick tests
+      systemConfigs.default = self.lib.makeSystemConfig {
+        modules = [ ./examples/example.nix ];
+      };
     }
     //
     (flake-utils.lib.eachSystem

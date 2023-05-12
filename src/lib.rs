@@ -22,21 +22,34 @@ pub struct StorePath {
     pub store_path: PathBuf,
 }
 
+// We cannot implement both From and TryFrom, and we need From for Deserialize...
 impl From<String> for StorePath {
     fn from(path: String) -> Self {
-        // TODO: handle this better
-        if !path.starts_with("/nix/store/") {
-            panic!("Error constructing store path, not in store: {path}");
-        }
-        StorePath {
-            store_path: PathBuf::from(path),
-        }
+        PathBuf::from(path)
+            .try_into()
+            .expect("Error constructing store path, path not in store.")
     }
 }
 
 impl From<StorePath> for PathBuf {
     fn from(value: StorePath) -> Self {
         value.store_path
+    }
+}
+
+impl TryFrom<PathBuf> for StorePath {
+    type Error = anyhow::Error;
+
+    fn try_from(path: PathBuf) -> Result<Self> {
+        let canon = path.canonicalize()?;
+        if !canon.starts_with(PathBuf::from("/").join("nix").join("store")) {
+            anyhow::bail!(
+                "Error constructing store path, not in store: {} (canonicalised: {})",
+                path.display(),
+                canon.display()
+            );
+        }
+        Ok(Self { store_path: canon })
     }
 }
 
