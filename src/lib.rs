@@ -26,9 +26,12 @@ pub struct StorePath {
 // We cannot implement both From and TryFrom, and we need From for Deserialize...
 impl From<String> for StorePath {
     fn from(path: String) -> Self {
-        PathBuf::from(path)
-            .try_into()
-            .expect("Error constructing store path, path not in store.")
+        PathBuf::from(path.clone()).try_into().unwrap_or_else(|e| {
+            panic!(
+                "Error constructing store path, path not in store: {}\n{:?}",
+                path, e
+            );
+        })
     }
 }
 
