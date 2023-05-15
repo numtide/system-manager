@@ -1,5 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
+use std::borrow::Cow;
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use std::process::{self, ExitCode};
@@ -135,12 +136,12 @@ fn go(args: Args) -> Result<()> {
         }
         Action::Build {
             build_args: BuildArgs { flake_uri },
-        } => build(&flake_uri, &target_host),
+        } => build(&flake_uri, &target_host).and_then(print_store_path),
         Action::Deactivate {
             optional_store_path_args: OptionalStorePathArgs { maybe_store_path },
         } => deactivate(maybe_store_path, &target_host, use_remote_sudo),
         Action::Generate { generate_args } => {
-            generate(&generate_args, &target_host, use_remote_sudo)
+            generate(&generate_args, &target_host, use_remote_sudo).and_then(print_store_path)
         }
         Action::Switch {
             build_args: BuildArgs { flake_uri },
@@ -154,23 +155,27 @@ fn go(args: Args) -> Result<()> {
     }
 }
 
-fn build(flake_uri: &str, target_host: &Option<String>) -> Result<()> {
+fn print_store_path<SP: AsRef<StorePath>>(store_path: SP) -> Result<()> {
+    // Print the raw store path to stdout
+    println!("{}", store_path.as_ref());
+    Ok(())
+}
+
+fn build(flake_uri: &str, target_host: &Option<String>) -> Result<StorePath> {
     let store_path = do_build(flake_uri)?;
     copy_closure(&store_path, target_host)?;
-    // Print the raw store path to stdout
-    println!("{store_path}");
-    Ok(())
+    Ok(store_path)
 }
 
 fn do_build(flake_uri: &str) -> Result<StorePath> {
     system_manager::generate::build(flake_uri)
 }
 
-fn generate(
-    args: &GenerateArgs,
+fn generate<'a>(
+    args: &'a GenerateArgs,
     target_host: &Option<String>,
     use_remote_sudo: bool,
-) -> Result<()> {
+) -> Result<Cow<'a, StorePath>> {
     match args {
         GenerateArgs {
             flake_uri: Some(flake_uri),
@@ -178,14 +183,16 @@ fn generate(
         } => {
             let store_path = do_build(flake_uri)?;
             copy_closure(&store_path, target_host)?;
-            do_generate(&store_path, target_host, use_remote_sudo)
+            do_generate(&store_path, target_host, use_remote_sudo)?;
+            Ok(store_path.into())
         }
         GenerateArgs {
             flake_uri: None,
             store_path: Some(store_path),
         } => {
             copy_closure(store_path, target_host)?;
-            do_generate(store_path, target_host, use_remote_sudo)
+            do_generate(store_path, target_host, use_remote_sudo)?;
+            Ok(store_path.into())
         }
         _ => {
             anyhow::bail!("Supply either a flake URI or a store path.")

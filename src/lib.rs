@@ -4,6 +4,7 @@ mod systemd;
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use std::os::unix;
 use std::path::{Path, PathBuf};
 use std::{fs, str};
@@ -62,6 +63,24 @@ impl From<StorePath> for String {
 impl std::fmt::Display for StorePath {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.store_path.display())
+    }
+}
+
+impl AsRef<StorePath> for StorePath {
+    fn as_ref(&self) -> &StorePath {
+        self
+    }
+}
+
+impl<'a> From<StorePath> for Cow<'a, StorePath> {
+    fn from(value: StorePath) -> Self {
+        Cow::Owned(value)
+    }
+}
+
+impl<'a> From<&'a StorePath> for Cow<'a, StorePath> {
+    fn from(value: &'a StorePath) -> Self {
+        Cow::Borrowed(value)
     }
 }
 
