@@ -441,10 +441,22 @@ in
           upstream = hostPkgs.callPackage "${nixpkgs}/nixos/lib/test-driver" { };
         in
         upstream.overrideAttrs (_: {
-          # Until github.com/NixOS/nixpkgs#228220 gets merged
-          patches = [
-            ../test/0001-nixos-test-driver-include-a-timeout-for-the-recv-cal.patch
-          ];
+          # Try to apply the patch for backwards compat.
+          # It is included upstream starting from NixOS 23.05.
+          # github.com/NixOS/nixpkgs#228220
+          postPatch =
+            let
+              patch = "${lib.getBin hostPkgs.patch}/bin/patch";
+              patchFile = ../test/0001-nixos-test-driver-include-a-timeout-for-the-recv-cal.patch;
+            in
+            ''
+              echo "Try to apply patch ${patchFile}..."
+              if ${patch} --reverse -p1 --silent --force --dry-run --input=${patchFile}; then
+                echo "Patch already present, ignoring..."
+              else
+                ${patch} -p1 < ${patchFile}
+              fi
+            '';
         });
 
       runTest = { nodes, vlans, testScript, extraDriverArgs }: ''

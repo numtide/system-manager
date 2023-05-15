@@ -23,10 +23,10 @@ index 9de98c217a5..4b34ac423d1 100644
 @@ -99,7 +100,7 @@ def _perform_ocr_on_screenshot(
          + "-blur 1x65535"
      )
- 
+
 -    tess_args = f"-c debug_file=/dev/null --psm 11"
 +    tess_args = "-c debug_file=/dev/null --psm 11"
- 
+
      cmd = f"convert {magick_args} '{screenshot_path}' 'tiff:{screenshot_path}.tiff'"
      ret = subprocess.run(cmd, shell=True, capture_output=True)
 @@ -154,6 +155,7 @@ class StartCommand:
@@ -40,18 +40,18 @@ index 9de98c217a5..4b34ac423d1 100644
 @@ -524,8 +526,10 @@ class Machine:
          if timeout is not None:
              timeout_str = f"timeout {timeout}"
- 
+
 +        # While sh is bash on NixOS, this is not the case for every distro.
 +        # We explicitely call bash here to allow for the driver to boot other distros as well.
          out_command = (
 -            f"{timeout_str} sh -c {shlex.quote(command)} | (base64 --wrap 0; echo)\n"
 +            f"{timeout_str} bash -c {shlex.quote(command)} | (base64 --wrap 0; echo)\n"
          )
- 
+
          assert self.shell
 @@ -719,6 +723,15 @@ class Machine:
          self.wait_for_unit(jobname)
- 
+
      def connect(self) -> None:
 +        def shell_ready(timeout_secs: int) -> bool:
 +            """We sent some data from the backdoor service running on the guest
@@ -64,10 +64,10 @@ index 9de98c217a5..4b34ac423d1 100644
 +
          if self.connected:
              return
- 
+
 @@ -728,8 +741,11 @@ class Machine:
              assert self.shell
- 
+
              tic = time.time()
 -            self.shell.recv(1024)
 -            # TODO: Timeout
@@ -77,17 +77,7 @@ index 9de98c217a5..4b34ac423d1 100644
 +
 +            self.log(self.shell.recv(1024).decode())
              toc = time.time()
- 
-             self.log("connected to guest root shell")
-@@ -950,7 +966,7 @@ class Machine:
-         Prepares the machine to be reconnected which is useful if the
-         machine was started with `allow_reboot = True`
-         """
--        self.send_key(f"ctrl-alt-delete")
-+        self.send_key("ctrl-alt-delete")
-         self.connected = False
- 
-     def wait_for_x(self) -> None:
--- 
-2.39.2
 
+             self.log("connected to guest root shell")
+--
+2.39.2
