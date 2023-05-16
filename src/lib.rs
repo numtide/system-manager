@@ -43,15 +43,29 @@ impl TryFrom<PathBuf> for StorePath {
     type Error = anyhow::Error;
 
     fn try_from(path: PathBuf) -> Result<Self> {
-        let canon = path.canonicalize().unwrap_or(path.clone());
-        if !canon.starts_with(PathBuf::from("/").join("nix").join("store")) {
+        let nix_store = PathBuf::from("/").join("nix").join("store");
+
+        if path.starts_with(&nix_store) {
+            Ok(Self { store_path: path })
+        } else if path.is_symlink() {
+            if let Ok(target) = path.read_link() {
+                if target.starts_with(&nix_store) {
+                    Ok(Self { store_path: target })
+                } else {
+                    Self::try_from(target)
+                }
+            } else {
+                anyhow::bail!(
+                    "Error constructing store path: cannot read symlink: {}",
+                    path.display()
+                )
+            }
+        } else {
             anyhow::bail!(
-                "Error constructing store path, not in store: {} (canonicalised: {})",
-                path.display(),
-                canon.display()
-            );
+                "Error constructing store path: not in nix store: {}",
+                path.display()
+            )
         }
-        Ok(Self { store_path: canon })
     }
 }
 
