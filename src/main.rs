@@ -1,6 +1,5 @@
 use anyhow::Result;
 use clap::Parser;
-use std::borrow::Cow;
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use std::process::{self, ExitCode};
@@ -54,12 +53,28 @@ struct ActivationArgs {
 }
 
 #[derive(clap::Args, Debug)]
-struct OptionalStorePathArgs {
+struct OptionalStorePathArg {
     #[arg(long = "store-path", name = "STORE_PATH")]
     /// The store path for the system-manager profile.
     /// You only need to specify this explicitly if it differs from the active
     /// system-manager profile.
     maybe_store_path: Option<StorePath>,
+}
+
+#[derive(clap::Args, Debug)]
+struct OptionalFlakeUriArg {
+    #[arg(long = "flake", name = "FLAKE_URI")]
+    /// The flake URI defining the system-manager profile
+    maybe_flake_uri: Option<String>,
+}
+
+#[derive(clap::Args, Debug)]
+struct StoreOrFlakeArgs {
+    #[command(flatten)]
+    optional_store_path_arg: OptionalStorePathArg,
+
+    #[command(flatten)]
+    optional_flake_uri_arg: OptionalFlakeUriArg,
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -76,7 +91,7 @@ enum Action {
     /// services. Useful in build scripts.
     PrePopulate {
         #[command(flatten)]
-        optional_store_path_args: OptionalStorePathArgs,
+        store_or_flake_args: StoreOrFlakeArgs,
         #[command(flatten)]
         activation_args: ActivationArgs,
     },
@@ -88,13 +103,13 @@ enum Action {
     /// Deactivate the active system-manager profile, removing all managed configuration
     Deactivate {
         #[command(flatten)]
-        optional_store_path_args: OptionalStorePathArgs,
+        optional_store_path_args: OptionalStorePathArg,
     },
     /// Generate a new system-manager profile and
     /// register is as the active system-manager profile
     Generate {
         #[command(flatten)]
-        generate_args: GenerateArgs,
+        store_or_flake_args: StoreOrFlakeArgs,
     },
     /// Generate a new system-manager profile and activate it
     Switch {
@@ -127,21 +142,25 @@ fn go(args: Args) -> Result<()> {
             activate(&store_path, ephemeral, &target_host, use_remote_sudo)
         }
         Action::PrePopulate {
-            optional_store_path_args: OptionalStorePathArgs { maybe_store_path },
+            store_or_flake_args,
             activation_args: ActivationArgs { ephemeral },
-        } => {
-            let store_path = store_path_or_active_profile(maybe_store_path).try_into()?;
-            copy_closure(&store_path, &target_host)?;
-            prepopulate(&store_path, ephemeral, &target_host, use_remote_sudo)
-        }
+        } => prepopulate(
+            store_or_flake_args,
+            ephemeral,
+            &target_host,
+            use_remote_sudo,
+        )
+        .and_then(print_store_path),
         Action::Build {
             build_args: BuildArgs { flake_uri },
         } => build(&flake_uri, &target_host).and_then(print_store_path),
         Action::Deactivate {
-            optional_store_path_args: OptionalStorePathArgs { maybe_store_path },
+            optional_store_path_args: OptionalStorePathArg { maybe_store_path },
         } => deactivate(maybe_store_path, &target_host, use_remote_sudo),
-        Action::Generate { generate_args } => {
-            generate(&generate_args, &target_host, use_remote_sudo).and_then(print_store_path)
+        Action::Generate {
+            store_or_flake_args,
+        } => {
+            generate(store_or_flake_args, &target_host, use_remote_sudo).and_then(print_store_path)
         }
         Action::Switch {
             build_args: BuildArgs { flake_uri },
@@ -171,28 +190,40 @@ fn do_build(flake_uri: &str) -> Result<StorePath> {
     system_manager::generate::build(flake_uri)
 }
 
-fn generate<'a>(
-    args: &'a GenerateArgs,
+fn generate(
+    args: StoreOrFlakeArgs,
     target_host: &Option<String>,
     use_remote_sudo: bool,
-) -> Result<Cow<'a, StorePath>> {
+) -> Result<StorePath> {
     match args {
-        GenerateArgs {
-            flake_uri: Some(flake_uri),
-            store_path: None,
+        StoreOrFlakeArgs {
+            optional_store_path_arg:
+                OptionalStorePathArg {
+                    maybe_store_path: None,
+                },
+            optional_flake_uri_arg:
+                OptionalFlakeUriArg {
+                    maybe_flake_uri: Some(flake_uri),
+                },
         } => {
-            let store_path = do_build(flake_uri)?;
+            let store_path = do_build(&flake_uri)?;
             copy_closure(&store_path, target_host)?;
             do_generate(&store_path, target_host, use_remote_sudo)?;
-            Ok(store_path.into())
+            Ok(store_path)
         }
-        GenerateArgs {
-            flake_uri: None,
-            store_path: Some(store_path),
+        StoreOrFlakeArgs {
+            optional_store_path_arg:
+                OptionalStorePathArg {
+                    maybe_store_path: Some(store_path),
+                },
+            optional_flake_uri_arg:
+                OptionalFlakeUriArg {
+                    maybe_flake_uri: None,
+                },
         } => {
-            copy_closure(store_path, target_host)?;
-            do_generate(store_path, target_host, use_remote_sudo)?;
-            Ok(store_path.into())
+            copy_closure(&store_path, target_host)?;
+            do_generate(&store_path, target_host, use_remote_sudo)?;
+            Ok(store_path)
         }
         _ => {
             anyhow::bail!("Supply either a flake URI or a store path.")
@@ -249,6 +280,49 @@ fn activate(
 }
 
 fn prepopulate(
+    args: StoreOrFlakeArgs,
+    ephemeral: bool,
+    target_host: &Option<String>,
+    use_remote_sudo: bool,
+) -> Result<StorePath> {
+    match args {
+        StoreOrFlakeArgs {
+            optional_store_path_arg:
+                OptionalStorePathArg {
+                    maybe_store_path: None,
+                },
+            optional_flake_uri_arg:
+                OptionalFlakeUriArg {
+                    maybe_flake_uri: Some(flake_uri),
+                },
+        } => {
+            let store_path = do_build(&flake_uri)?;
+            copy_closure(&store_path, target_host)?;
+            do_generate(&store_path, target_host, use_remote_sudo)?;
+            do_prepopulate(&store_path, ephemeral, target_host, use_remote_sudo)?;
+            Ok(store_path)
+        }
+        StoreOrFlakeArgs {
+            optional_store_path_arg: OptionalStorePathArg { maybe_store_path },
+            optional_flake_uri_arg:
+                OptionalFlakeUriArg {
+                    maybe_flake_uri: None,
+                },
+        } => {
+            let store_path = StorePath::try_from(store_path_or_active_profile(maybe_store_path))?;
+            copy_closure(&store_path, target_host)?;
+            //TODO: this currently fails in the VM test, need to figure out why
+            //do_generate(&store_path, target_host, use_remote_sudo)?;
+            do_prepopulate(&store_path, ephemeral, target_host, use_remote_sudo)?;
+            Ok(store_path)
+        }
+        _ => {
+            anyhow::bail!("Supply either a flake URI or a store path.")
+        }
+    }
+}
+
+fn do_prepopulate(
     store_path: &StorePath,
     ephemeral: bool,
     target_host: &Option<String>,

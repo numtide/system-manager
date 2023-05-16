@@ -27,10 +27,8 @@ pub struct StorePath {
 impl From<String> for StorePath {
     fn from(path: String) -> Self {
         PathBuf::from(path.clone()).try_into().unwrap_or_else(|e| {
-            panic!(
-                "Error constructing store path, path not in store: {}\n{:?}",
-                path, e
-            );
+            log::error!("Error constructing store path: {}\n  {:?}", path, e);
+            panic!("Error constructing store path: {}: {:?}", path, e);
         })
     }
 }
