@@ -243,6 +243,20 @@ where
             }))
     }
 
+    // Some versions of systemd ignore .wants and .requires directories when they are symlinks.
+    // We therefore create them as actual directories and link their contents instead.
+    fn is_systemd_dependency_dir(path: &Path) -> bool {
+        path.is_dir()
+            && path
+                .parent()
+                .map(|p| p.ends_with("systemd/system"))
+                .unwrap_or(false)
+            && path
+                .extension()
+                .filter(|ext| ["wants", "requires"].iter().any(|other| other == ext))
+                .is_some()
+    }
+
     fn go(
         link_target: &Path,
         etc_dir: &Path,
@@ -257,20 +271,8 @@ where
             .join(link_target);
         let absolute_target = etc_dir.join(SYSTEM_MANAGER_STATIC_NAME).join(link_target);
 
-        // Some versions of systemd ignore .wants and .requires directories when they are symlinks.
-        // We therefore create them as actual directories and link their contents instead.
-        let is_systemd_dependency_dir = absolute_target.is_dir()
-            && absolute_target
-                .parent()
-                .map(|p| p.ends_with("systemd/system"))
-                .unwrap_or(false)
-            && link_target
-                .extension()
-                .filter(|ext| ["wants", "requires"].iter().any(|other| other == ext))
-                .is_some();
-
         if (link_path.exists() && link_path.is_dir() && !old_state.is_managed(&link_path))
-            || is_systemd_dependency_dir
+            || is_systemd_dependency_dir(&absolute_target)
         {
             if absolute_target.is_dir() {
                 link_dir_contents(
