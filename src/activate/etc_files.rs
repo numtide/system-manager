@@ -295,9 +295,14 @@ where
         {
             log::debug!("Link {} up to date.", link_path.display());
             Ok(dir_state.register_managed_entry(&link_path))
+        } else if link_path.exists() && !old_state.is_managed(&link_path) {
+            Err(ActivationError::with_partial_result(
+                dir_state,
+                anyhow::anyhow!("Unmanaged path already exists in filesystem, please remove it and run system-manager again: {}",
+                                link_path.display()),
+            ))
         } else {
             let result = if link_path.exists() {
-                assert!(old_state.is_managed(&link_path));
                 fs::remove_file(&link_path)
                     .map_err(|e| ActivationError::with_partial_result(dir_state.clone(), e))
             } else {

@@ -71,7 +71,13 @@ forEachUbuntuImage
 
               node1.wait_for_unit("default.target")
 
-              node1.succeed("/system-manager-profile/bin/activate")
+              node1.succeed("touch /etc/foo_test")
+              node1.succeed("/system-manager-profile/bin/activate 2>&1 | tee /tmp/output.log")
+              node1.succeed("grep -F 'Error while creating file in /etc: Unmanaged path already exists in filesystem, please remove it and run system-manager again: /etc/foo_test' /tmp/output.log")
+              node1.succeed("rm /etc/foo_test")
+
+              node1.succeed("/system-manager-profile/bin/activate 2>&1 | tee /tmp/output.log")
+              node1.succeed("grep -vF 'ERROR' /tmp/output.log")
               node1.wait_for_unit("system-manager.target")
 
               node1.wait_for_unit("service-9.service")
@@ -81,7 +87,8 @@ forEachUbuntuImage
               node1.succeed("grep -F 'launch_the_rockets = true' /etc/foo.conf")
               node1.fail("grep -F 'launch_the_rockets = false' /etc/foo.conf")
 
-              node1.succeed("${newConfig}/bin/activate")
+              node1.succeed("${newConfig}/bin/activate 2>&1 | tee /tmp/output.log")
+              node1.succeed("grep -vF 'ERROR' /tmp/output.log")
               node1.wait_for_unit("new-service.service")
               node1.wait_until_fails("systemctl status service-9.service")
               node1.wait_until_fails("cat /etc/a/nested/example/foo3")
@@ -145,7 +152,8 @@ forEachUbuntuImage
 
               node1.wait_for_unit("default.target")
 
-              node1.succeed("/system-manager-profile/bin/prepopulate")
+              node1.succeed("/system-manager-profile/bin/prepopulate 2>&1 | tee /tmp/output.log")
+              node1.succeed("grep -vF 'ERROR' /tmp/output.log")
               node1.systemctl("daemon-reload")
               node1.systemctl("start default.target")
               node1.wait_for_unit("system-manager.target")
@@ -157,7 +165,8 @@ forEachUbuntuImage
               node1.succeed("grep -F 'launch_the_rockets = true' /etc/foo.conf")
               node1.fail("grep -F 'launch_the_rockets = false' /etc/foo.conf")
 
-              node1.succeed("${newConfig}/bin/activate")
+              node1.succeed("${newConfig}/bin/activate 2>&1 | tee /tmp/output.log")
+              node1.succeed("grep -vF 'ERROR' /tmp/output.log")
               node1.wait_for_unit("new-service.service")
               node1.wait_until_fails("systemctl status service-9.service")
               node1.wait_until_fails("cat /etc/a/nested/example/foo3")
