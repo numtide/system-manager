@@ -43,7 +43,7 @@ impl TryFrom<PathBuf> for StorePath {
     type Error = anyhow::Error;
 
     fn try_from(path: PathBuf) -> Result<Self> {
-        let canon = path.canonicalize()?;
+        let canon = path.canonicalize().unwrap_or(path.clone());
         if !canon.starts_with(PathBuf::from("/").join("nix").join("store")) {
             anyhow::bail!(
                 "Error constructing store path, not in store: {} (canonicalised: {})",
