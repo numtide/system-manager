@@ -132,19 +132,5 @@
           '';
         };
     };
-
-    # Can we make sure that this does not get relaunched when activating a new profile?
-    # Otherwise we get an infinite loop.
-    systemd.services.reactivate-system-manager = {
-      enable = false;
-      # TODO should we activate earlier?
-      wantedBy = [ "multi-user.target" ];
-      serviceConfig = {
-        Type = "oneshot";
-      };
-      script = ''
-        /nix/var/nix/profiles/system-manager-profiles/system-manager/bin/activate
-      '';
-    };
   };
 }
