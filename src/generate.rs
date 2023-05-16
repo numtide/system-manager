@@ -19,7 +19,10 @@ pub fn generate(store_path: &StorePath) -> Result<()> {
     let profile_name = Path::new(PROFILE_NAME);
 
     log::info!("Creating new generation from {store_path}");
-    install_nix_profile(store_path, profile_dir, profile_name)?;
+    let status = install_nix_profile(store_path, profile_dir, profile_name)?;
+    if !status.success() {
+        anyhow::bail!("Error installing the nix profile, see above for details.");
+    }
 
     log::info!("Registering GC root...");
     create_gcroot(GCROOT_PATH, &profile_dir.join(profile_name))?;
@@ -33,7 +36,10 @@ fn install_nix_profile(
     profile_dir: &Path,
     profile_name: &Path,
 ) -> Result<process::ExitStatus> {
-    DirBuilder::new().recursive(true).create(profile_dir)?;
+    DirBuilder::new()
+        .recursive(true)
+        .create(profile_dir)
+        .context("While creating the profile dir.")?;
     let status = process::Command::new("nix-env")
         .arg("--profile")
         .arg(profile_dir.join(profile_name))
@@ -41,7 +47,8 @@ fn install_nix_profile(
         .arg(&store_path.store_path)
         .stdout(process::Stdio::inherit())
         .stderr(process::Stdio::inherit())
-        .status()?;
+        .status()
+        .context("While running nix-env.")?;
     Ok(status)
 }
 
