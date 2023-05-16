@@ -12,7 +12,7 @@ let
         config = {
           nixpkgs.hostPlatform = system;
 
-          services.nginx.enable = true;
+          services.nginx.enable = false;
 
           environment.etc = {
             foo_new = {
@@ -80,20 +80,21 @@ forEachUbuntuImage
               node1.succeed("grep -vF 'ERROR' /tmp/output.log")
               node1.wait_for_unit("system-manager.target")
 
-              node1.wait_for_unit("service-9.service")
-              node1.wait_for_file("/etc/baz/bar/foo2")
-              node1.wait_for_file("/etc/a/nested/example/foo3")
-              node1.wait_for_file("/etc/foo.conf")
+              node1.succeed("systemctl status service-9.service")
+              node1.succeed("cat /etc/baz/bar/foo2")
+              node1.succeed("cat /etc/a/nested/example/foo3")
+              node1.succeed("cat /etc/foo.conf")
               node1.succeed("grep -F 'launch_the_rockets = true' /etc/foo.conf")
               node1.fail("grep -F 'launch_the_rockets = false' /etc/foo.conf")
 
               node1.succeed("${newConfig}/bin/activate 2>&1 | tee /tmp/output.log")
               node1.succeed("grep -vF 'ERROR' /tmp/output.log")
-              node1.wait_for_unit("new-service.service")
-              node1.wait_until_fails("systemctl status service-9.service")
-              node1.wait_until_fails("cat /etc/a/nested/example/foo3")
-              node1.wait_until_fails("cat /etc/baz/bar/foo2")
-              node1.wait_for_file("/etc/foo_new")
+              node1.succeed("systemctl status new-service.service")
+              node1.fail("systemctl status service-9.service")
+              node1.fail("cat /etc/a/nested/example/foo3")
+              node1.fail("cat /etc/baz/bar/foo2")
+              node1.fail("cat /etc/systemd/system/nginx.service")
+              node1.succeed("cat /etc/foo_new")
 
               # Simulate a reboot, to check that the services defined with
               # system-manager start correctly after a reboot.
@@ -105,15 +106,15 @@ forEachUbuntuImage
               node1.systemctl("isolate default.target")
               node1.wait_for_unit("default.target")
 
-              node1.wait_for_unit("new-service.service")
-              node1.wait_until_fails("systemctl status service-9.service")
-              node1.wait_until_fails("cat /etc/a/nested/example/foo3")
-              node1.wait_until_fails("cat /etc/baz/bar/foo2")
-              node1.wait_for_file("/etc/foo_new")
+              node1.succeed("systemctl status new-service.service")
+              node1.fail("systemctl status service-9.service")
+              node1.fail("cat /etc/a/nested/example/foo3")
+              node1.fail("cat /etc/baz/bar/foo2")
+              node1.succeed("cat /etc/foo_new")
 
               node1.succeed("${newConfig}/bin/deactivate")
-              node1.wait_until_fails("systemctl status new-service.service")
-              node1.wait_until_fails("cat /etc/foo_new")
+              node1.fail("systemctl status new-service.service")
+              node1.fail("cat /etc/foo_new")
             '';
           })
       ];
@@ -158,24 +159,24 @@ forEachUbuntuImage
               node1.systemctl("start default.target")
               node1.wait_for_unit("system-manager.target")
 
-              node1.wait_for_unit("service-9.service")
-              node1.wait_for_file("/etc/baz/bar/foo2")
-              node1.wait_for_file("/etc/a/nested/example/foo3")
-              node1.wait_for_file("/etc/foo.conf")
+              node1.succeed("systemctl status service-9.service")
+              node1.succeed("cat /etc/baz/bar/foo2")
+              node1.succeed("cat /etc/a/nested/example/foo3")
+              node1.succeed("cat /etc/foo.conf")
               node1.succeed("grep -F 'launch_the_rockets = true' /etc/foo.conf")
               node1.fail("grep -F 'launch_the_rockets = false' /etc/foo.conf")
 
               node1.succeed("${newConfig}/bin/activate 2>&1 | tee /tmp/output.log")
               node1.succeed("grep -vF 'ERROR' /tmp/output.log")
-              node1.wait_for_unit("new-service.service")
-              node1.wait_until_fails("systemctl status service-9.service")
-              node1.wait_until_fails("cat /etc/a/nested/example/foo3")
-              node1.wait_until_fails("cat /etc/baz/bar/foo2")
-              node1.wait_for_file("/etc/foo_new")
+              node1.succeed("systemctl status new-service.service")
+              node1.fail("systemctl status service-9.service")
+              node1.fail("cat /etc/a/nested/example/foo3")
+              node1.fail("cat /etc/baz/bar/foo2")
+              node1.succeed("cat /etc/foo_new")
 
               node1.succeed("${newConfig}/bin/deactivate")
-              node1.wait_until_fails("systemctl status new-service.service")
-              node1.wait_until_fails("cat /etc/foo_new")
+              node1.fail("systemctl status new-service.service")
+              node1.fail("cat /etc/foo_new")
             '';
           }
         )

@@ -1,6 +1,6 @@
-{ lib, ... }:
+{ config, lib, ... }:
 {
-  systemd.services.nginx = {
+  systemd.services.nginx = lib.mkIf config.services.nginx.enable {
     serviceConfig.DynamicUser = true;
 
     # TODO: can we handle this better?
