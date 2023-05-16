@@ -84,6 +84,7 @@
             dbus
           ];
           nativeBuildInputs = with pkgs; [
+            makeWrapper
             pkg-config
           ];
         };
@@ -96,6 +97,9 @@
         system-manager = craneLib.buildPackage (commonArgs // {
           pname = "system-manager";
           inherit cargoArtifacts;
+          postInstall = ''
+            wrapProgram $out/bin/system-manager --prefix PATH : ${nixpkgs.lib.makeBinPath [ pkgs.nix ]}
+          '';
         });
 
         system-manager-clippy = craneLib.cargoClippy (commonArgs // {
