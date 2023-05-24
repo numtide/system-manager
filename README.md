@@ -39,7 +39,7 @@ A basic Nix flake using System Manager would look something like this:
     };
   };
 
-  outputs = { self, nixpkgs, system-manager }: {
+  outputs = { self, flake-utils, nixpkgs, system-manager }: {
     systemConfigs.default = self.lib.makeSystemConfig {
       system = flake-utils.lib.system.x86_64-linux;
       modules = [
