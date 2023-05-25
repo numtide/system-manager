@@ -5,7 +5,9 @@ use std::fs::DirBuilder;
 use std::path::Path;
 use std::{fs, process, str};
 
-use super::{create_store_link, StorePath, FLAKE_ATTR, GCROOT_PATH, PROFILE_DIR, PROFILE_NAME};
+use super::{
+    create_store_link, NixOptions, StorePath, FLAKE_ATTR, GCROOT_PATH, PROFILE_DIR, PROFILE_NAME,
+};
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -58,17 +60,18 @@ fn create_gcroot(gcroot_path: &str, profile_path: &Path) -> Result<()> {
     create_store_link(&store_path, Path::new(gcroot_path))
 }
 
-pub fn build(flake_uri: &str) -> Result<StorePath> {
-    let full_flake_uri = find_flake_attr(flake_uri)?;
+pub fn build(flake_uri: &str, nix_options: &NixOptions) -> Result<StorePath> {
+    let full_flake_uri = find_flake_attr(flake_uri, nix_options)?;
 
     log::info!("Building new system-manager generation...");
     log::info!("Running nix build...");
-    let store_path = run_nix_build(full_flake_uri.as_ref()).and_then(get_store_path)?;
+    let store_path =
+        run_nix_build(full_flake_uri.as_ref(), nix_options).and_then(get_store_path)?;
     log::info!("Built system-manager profile {store_path}");
     Ok(store_path)
 }
 
-fn find_flake_attr(flake_uri: &str) -> Result<String> {
+fn find_flake_attr(flake_uri: &str, nix_options: &NixOptions) -> Result<String> {
     fn full_uri(flake: &str, attr: &str) -> String {
         format!("{flake}#{FLAKE_ATTR}.{attr}")
     }
@@ -85,7 +88,7 @@ fn find_flake_attr(flake_uri: &str) -> Result<String> {
     }
 
     if let Some(attr) = attr {
-        if try_flake_attr(flake, attr)? {
+        if try_flake_attr(flake, attr, nix_options)? {
             return Ok(full_uri(flake, attr));
         } else {
             anyhow::bail!(
@@ -99,18 +102,18 @@ fn find_flake_attr(flake_uri: &str) -> Result<String> {
     let hostname = hostname_os.to_string_lossy();
     let default = "default";
 
-    if try_flake_attr(flake, &hostname)? {
+    if try_flake_attr(flake, &hostname, nix_options)? {
         return Ok(full_uri(flake, &hostname));
-    } else if try_flake_attr(flake, default)? {
+    } else if try_flake_attr(flake, default, nix_options)? {
         return Ok(full_uri(flake, default));
     };
     anyhow::bail!("No suitable flake attribute found, giving up.");
 }
 
-fn try_flake_attr(flake: &str, attr: &str) -> Result<bool> {
+fn try_flake_attr(flake: &str, attr: &str, nix_options: &NixOptions) -> Result<bool> {
     let full_uri = format!("{flake}#{FLAKE_ATTR}.{attr}");
     log::info!("Trying flake URI: {full_uri}...");
-    let status = try_nix_eval(flake, attr)?;
+    let status = try_nix_eval(flake, attr, nix_options)?;
     if status {
         log::info!("Success, using {full_uri}");
     } else {
@@ -143,8 +146,8 @@ fn parse_nix_build_output(output: String) -> Result<StorePath> {
     anyhow::bail!("Multiple build results were returned, we cannot handle that yet.")
 }
 
-fn run_nix_build(flake_uri: &str) -> Result<process::Output> {
-    let output = nix_cmd()
+fn run_nix_build(flake_uri: &str, nix_options: &NixOptions) -> Result<process::Output> {
+    let output = nix_cmd(nix_options)
         .arg("build")
         .arg(flake_uri)
         .arg("--json")
@@ -156,8 +159,8 @@ fn run_nix_build(flake_uri: &str) -> Result<process::Output> {
     Ok(output)
 }
 
-fn try_nix_eval(flake: &str, attr: &str) -> Result<bool> {
-    let output = nix_cmd()
+fn try_nix_eval(flake: &str, attr: &str, nix_options: &NixOptions) -> Result<bool> {
+    let output = nix_cmd(nix_options)
         .arg("eval")
         .arg(format!("{flake}#{FLAKE_ATTR}"))
         .arg("--json")
@@ -175,9 +178,12 @@ fn try_nix_eval(flake: &str, attr: &str) -> Result<bool> {
     }
 }
 
-fn nix_cmd() -> process::Command {
+fn nix_cmd(nix_options: &NixOptions) -> process::Command {
     let mut cmd = process::Command::new("nix");
     cmd.arg("--extra-experimental-features")
         .arg("nix-command flakes");
+    nix_options.options.iter().for_each(|option| {
+        cmd.arg("--option").arg(&option.0).arg(&option.1);
+    });
     cmd
 }

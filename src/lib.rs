@@ -99,6 +99,16 @@ impl<'a> From<&'a StorePath> for Cow<'a, StorePath> {
     }
 }
 
+pub struct NixOptions {
+    options: Vec<(String, String)>,
+}
+
+impl NixOptions {
+    pub fn new(options: Vec<(String, String)>) -> Self {
+        Self { options }
+    }
+}
+
 fn create_store_link(store_path: &StorePath, from: &Path) -> Result<()> {
     create_link(Path::new(&store_path.store_path), from)
 }

@@ -4,7 +4,7 @@ use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use std::process::{self, ExitCode};
 
-use system_manager::StorePath;
+use system_manager::{NixOptions, StorePath};
 
 #[derive(clap::Parser, Debug)]
 #[command(
@@ -25,6 +25,9 @@ struct Args {
     /// Invoke the remote command with sudo.
     /// Only useful in combination with --target-host
     use_remote_sudo: bool,
+
+    #[clap(long = "nix-option", num_args = 2)]
+    nix_options: Option<Vec<String>>,
 }
 
 #[derive(clap::Args, Debug)]
@@ -122,7 +125,7 @@ enum Action {
 
 // TODO: create a general lock while we are running to avoid running system-manager concurrently
 fn main() -> ExitCode {
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug")).init();
     handle_toplevel_error(go(Args::parse()))
 }
 
@@ -131,7 +134,25 @@ fn go(args: Args) -> Result<()> {
         action,
         target_host,
         use_remote_sudo,
+        nix_options,
     } = args;
+
+    let nix_options = NixOptions::new(nix_options.map_or(Vec::new(), |vals| {
+        vals.chunks(2)
+            .map(|slice| {
+                (
+                    slice
+                        .get(0)
+                        .expect("Error parsing nix-option values")
+                        .to_owned(),
+                    slice
+                        .get(1)
+                        .expect("Error parsing nix-option values")
+                        .to_owned(),
+                )
+            })
+            .collect::<Vec<_>>()
+    }));
 
     match action {
         Action::Activate {
@@ -149,24 +170,29 @@ fn go(args: Args) -> Result<()> {
             ephemeral,
             &target_host,
             use_remote_sudo,
+            &nix_options,
         )
         .and_then(print_store_path),
         Action::Build {
             build_args: BuildArgs { flake_uri },
-        } => build(&flake_uri, &target_host).and_then(print_store_path),
+        } => build(&flake_uri, &target_host, &nix_options).and_then(print_store_path),
         Action::Deactivate {
             optional_store_path_args: OptionalStorePathArg { maybe_store_path },
         } => deactivate(maybe_store_path, &target_host, use_remote_sudo),
         Action::Generate {
             store_or_flake_args,
-        } => {
-            generate(store_or_flake_args, &target_host, use_remote_sudo).and_then(print_store_path)
-        }
+        } => generate(
+            store_or_flake_args,
+            &target_host,
+            use_remote_sudo,
+            &nix_options,
+        )
+        .and_then(print_store_path),
         Action::Switch {
             build_args: BuildArgs { flake_uri },
             activation_args: ActivationArgs { ephemeral },
         } => {
-            let store_path = do_build(&flake_uri)?;
+            let store_path = do_build(&flake_uri, &nix_options)?;
             copy_closure(&store_path, &target_host)?;
             do_generate(&store_path, &target_host, use_remote_sudo)?;
             activate(&store_path, ephemeral, &target_host, use_remote_sudo)
@@ -180,20 +206,25 @@ fn print_store_path<SP: AsRef<StorePath>>(store_path: SP) -> Result<()> {
     Ok(())
 }
 
-fn build(flake_uri: &str, target_host: &Option<String>) -> Result<StorePath> {
-    let store_path = do_build(flake_uri)?;
+fn build(
+    flake_uri: &str,
+    target_host: &Option<String>,
+    nix_options: &NixOptions,
+) -> Result<StorePath> {
+    let store_path = do_build(flake_uri, nix_options)?;
     copy_closure(&store_path, target_host)?;
     Ok(store_path)
 }
 
-fn do_build(flake_uri: &str) -> Result<StorePath> {
-    system_manager::generate::build(flake_uri)
+fn do_build(flake_uri: &str, nix_options: &NixOptions) -> Result<StorePath> {
+    system_manager::generate::build(flake_uri, nix_options)
 }
 
 fn generate(
     args: StoreOrFlakeArgs,
     target_host: &Option<String>,
     use_remote_sudo: bool,
+    nix_options: &NixOptions,
 ) -> Result<StorePath> {
     match args {
         StoreOrFlakeArgs {
@@ -206,7 +237,7 @@ fn generate(
                     maybe_flake_uri: Some(flake_uri),
                 },
         } => {
-            let store_path = do_build(&flake_uri)?;
+            let store_path = do_build(&flake_uri, nix_options)?;
             copy_closure(&store_path, target_host)?;
             do_generate(&store_path, target_host, use_remote_sudo)?;
             Ok(store_path)
@@ -284,6 +315,7 @@ fn prepopulate(
     ephemeral: bool,
     target_host: &Option<String>,
     use_remote_sudo: bool,
+    nix_options: &NixOptions,
 ) -> Result<StorePath> {
     match args {
         StoreOrFlakeArgs {
@@ -296,7 +328,7 @@ fn prepopulate(
                     maybe_flake_uri: Some(flake_uri),
                 },
         } => {
-            let store_path = do_build(&flake_uri)?;
+            let store_path = do_build(&flake_uri, nix_options)?;
             copy_closure(&store_path, target_host)?;
             do_generate(&store_path, target_host, use_remote_sudo)?;
             do_prepopulate(&store_path, ephemeral, target_host, use_remote_sudo)?;
