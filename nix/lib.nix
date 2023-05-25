@@ -16,7 +16,6 @@ in
   makeSystemConfig =
     { modules
     , extraSpecialArgs ? { }
-    ,
     }:
     let
       # Module that sets additional module arguments
@@ -451,7 +450,7 @@ in
             in
             ''
               echo "Try to apply patch ${patchFile}..."
-              if ${patch} --reverse -p1 --silent --force --dry-run --input=${patchFile}; then
+              if grep --quiet --fixed-strings "bash" test_driver/machine.py; then
                 echo "Patch already present, ignoring..."
               else
                 ${patch} -p1 < ${patchFile}
