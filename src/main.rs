@@ -1,6 +1,7 @@
 use anyhow::Result;
 use clap::Parser;
 use std::ffi::OsString;
+use std::mem;
 use std::path::{Path, PathBuf};
 use std::process::{self, ExitCode};
 
@@ -137,18 +138,12 @@ fn go(args: Args) -> Result<()> {
         nix_options,
     } = args;
 
-    let nix_options = NixOptions::new(nix_options.map_or(Vec::new(), |vals| {
-        vals.chunks(2)
+    let nix_options = NixOptions::new(nix_options.map_or(Vec::new(), |mut vals| {
+        vals.chunks_mut(2)
             .map(|slice| {
                 (
-                    slice
-                        .get(0)
-                        .expect("Error parsing nix-option values")
-                        .to_owned(),
-                    slice
-                        .get(1)
-                        .expect("Error parsing nix-option values")
-                        .to_owned(),
+                    mem::take(slice.get_mut(0).expect("Error parsing nix-option values")),
+                    mem::take(slice.get_mut(1).expect("Error parsing nix-option values")),
                 )
             })
             .collect::<Vec<_>>()
