@@ -116,7 +116,7 @@ impl FileTree {
                                 Some(go(
                                     maybe_subtree.unwrap_or_else(|| {
                                         FileTree::with_status(
-                                            new_path.to_owned(),
+                                            new_path.clone(),
                                             // We only label as managed the final path entry,
                                             // to label intermediate nodes as managed, we should
                                             // call this function for every one of them separately.

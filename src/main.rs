@@ -424,7 +424,7 @@ fn invoke_remote_script(
             path.join("bin")
                 .join(script_name)
                 .to_string_lossy()
-                .into_owned(),
+                .to_string(),
         ))
         .stdout(process::Stdio::inherit())
         .stderr(process::Stdio::inherit())

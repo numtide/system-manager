@@ -2,6 +2,7 @@ use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::DirBuilder;
+use std::mem;
 use std::path::Path;
 use std::{fs, process, str};
 
@@ -134,12 +135,12 @@ fn get_store_path(nix_build_result: process::Output) -> Result<StorePath> {
 
 fn parse_nix_build_output(output: String) -> Result<StorePath> {
     let expected_output_name = "out";
-    let results: Vec<NixBuildOutput> =
+    let mut results: Vec<NixBuildOutput> =
         serde_json::from_str(&output).context("Error reading nix build output")?;
 
-    if let [result] = results.as_slice() {
-        if let Some(store_path) = result.outputs.get(expected_output_name) {
-            return Ok(StorePath::from(store_path.to_owned()));
+    if let [result] = results.as_mut_slice() {
+        if let Some(store_path) = result.outputs.get_mut(expected_output_name) {
+            return Ok(StorePath::from(mem::take(store_path)));
         }
         anyhow::bail!("No output '{expected_output_name}' found in nix build result.")
     }
