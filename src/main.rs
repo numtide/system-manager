@@ -146,7 +146,7 @@ fn go(args: Args) -> Result<()> {
                     mem::take(slice.get_mut(1).expect("Error parsing nix-option values")),
                 )
             })
-            .collect::<Vec<_>>()
+            .collect()
     }));
 
     match action {
