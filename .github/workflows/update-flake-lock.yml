@@ -1,0 +1,31 @@
+name: update-flake-lock
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '45 3 * * 1' # runs weekly every Monday at 03:45 UTC
+
+jobs:
+  lockfile:
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Checkout the repo"
+        uses: "actions/checkout@v3"
+      - name: "Install the Nix package manager"
+        uses: "cachix/install-nix-action@master"
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: "Update the lockfile"
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          nix flake update --commit-lock-file
+          cargo update
+          git add Cargo.lock
+          git commit -m "cargo update"
+      - name: "Create Pull Request"
+        uses: "peter-evans/create-pull-request@v5"
+        with:
+          branch: "auto_update_deps"
+          title: "Bump flake.lock and Cargo.lock"
+          body: |
+            Automatically bumped the lock files.
