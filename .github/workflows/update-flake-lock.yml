@@ -21,7 +21,8 @@ jobs:
           nix flake update --commit-lock-file
           cargo update
           git add Cargo.lock
-          git commit -m "cargo update"
+          # Commit exits with an error when there is nothing to do
+          git commit -m "cargo update" || true
       - name: "Create Pull Request"
         uses: "peter-evans/create-pull-request@v5"
         with:
