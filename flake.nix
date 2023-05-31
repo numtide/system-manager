@@ -1,19 +1,11 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    systems = {
-      url = "path:./systems.nix";
-      flake = false;
-    };
-    flake-utils = {
-      url = "github:numtide/flake-utils";
-      inputs.systems.follows = "systems";
-    };
+    flake-utils.url = "github:numtide/flake-utils";
     devshell = {
       url = "github:numtide/devshell";
       inputs = {
         nixpkgs.follows = "nixpkgs";
-        systems.follows = "systems";
       };
     };
     pre-commit-hooks = {
@@ -54,7 +46,7 @@
     , devshell
     , treefmt-nix
     , pre-commit-hooks
-    , ...
+    ,
     }:
     {
       lib = import ./nix/lib.nix {
@@ -68,7 +60,11 @@
       };
     }
     //
-    (flake-utils.lib.eachDefaultSystem
+    (flake-utils.lib.eachSystem
+      [
+        flake-utils.lib.system.x86_64-linux
+        flake-utils.lib.system.aarch64-linux
+      ]
       (system:
       let
         pkgs = import nixpkgs {
