@@ -1,5 +1,5 @@
 pub mod activate;
-pub mod generate;
+pub mod register;
 mod systemd;
 
 use anyhow::Result;

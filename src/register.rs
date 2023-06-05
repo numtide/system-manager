@@ -17,12 +17,12 @@ struct NixBuildOutput {
     outputs: HashMap<String, String>,
 }
 
-pub fn generate(store_path: &StorePath) -> Result<()> {
+pub fn register(store_path: &StorePath, nix_options: &NixOptions) -> Result<()> {
     let profile_dir = Path::new(PROFILE_DIR);
     let profile_name = Path::new(PROFILE_NAME);
 
     log::info!("Creating new generation from {store_path}");
-    let status = install_nix_profile(store_path, profile_dir, profile_name)?;
+    let status = install_nix_profile(store_path, profile_dir, profile_name, nix_options)?;
     if !status.success() {
         anyhow::bail!("Error installing the nix profile, see above for details.");
     }
@@ -38,16 +38,21 @@ fn install_nix_profile(
     store_path: &StorePath,
     profile_dir: &Path,
     profile_name: &Path,
+    nix_options: &NixOptions,
 ) -> Result<process::ExitStatus> {
     DirBuilder::new()
         .recursive(true)
         .create(profile_dir)
         .context("While creating the profile dir.")?;
-    let status = process::Command::new("nix-env")
-        .arg("--profile")
+    let mut cmd = process::Command::new("nix-env");
+    cmd.arg("--profile")
         .arg(profile_dir.join(profile_name))
         .arg("--set")
-        .arg(&store_path.store_path)
+        .arg(&store_path.store_path);
+    nix_options.options.iter().for_each(|option| {
+        cmd.arg("--option").arg(&option.0).arg(&option.1);
+    });
+    let status = cmd
         .stdout(process::Stdio::inherit())
         .stderr(process::Stdio::inherit())
         .status()
