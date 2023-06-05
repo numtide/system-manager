@@ -340,7 +340,6 @@ fn prepopulate(
         } => {
             let store_path = StorePath::try_from(store_path_or_active_profile(maybe_store_path))?;
             copy_closure(&store_path, target_host)?;
-            //TODO: this currently fails in the VM test, need to figure out why
             do_register(&store_path, target_host, use_remote_sudo, nix_options)?;
             do_prepopulate(&store_path, ephemeral, target_host, use_remote_sudo)?;
             Ok(store_path)
