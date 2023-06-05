@@ -104,7 +104,7 @@ in
       };
 
       registerProfileScript = pkgs.writeShellScript "register-profile" ''
-        ${system-manager}/bin/system-manager generate \
+        ${system-manager}/bin/system-manager register \
           --store-path "$(dirname $(realpath $(dirname ''${0})))" \
           "$@"
       '';
@@ -253,7 +253,10 @@ in
   # Careful since we do not have the nix store yet when this service runs,
   # so we cannot use pkgs.writeTest or pkgs.writeShellScript for instance,
   # since their results would refer to the store
-  mount_store = { pkgs }:
+  mount_store = { pkgs, pathsToRegister }:
+    let
+      pathRegistrationInfo = "${pkgs.closureInfo { rootPaths = pathsToRegister; }}/registration";
+    in
     pkgs.writeText "mount-store.service" ''
       [Service]
       Type = oneshot
@@ -263,6 +266,12 @@ in
       ExecStart = mount -t tmpfs tmpfs /nix/.rw-store
       ExecStart = mkdir -p -m 0755 /nix/.rw-store/store /nix/.rw-store/work
       ExecStart = mount -t overlay overlay /nix/store -o lowerdir=/nix/.ro-store,upperdir=/nix/.rw-store/store,workdir=/nix/.rw-store/work
+
+      # Register the required paths in the nix DB.
+      # The store has been mounted at this point, to we can use writeShellScript now.
+      ExecStart = ${pkgs.writeShellScript "execstartpost-script" ''
+        ${lib.getBin pkgs.nix}/bin/nix-store --load-db < ${pathRegistrationInfo}
+      ''}
 
       [Install]
       WantedBy = multi-user.target
@@ -315,7 +324,7 @@ in
       WantedBy = multi-user.target
     '';
 
-  prepareUbuntuImage = { hostPkgs, nodeConfig, image }:
+  prepareUbuntuImage = { hostPkgs, nodeConfig, image, extraPathsToRegister ? [ ] }:
     let
       pkgs = hostPkgs;
 
@@ -325,6 +334,9 @@ in
       };
 
       resultImg = "./image.qcow2";
+
+      # The nix store paths that need to be added to the nix DB for this node.
+      pathsToRegister = [ nodeConfig.systemConfig ] ++ extraPathsToRegister;
     in
     pkgs.runCommand "${image.name}-system-manager-vm-test.qcow2" { } ''
       # We will modify the VM image, so we need a mutable copy
@@ -333,7 +345,7 @@ in
       # Copy the service files here, since otherwise they end up in the VM
       # with their paths including the nix hash
       cp ${self.lib.backdoor { inherit pkgs; }} backdoor.service
-      cp ${self.lib.mount_store { inherit pkgs; }} mount-store.service
+      cp ${self.lib.mount_store { inherit pkgs pathsToRegister; }} mount-store.service
 
       #export LIBGUESTFS_DEBUG=1 LIBGUESTFS_TRACE=1
       ${lib.concatStringsSep "  \\\n" [
