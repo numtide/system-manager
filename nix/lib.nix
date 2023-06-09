@@ -284,6 +284,13 @@ in
       cp ${resultImg} $out
     '';
 
+  mkTestPreamble = node: action: ''
+    ${node}.succeed("/system-manager-profile/bin/${action} 2>&1 | tee /tmp/output.log")
+    ${node}.succeed("grep -vF 'ERROR' /tmp/output.log")
+  '';
+
+  activateProfileSnippet = node: self.lib.mkTestPreamble node "activate";
+
   make-vm-test =
     name:
     { system

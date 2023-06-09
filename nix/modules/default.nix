@@ -6,6 +6,7 @@
 }:
 {
   imports = [
+    ./environment.nix
     ./etc.nix
     ./systemd.nix
     ./upstream/nixpkgs
@@ -16,7 +17,6 @@
       inherit (lib) types;
     in
     {
-
       nixpkgs = {
         # TODO: switch to lib.systems.parsedPlatform
         hostPlatform = lib.mkOption {

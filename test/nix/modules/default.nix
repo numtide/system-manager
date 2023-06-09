@@ -160,7 +160,7 @@ forEachUbuntuImage
     })
   )
 
-  //
+//
 
 forEachUbuntuImage
   (imgName: image: lib.nameValuePair
@@ -219,6 +219,50 @@ forEachUbuntuImage
             '';
           }
         )
+      ];
+    })
+  )
+
+  //
+
+forEachUbuntuImage
+  (imgName: image: lib.nameValuePair
+    "vm-test-system-path-${imgName}"
+    (system-manager.lib.make-vm-test "vm-test-system-path-${imgName}" {
+      inherit system;
+      modules = [
+        ({ config, ... }:
+          let
+            inherit (config) hostPkgs;
+          in
+          {
+            nodes = {
+              node1 = { config, ... }: {
+                modules = [
+                  ../../../examples/example.nix
+                ];
+
+                virtualisation.rootImage = system-manager.lib.prepareUbuntuImage {
+                  inherit hostPkgs image;
+                  nodeConfig = config;
+                };
+              };
+            };
+
+            testScript = ''
+              # Start all machines in parallel
+              start_all()
+
+              ${system-manager.lib.activateProfileSnippet "node1"}
+
+              node1.succeed("/system-manager-profile/bin/activate 2>&1 | tee /tmp/output.log")
+              node1.succeed("grep -vF 'ERROR' /tmp/output.log")
+              node1.wait_for_unit("system-manager.target")
+
+              node1.succeed("bash --login -c 'realpath $(which rg) | grep -F ${hostPkgs.ripgrep}/bin/rg'")
+              node1.succeed("bash --login -c 'realpath $(which fd) | grep -F ${hostPkgs.fd}/bin/fd'")
+            '';
+          })
       ];
     })
   )
