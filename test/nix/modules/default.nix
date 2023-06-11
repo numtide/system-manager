@@ -50,12 +50,18 @@ let
 
           services.nginx.enable = false;
 
-          environment.etc = {
-            foo_new = {
-              text = ''
-                This is just a test!
-              '';
+          environment = {
+            etc = {
+              foo_new = {
+                text = ''
+                  This is just a test!
+                '';
+              };
             };
+
+            systemPackages = [
+              pkgs.fish
+            ];
           };
 
           systemd.services = {
@@ -258,9 +264,14 @@ forEachUbuntuImage
               node1.succeed("/system-manager-profile/bin/activate 2>&1 | tee /tmp/output.log")
               node1.succeed("grep -vF 'ERROR' /tmp/output.log")
               node1.wait_for_unit("system-manager.target")
+              node1.wait_for_unit("system-manager-path.service")
 
               node1.succeed("bash --login -c 'realpath $(which rg) | grep -F ${hostPkgs.ripgrep}/bin/rg'")
               node1.succeed("bash --login -c 'realpath $(which fd) | grep -F ${hostPkgs.fd}/bin/fd'")
+
+              node1.succeed("${newConfig}/bin/activate 2>&1 | tee /tmp/output.log")
+              node1.succeed("grep -vF 'ERROR' /tmp/output.log")
+              node1.succeed("bash --login -c 'realpath $(which fish) | grep -F ${hostPkgs.fish}/bin/fish'")
             '';
           })
       ];
