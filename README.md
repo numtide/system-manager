@@ -30,18 +30,15 @@ A basic Nix flake using System Manager would look something like this:
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
 
     system-manager = {
       url = "github:numtide/system-manager";
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
     };
   };
 
   outputs = { self, flake-utils, nixpkgs, system-manager }: {
-    systemConfigs.default = self.lib.makeSystemConfig {
-      system = flake-utils.lib.system.x86_64-linux;
+    systemConfigs.default = system-manager.lib.makeSystemConfig {
       modules = [
         ./modules
       ];
@@ -60,11 +57,14 @@ A simple System Manager module could look something like this:
 
 {
   config = {
-    environment.etc = {
-      "foo.conf".text = ''
-        launch_the_rockets = true
-      '';
+    environment = {
+      etc = {
+        "foo.conf".text = ''
+          launch_the_rockets = true
+        '';
+      };
     };
+
     systemd.services = {
       foo = {
         enable = true;
@@ -72,7 +72,7 @@ A simple System Manager module could look something like this:
           Type = "oneshot";
           RemainAfterExit = true;
         };
-        wantedBy = [ "multi-user.target" ];
+        wantedBy = [ "system-manager.target" ];
         script = ''
           ${lib.getBin pkgs.foo}/bin/foo
           echo "We launched the rockets!"
