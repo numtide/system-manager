@@ -63,6 +63,10 @@ A simple System Manager module could look something like this:
           launch_the_rockets = true
         '';
       };
+      systemPackages = [
+        pkgs.ripgrep
+        pkgs.fd
+      ];
     };
 
     systemd.services = {
