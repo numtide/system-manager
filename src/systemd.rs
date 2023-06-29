@@ -235,9 +235,13 @@ impl ServiceManager {
         Ok(true)
     }
 
-    pub fn reload_unit(&self, unit_name: &str) -> Result<Job, Error> {
+    pub fn reload_or_restart_unit(&self, unit_name: &str) -> Result<Job, Error> {
         Ok(Job {
-            path: OrgFreedesktopSystemd1Manager::reload_unit(&self.proxy, unit_name, "replace")?,
+            path: OrgFreedesktopSystemd1Manager::reload_or_restart_unit(
+                &self.proxy,
+                unit_name,
+                "replace",
+            )?,
         })
     }
 

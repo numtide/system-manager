@@ -89,7 +89,7 @@ pub fn activate(
     wait_for_jobs(
         &service_manager,
         &job_monitor,
-        reload_units(&service_manager, convert_services(&services_to_reload))
+        reload_or_restart_units(&service_manager, convert_services(&services_to_reload))
             + start_units(&service_manager, ["system-manager.target"]),
         &timeout,
     )
@@ -229,12 +229,15 @@ where
     for_each_unit(|s| service_manager.stop_unit(s), units.as_ref(), "stopping")
 }
 
-fn reload_units<'a, U>(service_manager: &systemd::ServiceManager, units: U) -> HashSet<JobId>
+fn reload_or_restart_units<'a, U>(
+    service_manager: &systemd::ServiceManager,
+    units: U,
+) -> HashSet<JobId>
 where
     U: AsRef<[&'a str]>,
 {
     for_each_unit(
-        |s| service_manager.reload_unit(s),
+        |s| service_manager.reload_or_restart_unit(s),
         units.as_ref(),
         "reloading",
     )

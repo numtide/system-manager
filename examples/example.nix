@@ -1,4 +1,4 @@
-{ lib, pkgs, ... }: {
+{ lib, ... }: {
   config = {
     nixpkgs.hostPlatform = "x86_64-linux";
 
@@ -62,7 +62,6 @@
               serviceConfig = {
                 Type = "oneshot";
                 RemainAfterExit = true;
-                ExecReload = "${lib.getBin pkgs.coreutils}/bin/true";
               };
               wantedBy = [ "system-manager.target" ];
               requiredBy = lib.mkIf (ix > 5) [ "service-0.service" ];
