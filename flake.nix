@@ -73,51 +73,72 @@
         };
         # TODO Pin the version for release
         rust = pkgs.rust-bin.stable.latest;
-        llvm = pkgs.llvmPackages_latest;
 
         craneLib = (crane.mkLib pkgs).overrideToolchain rust.default;
 
         # Common derivation arguments used for all builds
-        commonArgs = {
+        commonArgs = { dbus, pkg-config }: {
           src = craneLib.cleanCargoSource ./.;
-          buildInputs = with pkgs; [
+          buildInputs = [
             dbus
           ];
-          nativeBuildInputs = with pkgs; [
-            makeWrapper
+          nativeBuildInputs = [
             pkg-config
           ];
         };
 
         # Build only the cargo dependencies
-        cargoArtifacts = craneLib.buildDepsOnly (commonArgs // {
-          pname = "system-manager";
-        });
+        cargoArtifacts = { dbus, pkg-config }:
+          craneLib.buildDepsOnly ((commonArgs { inherit dbus pkg-config; }) // {
+            pname = "system-manager";
+          });
 
-        system-manager-unwrapped = craneLib.buildPackage (commonArgs // {
-          pname = "system-manager";
-          inherit cargoArtifacts;
-        });
+        system-manager-unwrapped =
+          { dbus
+          , pkg-config
+          }:
+          craneLib.buildPackage ((commonArgs { inherit dbus pkg-config; }) // {
+            pname = "system-manager";
+            cargoArtifacts = cargoArtifacts { inherit dbus pkg-config; };
+          });
 
-        system-manager = pkgs.runCommand "system-manager"
-          {
-            nativeBuildInputs = [ pkgs.makeBinaryWrapper ];
-          }
-          ''
-            makeWrapper \
-              ${system-manager-unwrapped}/bin/system-manager \
-              $out/bin/system-manager \
-              --prefix PATH : ${nixpkgs.lib.makeBinPath [ pkgs.nix ]}
-          '';
+        system-manager =
+          { dbus
+          , makeBinaryWrapper
+          , nix
+          , pkg-config
+          , runCommand
+          }:
+          let
+            unwrapped = system-manager-unwrapped { inherit dbus pkg-config; };
+          in
+          runCommand "system-manager"
+            {
+              nativeBuildInputs = [ makeBinaryWrapper ];
+            }
+            ''
+              makeWrapper \
+                ${unwrapped}/bin/system-manager \
+                $out/bin/system-manager \
+                --prefix PATH : ${nixpkgs.lib.makeBinPath [ nix ]}
+            '';
 
-        system-manager-clippy = craneLib.cargoClippy (commonArgs // {
-          inherit cargoArtifacts;
-          cargoClippyExtraArgs = "--all-targets -- --deny warnings";
-        });
+        system-manager-clippy =
+          { dbus
+          , pkg-config
+          }:
+          craneLib.cargoClippy ((commonArgs { inherit dbus pkg-config; }) // {
+            cargoArtifacts = cargoArtifacts { inherit dbus pkg-config; };
+            cargoClippyExtraArgs = "--all-targets -- --deny warnings";
+          });
 
-        system-manager-test = craneLib.cargoTest (commonArgs // {
-          inherit cargoArtifacts;
-        });
+        system-manager-test =
+          { dbus
+          , pkg-config
+          }:
+          craneLib.cargoTest ((commonArgs { inherit dbus pkg-config; }) // {
+            cargoArtifacts = cargoArtifacts { inherit dbus pkg-config; };
+          });
 
         # treefmt-nix configuration
         treefmt.config = {
@@ -137,74 +158,81 @@
           # cannot be found.
           # The wrapped version has a reference to the nix store path, so nix is
           # part of its runtime closure.
-          inherit system-manager-unwrapped system-manager;
+          system-manager-unwrapped = pkgs.callPackage system-manager-unwrapped { };
+          system-manager = pkgs.callPackage system-manager { };
+
+          system-manager-clippy = pkgs.callPackage system-manager-clippy { };
+          system-manager-test = pkgs.callPackage system-manager-test { };
 
           default = self.packages.${system}.system-manager;
         };
 
-        devShells.default = pkgs.devshell.mkShell {
-          packages = with pkgs; [
-            llvm.clang
-            openssl
-            pkg-config
-            (rust.default.override {
-              extensions = [ "rust-src" ];
-            })
-            (treefmt-nix.lib.mkWrapper pkgs treefmt.config)
-          ];
-          env = [
-            {
-              name = "PKG_CONFIG_PATH";
-              value = pkgs.lib.makeSearchPath "lib/pkgconfig" [
-                pkgs.dbus.dev
-                pkgs.systemdMinimal.dev
-              ];
-            }
-            {
-              name = "LIBCLANG_PATH";
-              value = "${llvm.libclang}/lib";
-            }
-            {
-              # for rust-analyzer
-              name = "RUST_SRC_PATH";
-              value = "${rust.rust-src}";
-            }
-            {
-              name = "RUST_BACKTRACE";
-              value = "1";
-            }
-            {
-              name = "RUSTFLAGS";
-              value =
-                let
-                  getLib = pkg: "${pkgs.lib.getLib pkg}/lib";
-                in
-                pkgs.lib.concatStringsSep " " [
-                  "-L${getLib pkgs.systemdMinimal} -lsystemd"
+        devShells.default =
+          let
+            llvm = pkgs.llvmPackages_latest;
+          in
+          pkgs.devshell.mkShell {
+            packages = with pkgs; [
+              llvm.clang
+              pkg-config
+              (rust.default.override {
+                extensions = [ "rust-src" ];
+              })
+              (treefmt-nix.lib.mkWrapper pkgs treefmt.config)
+            ];
+            env = [
+              {
+                name = "PKG_CONFIG_PATH";
+                value = pkgs.lib.makeSearchPath "lib/pkgconfig" [
+                  pkgs.dbus.dev
+                  pkgs.systemdMinimal.dev
                 ];
-            }
-            {
-              name = "DEVSHELL_NO_MOTD";
-              value = "1";
-            }
-          ];
-          devshell.startup.pre-commit.text = (pre-commit-hooks.lib.${system}.run {
-            src = ./.;
-            hooks = {
-              check-format = {
-                enable = true;
-                entry = "treefmt --fail-on-change";
+              }
+              {
+                name = "LIBCLANG_PATH";
+                value = "${llvm.libclang}/lib";
+              }
+              {
+                # for rust-analyzer
+                name = "RUST_SRC_PATH";
+                value = "${rust.rust-src}";
+              }
+              {
+                name = "RUST_BACKTRACE";
+                value = "1";
+              }
+              {
+                name = "RUSTFLAGS";
+                value =
+                  let
+                    getLib = pkg: "${pkgs.lib.getLib pkg}/lib";
+                  in
+                  pkgs.lib.concatStringsSep " " [
+                    "-L${getLib pkgs.systemdMinimal} -lsystemd"
+                  ];
+              }
+              {
+                name = "DEVSHELL_NO_MOTD";
+                value = "1";
+              }
+            ];
+            devshell.startup.pre-commit.text = (pre-commit-hooks.lib.${system}.run {
+              src = ./.;
+              hooks = {
+                check-format = {
+                  enable = true;
+                  entry = "treefmt --fail-on-change";
+                };
+                cargo-clippy = {
+                  enable = true;
+                  description = "Lint Rust code.";
+                  entry = "cargo-clippy --workspace -- -D warnings";
+                  files = "\\.rs$";
+                  pass_filenames = false;
+                };
               };
-              cargo-clippy = {
-                enable = true;
-                description = "Lint Rust code.";
-                entry = "cargo-clippy --workspace -- -D warnings";
-                files = "\\.rs$";
-                pass_filenames = false;
-              };
-            };
-          }).shellHook;
-        };
+            }).shellHook;
+          };
 
         checks =
           let
@@ -212,7 +240,7 @@
             enableVmTests = system != flake-utils.lib.system.aarch64-linux;
           in
           {
-            inherit
+            inherit (self.packages.${system})
               # Build the crate as part of `nix flake check` for convenience
               system-manager
               system-manager-clippy
