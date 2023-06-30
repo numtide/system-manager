@@ -26,6 +26,7 @@ in
           utils = import "${nixos}/lib/utils.nix" {
             inherit lib config pkgs;
           };
+          # Pass the wrapped system-manager binary down
           inherit (self.packages.${config.nixpkgs.hostPlatform}) system-manager;
         };
       };
