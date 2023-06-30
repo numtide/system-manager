@@ -94,13 +94,21 @@
           pname = "system-manager";
         });
 
-        system-manager = craneLib.buildPackage (commonArgs // {
+        system-manager-unwrapped = craneLib.buildPackage (commonArgs // {
           pname = "system-manager";
           inherit cargoArtifacts;
-          postInstall = ''
-            wrapProgram $out/bin/system-manager --prefix PATH : ${nixpkgs.lib.makeBinPath [ pkgs.nix ]}
-          '';
         });
+
+        system-manager = pkgs.runCommand "system-manager"
+          {
+            nativeBuildInputs = [ pkgs.makeBinaryWrapper ];
+          }
+          ''
+            makeWrapper \
+              ${system-manager-unwrapped}/bin/system-manager \
+              $out/bin/system-manager \
+              --prefix PATH : ${nixpkgs.lib.makeBinPath [ pkgs.nix ]}
+          '';
 
         system-manager-clippy = craneLib.cargoClippy (commonArgs // {
           inherit cargoArtifacts;
@@ -125,7 +133,11 @@
       in
       {
         packages = {
-          inherit system-manager;
+          # The unwrapped version takes nix from the PATH, it will fail if nix
+          # cannot be found.
+          # The wrapped version has a reference to the nix store path, so nix is
+          # part of its runtime closure.
+          inherit system-manager-unwrapped system-manager;
 
           default = self.packages.${system}.system-manager;
         };
