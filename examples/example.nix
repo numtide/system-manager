@@ -70,5 +70,6 @@
               '';
             })
         );
+    systemd.tmpfiles.rules = [ "d /var/tmp/system-manager 0755 root root -" ];
   };
 }

@@ -134,6 +134,9 @@ forEachUbuntuImage
               node1.fail("cat /etc/baz/bar/foo2")
               node1.fail("cat /etc/systemd/system/nginx.service")
               node1.succeed("cat /etc/foo_new")
+              
+              node1.succeed("test -d /var/tmp/system-manager")
+              node1.succeed("touch /var/tmp/system-manager/foo1")
 
               # Simulate a reboot, to check that the services defined with
               # system-manager start correctly after a reboot.
@@ -154,6 +157,7 @@ forEachUbuntuImage
               node1.succeed("${newConfig}/bin/deactivate")
               node1.fail("systemctl status new-service.service")
               node1.fail("cat /etc/foo_new")
+              node1.fail("test -f /var/tmp/system-manager/foo1")
             '';
           })
       ];
