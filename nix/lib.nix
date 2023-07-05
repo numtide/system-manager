@@ -284,12 +284,30 @@ in
       cp ${resultImg} $out
     '';
 
-  mkTestPreamble = node: action: ''
-    ${node}.succeed("/system-manager-profile/bin/${action} 2>&1 | tee /tmp/output.log")
-    ${node}.succeed("grep -vF 'ERROR' /tmp/output.log")
-  '';
+  mkTestPreamble =
+    { node
+    , profile
+    , action
+    }: ''
+      ${node}.succeed("/${profile}/bin/${action} 2>&1 | tee /tmp/output.log")
+      ${node}.succeed("! grep -F 'ERROR' /tmp/output.log")
+    '';
 
-  activateProfileSnippet = node: self.lib.mkTestPreamble node "activate";
+  activateProfileSnippet = { node, profile ? "system-manager-profile" }:
+    self.lib.mkTestPreamble {
+      inherit node profile;
+      action = "activate";
+    };
+  deactivateProfileSnippet = { node, profile ? "system-manager-profile" }:
+    self.lib.mkTestPreamble {
+      inherit node profile;
+      action = "deactivate";
+    };
+  prepopulateProfileSnippet = { node, profile ? "system-manager-profile" }:
+    self.lib.mkTestPreamble {
+      inherit node profile;
+      action = "prepopulate";
+    };
 
   make-vm-test =
     name:

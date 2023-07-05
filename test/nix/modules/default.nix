@@ -121,8 +121,7 @@ forEachUbuntuImage
               node1.succeed("grep -F 'Error while creating file in /etc: Unmanaged path already exists in filesystem, please remove it and run system-manager again: /etc/foo_test' /tmp/output.log")
               node1.succeed("rm /etc/foo_test")
 
-              node1.succeed("/system-manager-profile/bin/activate 2>&1 | tee /tmp/output.log")
-              node1.succeed("! grep -F 'ERROR' /tmp/output.log")
+              ${system-manager.lib.activateProfileSnippet { node = "node1"; }}
               node1.wait_for_unit("system-manager.target")
 
               node1.succeed("systemctl status service-9.service")
@@ -132,8 +131,7 @@ forEachUbuntuImage
               node1.succeed("grep -F 'launch_the_rockets = true' /etc/foo.conf")
               node1.fail("grep -F 'launch_the_rockets = false' /etc/foo.conf")
 
-              node1.succeed("${newConfig}/bin/activate 2>&1 | tee /tmp/output.log")
-              node1.succeed("! grep -F 'ERROR' /tmp/output.log")
+              ${system-manager.lib.activateProfileSnippet { node = "node1"; profile = newConfig; }}
               node1.succeed("systemctl status new-service.service")
               node1.fail("systemctl status service-9.service")
               node1.fail("cat /etc/a/nested/example/foo3")
@@ -157,7 +155,7 @@ forEachUbuntuImage
               node1.fail("cat /etc/baz/bar/foo2")
               node1.succeed("cat /etc/foo_new")
 
-              node1.succeed("${newConfig}/bin/deactivate")
+              ${system-manager.lib.deactivateProfileSnippet { node = "node1"; profile = newConfig; }}
               node1.fail("systemctl status new-service.service")
               node1.fail("cat /etc/foo_new")
             '';
@@ -198,8 +196,8 @@ forEachUbuntuImage
 
               node1.wait_for_unit("default.target")
 
-              node1.succeed("/system-manager-profile/bin/prepopulate 2>&1 | tee /tmp/output.log")
-              node1.succeed("! grep -F 'ERROR' /tmp/output.log")
+              ${system-manager.lib.activateProfileSnippet { node = "node1"; }}
+
               node1.systemctl("daemon-reload")
               node1.systemctl("start default.target")
               node1.wait_for_unit("system-manager.target")
@@ -211,15 +209,14 @@ forEachUbuntuImage
               node1.succeed("grep -F 'launch_the_rockets = true' /etc/foo.conf")
               node1.fail("grep -F 'launch_the_rockets = false' /etc/foo.conf")
 
-              node1.succeed("${newConfig}/bin/activate 2>&1 | tee /tmp/output.log")
-              node1.succeed("! grep -F 'ERROR' /tmp/output.log")
+              ${system-manager.lib.activateProfileSnippet { node = "node1"; profile = newConfig; }}
               node1.succeed("systemctl status new-service.service")
               node1.fail("systemctl status service-9.service")
               node1.fail("cat /etc/a/nested/example/foo3")
               node1.fail("cat /etc/baz/bar/foo2")
               node1.succeed("cat /etc/foo_new")
 
-              node1.succeed("${newConfig}/bin/deactivate")
+              ${system-manager.lib.deactivateProfileSnippet { node = "node1"; profile = newConfig; }}
               node1.fail("systemctl status new-service.service")
               node1.fail("cat /etc/foo_new")
             '';
@@ -258,19 +255,24 @@ forEachUbuntuImage
             testScript = ''
               # Start all machines in parallel
               start_all()
+              node1.wait_for_unit("default.target")
 
-              ${system-manager.lib.activateProfileSnippet "node1"}
+              node1.fail("bash --login -c '$(which rg)'")
+              node1.fail("bash --login -c '$(which fd)'")
 
-              node1.succeed("/system-manager-profile/bin/activate 2>&1 | tee /tmp/output.log")
-              node1.succeed("grep -vF 'ERROR' /tmp/output.log")
+              ${system-manager.lib.activateProfileSnippet { node = "node1"; }}
+
               node1.wait_for_unit("system-manager.target")
               node1.wait_for_unit("system-manager-path.service")
 
+              node1.fail("bash --login -c '$(which fish)'")
               node1.succeed("bash --login -c 'realpath $(which rg) | grep -F ${hostPkgs.ripgrep}/bin/rg'")
               node1.succeed("bash --login -c 'realpath $(which fd) | grep -F ${hostPkgs.fd}/bin/fd'")
 
-              node1.succeed("${newConfig}/bin/activate 2>&1 | tee /tmp/output.log")
-              node1.succeed("grep -vF 'ERROR' /tmp/output.log")
+              ${system-manager.lib.activateProfileSnippet { node = "node1"; profile = newConfig; }}
+
+              node1.fail("bash --login -c '$(which rg)'")
+              node1.fail("bash --login -c '$(which fd)'")
               node1.succeed("bash --login -c 'realpath $(which fish) | grep -F ${hostPkgs.fish}/bin/fish'")
             '';
           })
