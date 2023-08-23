@@ -98,3 +98,10 @@ nix run 'github:numtide/system-manager' -- switch --flake '.'
 
 Currently it is possible to configure files under `/etc/` and systemd services.
 More features may follow later.
+
+## Commercial support
+
+Looking for help or customization?
+
+Get in touch with Numtide to get a quote. We make it easy for companies to
+work with Open Source projects: <https://numtide.com/contact>
