@@ -4,8 +4,8 @@
       "ubuntu_23_04_cloudimg": {
         "name": "ubuntu-23.04-server-cloudimg-amd64.img",
         "releaseName": "lunar",
-        "releaseTimeStamp": "20230502",
-        "hash": "sha256-E5ZchMZcurCzQyasNKwMR6iAMPnf+A5jkeVsuQd8rdA="
+        "releaseTimeStamp": "20230829",
+        "hash": "sha256-t51lSk9M7jaR+72i70iWtbutrkDGCgdjxd385rIe/08="
       },
 
       "ubuntu_22_10_cloudimg": {
@@ -18,15 +18,15 @@
       "ubuntu_22_04_cloudimg": {
         "name": "ubuntu-22.04-server-cloudimg-amd64.img",
         "releaseName": "jammy",
-        "releaseTimeStamp": "20230427",
-        "hash": "sha256-m76TZOKYnBzOLBZpt6kcK70TkFKHaoyBzVLA+q77ZHQ="
+        "releaseTimeStamp": "20230828",
+        "hash": "sha256-C9onYpn8XxiXGOVvZVeRc0deyl/8ImPWgBuJfISLKPg="
       },
 
       "ubuntu_20_04_cloudimg": {
         "name": "ubuntu-20.04-server-cloudimg-amd64.img",
         "releaseName": "focal",
-        "releaseTimeStamp": "20230420",
-        "hash": "sha256-XFUVWvk8O1IHfp+sAiOSCU5ASk/qJG2JIF4WH0ex12U="
+        "releaseTimeStamp": "20230908",
+        "hash": "sha256-N/folU4v6aAGy62vIfj3M70STZb/TOTzP1fw+mS7xiE="
       }
     },
     "aarch64-linux": {
