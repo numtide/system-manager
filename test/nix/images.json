@@ -1,0 +1,62 @@
+{
+  "ubuntu": {
+    "x86_64-linux": {
+      "ubuntu_23_04_cloudimg": {
+        "name": "ubuntu-23.04-server-cloudimg-amd64.img",
+        "releaseName": "lunar",
+        "releaseTimeStamp": "20230829",
+        "hash": "sha256-t51lSk9M7jaR+72i70iWtbutrkDGCgdjxd385rIe/08="
+      },
+
+      "ubuntu_22_10_cloudimg": {
+        "name": "ubuntu-22.10-server-cloudimg-amd64.img",
+        "releaseName": "kinetic",
+        "releaseTimeStamp": "20230716",
+        "hash": "sha256-ZMgnM7t0bhOSxU957aWF0VMwQIAa/RPU8EvfIYAkVno="
+      },
+
+      "ubuntu_22_04_cloudimg": {
+        "name": "ubuntu-22.04-server-cloudimg-amd64.img",
+        "releaseName": "jammy",
+        "releaseTimeStamp": "20230828",
+        "hash": "sha256-C9onYpn8XxiXGOVvZVeRc0deyl/8ImPWgBuJfISLKPg="
+      },
+
+      "ubuntu_20_04_cloudimg": {
+        "name": "ubuntu-20.04-server-cloudimg-amd64.img",
+        "releaseName": "focal",
+        "releaseTimeStamp": "20230908",
+        "hash": "sha256-N/folU4v6aAGy62vIfj3M70STZb/TOTzP1fw+mS7xiE="
+      }
+    },
+    "aarch64-linux": {
+      "ubuntu_23_04_cloudimg": {
+        "name": "ubuntu-23.04-server-cloudimg-arm64.img",
+        "releaseName": "lunar",
+        "releaseTimeStamp": "20230502",
+        "hash": ""
+      },
+
+      "ubuntu_22_10_cloudimg": {
+        "name": "ubuntu-22.10-server-cloudimg-arm64.img",
+        "releaseName": "kinetic",
+        "releaseTimeStamp": "20230716",
+        "hash": ""
+      },
+
+      "ubuntu_22_04_cloudimg": {
+        "name": "ubuntu-22.04-server-cloudimg-arm64.img",
+        "releaseName": "jammy",
+        "releaseTimeStamp": "20230427",
+        "hash": "sha256-9vkeg5VumVBxj4TaLd0SgJEWjw11pcP7SBz5zd1V0EE="
+      },
+
+      "ubuntu_20_04_cloudimg": {
+        "name": "ubuntu-20.04-server-cloudimg-arm64.img",
+        "releaseName": "focal",
+        "releaseTimeStamp": "20230420",
+        "hash": "sha256-YUtW3oMHz4Hw7WeIu6ksx+/mUfxp7cCSSETvY6KGwU4="
+      }
+    }
+  }
+}

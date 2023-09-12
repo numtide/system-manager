@@ -4,7 +4,8 @@
 }:
 
 let
-  forEachUbuntuImage = lib.flip lib.mapAttrs' system-manager.lib.images.ubuntu.${system};
+  images = lib.importJSON ../images.json;
+  forEachUbuntuImage = lib.flip lib.mapAttrs' images.ubuntu.${system};
 
   # To test reload and restart, we include two services, one that can be reloaded
   # and one that cannot.
