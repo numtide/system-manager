@@ -57,6 +57,8 @@ A simple System Manager module could look something like this:
 
 {
   config = {
+    nixpkgs.hostPlatform = "x86_64-linux";
+
     environment = {
       etc = {
         "foo.conf".text = ''
@@ -66,6 +68,7 @@ A simple System Manager module could look something like this:
       systemPackages = [
         pkgs.ripgrep
         pkgs.fd
+        pkgs.hello
       ];
     };
 
@@ -78,7 +81,7 @@ A simple System Manager module could look something like this:
         };
         wantedBy = [ "system-manager.target" ];
         script = ''
-          ${lib.getBin pkgs.foo}/bin/foo
+          ${lib.getBin pkgs.hello}/bin/hello
           echo "We launched the rockets!"
         '';
       };
