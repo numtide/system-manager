@@ -85,6 +85,8 @@
           nativeBuildInputs = [
             pkg-config
           ];
+          # https://github.com/ipetkov/crane/issues/385
+          doNotLinkInheritedArtifacts = true;
         };
 
         # Build only the cargo dependencies
