@@ -153,10 +153,12 @@ fn parse_nix_build_output(output: String) -> Result<StorePath> {
 }
 
 fn run_nix_build(flake_uri: &str, nix_options: &NixOptions) -> Result<process::Output> {
-    let output = nix_cmd(nix_options)
-        .arg("build")
-        .arg(flake_uri)
-        .arg("--json")
+    let mut cmd = nix_cmd(nix_options);
+    cmd.arg("build").arg(flake_uri).arg("--json");
+
+    log::debug!("Running nix command: {cmd:?}");
+
+    let output = cmd
         // Nix outputs progress info on stderr and the final output on stdout,
         // so we inherit and output stderr directly to the terminal, but we
         // capture stdout as the result of this call
@@ -166,14 +168,16 @@ fn run_nix_build(flake_uri: &str, nix_options: &NixOptions) -> Result<process::O
 }
 
 fn try_nix_eval(flake: &str, attr: &str, nix_options: &NixOptions) -> Result<bool> {
-    let output = nix_cmd(nix_options)
-        .arg("eval")
+    let mut cmd = nix_cmd(nix_options);
+    cmd.arg("eval")
         .arg(format!("{flake}#{FLAKE_ATTR}"))
         .arg("--json")
         .arg("--apply")
-        .arg(format!("a: a ? \"{attr}\""))
-        .stderr(process::Stdio::inherit())
-        .output()?;
+        .arg(format!("a: a ? \"{attr}\""));
+
+    log::debug!("Running nix command: {cmd:?}");
+
+    let output = cmd.stderr(process::Stdio::inherit()).output()?;
     if output.status.success() {
         let stdout = String::from_utf8(output.stdout)?;
         let parsed_output: bool = serde_json::from_str(&stdout)?;
