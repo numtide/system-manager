@@ -361,7 +361,7 @@ in
       '';
 
       passthru = {
-        runVM = hostPkgs.writeShellScriptBin "run-vm"
+        driverInteractive = hostPkgs.writeShellScriptBin "run-vm"
           (defaultTest {
             extraDriverArgs = "--interactive";
           });
