@@ -1,5 +1,6 @@
 mod etc_files;
 mod services;
+mod tmp_files;
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -80,6 +81,17 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
 
     match etc_files::activate(store_path, old_state.file_tree, ephemeral) {
         Ok(etc_tree) => {
+            log::info!("Activating tmp files...");
+            match tmp_files::activate() {
+                Ok(_) => {
+                    log::debug!("Successfully created tmp files");
+                }
+                Err(e) => {
+                    log::error!("Error during activation of tmp files");
+                    log::error!("{e}");
+                }
+            };
+
             log::info!("Activating systemd services...");
             match services::activate(store_path, old_state.services, ephemeral) {
                 Ok(services) => State {
@@ -104,6 +116,7 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
         }
     }
     .write_to_file(state_file)?;
+
     Ok(())
 }
 
@@ -184,6 +197,7 @@ pub fn deactivate() -> Result<()> {
         }
     }
     .write_to_file(state_file)?;
+
     Ok(())
 }
 
