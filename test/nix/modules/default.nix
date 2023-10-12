@@ -126,9 +126,9 @@ forEachUbuntuImage
               node1.wait_for_unit("system-manager.target")
 
               node1.succeed("systemctl status service-9.service")
-              node1.succeed("cat /etc/baz/bar/foo2")
-              node1.succeed("cat /etc/a/nested/example/foo3")
-              node1.succeed("cat /etc/foo.conf")
+              node1.succeed("test -f /etc/baz/bar/foo2")
+              node1.succeed("test -f /etc/a/nested/example/foo3")
+              node1.succeed("test -f /etc/foo.conf")
               node1.succeed("grep -F 'launch_the_rockets = true' /etc/foo.conf")
               node1.fail("grep -F 'launch_the_rockets = false' /etc/foo.conf")
 
@@ -137,10 +137,10 @@ forEachUbuntuImage
               ${system-manager.lib.activateProfileSnippet { node = "node1"; profile = newConfig; }}
               node1.succeed("systemctl status new-service.service")
               node1.fail("systemctl status service-9.service")
-              node1.fail("cat /etc/a/nested/example/foo3")
-              node1.fail("cat /etc/baz/bar/foo2")
-              node1.fail("cat /etc/systemd/system/nginx.service")
-              node1.succeed("cat /etc/foo_new")
+              node1.fail("test -f /etc/a/nested/example/foo3")
+              node1.fail("test -f /etc/baz/bar/foo2")
+              node1.fail("test -f /etc/systemd/system/nginx.service")
+              node1.succeed("test -f /etc/foo_new")
 
               node1.succeed("test -d /var/tmp/system-manager")
               node1.succeed("touch /var/tmp/system-manager/foo1")
@@ -157,13 +157,13 @@ forEachUbuntuImage
 
               node1.succeed("systemctl status new-service.service")
               node1.fail("systemctl status service-9.service")
-              node1.fail("cat /etc/a/nested/example/foo3")
-              node1.fail("cat /etc/baz/bar/foo2")
-              node1.succeed("cat /etc/foo_new")
+              node1.fail("test -f /etc/a/nested/example/foo3")
+              node1.fail("test -f /etc/baz/bar/foo2")
+              node1.succeed("test -f /etc/foo_new")
 
               ${system-manager.lib.deactivateProfileSnippet { node = "node1"; profile = newConfig; }}
               node1.fail("systemctl status new-service.service")
-              node1.fail("cat /etc/foo_new")
+              node1.fail("test -f /etc/foo_new")
               #node1.fail("test -f /var/tmp/system-manager/foo1")
             '';
           })
@@ -217,22 +217,22 @@ forEachUbuntuImage
               node1.wait_for_unit("system-manager.target")
 
               node1.succeed("systemctl status service-9.service")
-              node1.succeed("cat /etc/baz/bar/foo2")
-              node1.succeed("cat /etc/a/nested/example/foo3")
-              node1.succeed("cat /etc/foo.conf")
+              node1.succeed("test -f /etc/baz/bar/foo2")
+              node1.succeed("test -f /etc/a/nested/example/foo3")
+              node1.succeed("test -f /etc/foo.conf")
               node1.succeed("grep -F 'launch_the_rockets = true' /etc/foo.conf")
               node1.fail("grep -F 'launch_the_rockets = false' /etc/foo.conf")
 
               ${system-manager.lib.activateProfileSnippet { node = "node1"; profile = newConfig; }}
               node1.succeed("systemctl status new-service.service")
               node1.fail("systemctl status service-9.service")
-              node1.fail("cat /etc/a/nested/example/foo3")
-              node1.fail("cat /etc/baz/bar/foo2")
-              node1.succeed("cat /etc/foo_new")
+              node1.fail("test -f /etc/a/nested/example/foo3")
+              node1.fail("test -f /etc/baz/bar/foo2")
+              node1.succeed("test -f /etc/foo_new")
 
               ${system-manager.lib.deactivateProfileSnippet { node = "node1"; profile = newConfig; }}
               node1.fail("systemctl status new-service.service")
-              node1.fail("cat /etc/foo_new")
+              node1.fail("test -f /etc/foo_new")
             '';
           }
         )
