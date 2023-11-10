@@ -75,14 +75,14 @@
       services.logrotate = lib.mkOption {
         internal = true;
         default = { };
-        type = types.freeform;
+        type = types.attrs;
       };
 
       # No-op option for now.
       users = lib.mkOption {
         internal = true;
         default = { };
-        type = types.freeform;
+        type = types.attrs;
       };
 
       networking = {
