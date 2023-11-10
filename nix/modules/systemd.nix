@@ -18,6 +18,27 @@ let
       } ''
         mkdir -p $out
 
+        # Symlink all units provided listed in systemd.packages.
+        packages="${toString packages}"
+
+        # Filter duplicate directories
+        declare -A unique_packages
+        for k in $packages ; do unique_packages[$k]=1 ; done
+
+        for i in ''${!unique_packages[@]}; do
+          for fn in $i/etc/systemd/${type}/* $i/lib/systemd/${type}/*; do
+            if ! [[ "$fn" =~ .wants$ ]]; then
+              if [[ -d "$fn" ]]; then
+                targetDir="$out/$(basename "$fn")"
+                mkdir -p "$targetDir"
+                ${pkgs.buildPackages.xorg.lndir}/bin/lndir "$fn" "$targetDir"
+              else
+                ln -s $fn $out/
+              fi
+            fi
+          done
+        done
+
         for i in ${toString (lib.mapAttrsToList (n: v: v.unit) units)}; do
           fn=$(basename $i/*)
           if [ -e $out/$fn ]; then
@@ -265,13 +286,11 @@ in
 
     environment.etc = {
       "systemd/system".source = generateUnits {
-        allowCollisions = false;
         type = "system";
         units = lib.filterAttrs (_: unit: unit.enable) cfg.units;
       };
 
       "systemd/user".source = generateUnits {
-        allowCollisions = false;
         type = "user";
         units = lib.filterAttrs (_: unit: unit.enable) cfg.user.units;
       };
