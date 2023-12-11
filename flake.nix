@@ -26,9 +26,6 @@
       url = "github:ipetkov/crane";
       inputs = {
         nixpkgs.follows = "nixpkgs";
-        flake-utils.follows = "flake-utils";
-        rust-overlay.follows = "rust-overlay";
-        flake-compat.follows = "pre-commit-hooks/flake-compat";
       };
     };
     treefmt-nix = {
