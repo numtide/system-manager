@@ -1,4 +1,5 @@
 { nixosModulesPath
+, lib
 , ...
 }:
 {
@@ -12,4 +13,17 @@
     "/security/acme/"
     "/services/web-servers/nginx/"
   ];
+
+
+  options =
+    # We need to ignore a bunch of options that are used in NixOS modules but
+    # that don't apply to system-manager configs.
+    # TODO: can we print an informational message for things like kernel modules
+    # to inform users that they need to be enabled in the host system?
+    {
+      boot = lib.mkOption {
+        type = lib.types.raw;
+      };
+    };
+
 }
