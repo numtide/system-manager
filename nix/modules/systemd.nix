@@ -10,6 +10,70 @@ let
 
   inherit (utils) systemdUtils;
   systemd-lib = utils.systemdUtils.lib;
+
+  generateUnits = { allowCollisions ? true, type, units, packages ? cfg.packages }:
+    pkgs.runCommand "${type}-units"
+      { preferLocalBuild = true;
+        allowSubstitutes = false;
+      } ''
+        mkdir -p $out
+
+        # Symlink all units provided listed in systemd.packages.
+        packages="${toString packages}"
+
+        # Filter duplicate directories
+        declare -A unique_packages
+        for k in $packages ; do unique_packages[$k]=1 ; done
+
+        for i in ''${!unique_packages[@]}; do
+          for fn in $i/etc/systemd/${type}/* $i/lib/systemd/${type}/*; do
+            if ! [[ "$fn" =~ .wants$ ]]; then
+              if [[ -d "$fn" ]]; then
+                targetDir="$out/$(basename "$fn")"
+                mkdir -p "$targetDir"
+                ${pkgs.buildPackages.xorg.lndir}/bin/lndir "$fn" "$targetDir"
+              else
+                ln -s $fn $out/
+              fi
+            fi
+          done
+        done
+
+        for i in ${toString (lib.mapAttrsToList (n: v: v.unit) units)}; do
+          fn=$(basename $i/*)
+          if [ -e $out/$fn ]; then
+            if [ "$(readlink -f $i/$fn)" = /dev/null ]; then
+              ln -sfn /dev/null $out/$fn
+            else
+              ${if allowCollisions then ''
+                mkdir -p $out/$fn.d
+                ln -s $i/$fn $out/$fn.d/overrides.conf
+              '' else ''
+                echo "Found multiple derivations configuring $fn!"
+                exit 1
+              ''}
+            fi
+          else
+            ln -fs $i/$fn $out/
+          fi
+        done
+
+        ${lib.concatStrings (
+          lib.mapAttrsToList (name: unit:
+            lib.concatMapStrings (name2: ''
+              mkdir -p $out/'${name2}.wants'
+              ln -sfn '../${name}' $out/'${name2}.wants'/
+            '') (unit.wantedBy or [])
+          ) units)}
+
+        ${lib.concatStrings (
+          lib.mapAttrsToList (name: unit:
+            lib.concatMapStrings (name2: ''
+              mkdir -p $out/'${name2}.requires'
+              ln -sfn '../${name}' $out/'${name2}.requires'/
+            '') (unit.requiredBy or [])
+          ) units)}
+      '';
 in
 {
   options.systemd = {
@@ -123,6 +187,50 @@ in
     };
   };
 
+  options.systemd.user = {
+    units = lib.mkOption {
+      description = lib.mdDoc "Definition of systemd per-user units.";
+      default = {};
+      type = systemdUtils.types.units;
+    };
+
+    paths = lib.mkOption {
+      default = {};
+      type = systemdUtils.types.paths;
+      description = lib.mdDoc "Definition of systemd per-user path units.";
+    };
+
+    services = lib.mkOption {
+      default = {};
+      type = systemdUtils.types.services;
+      description = lib.mdDoc "Definition of systemd per-user service units.";
+    };
+
+    slices = lib.mkOption {
+      default = {};
+      type = systemdUtils.types.slices;
+      description = lib.mdDoc "Definition of systemd per-user slice units.";
+    };
+
+    sockets = lib.mkOption {
+      default = {};
+      type = systemdUtils.types.sockets;
+      description = lib.mdDoc "Definition of systemd per-user socket units.";
+    };
+
+    targets = lib.mkOption {
+      default = {};
+      type = systemdUtils.types.targets;
+      description = lib.mdDoc "Definition of systemd per-user target units.";
+    };
+
+    timers = lib.mkOption {
+      default = {};
+      type = systemdUtils.types.timers;
+      description = lib.mdDoc "Definition of systemd per-user timer units.";
+    };
+  };
+
   config = {
     systemd = {
       targets.system-manager = {
@@ -157,56 +265,35 @@ in
           cfg.automounts);
     };
 
-    environment.etc =
-      let
-        allowCollisions = false;
+    systemd.user = {
+      timers =
+        lib.mapAttrs
+          (name: service:
+            {
+              wantedBy = [ "timers.target" ];
+              timerConfig.OnCalendar = service.startAt;
+            })
+          (lib.filterAttrs (name: service: service.enable && service.startAt != [ ]) cfg.user.services);
 
-        enabledUnits = lib.filterAttrs (_: unit: unit.enable) cfg.units;
-      in
-      {
-        "systemd/system".source = pkgs.runCommand "system-manager-units"
-          {
-            preferLocalBuild = true;
-            allowSubstitutes = false;
-          }
-          ''
-            mkdir -p $out
+      units =
+        lib.mapAttrs' (n: v: lib.nameValuePair "${n}.path" (systemd-lib.pathToUnit n v)) cfg.user.paths
+        // lib.mapAttrs' (n: v: lib.nameValuePair "${n}.service" (systemd-lib.serviceToUnit n v)) cfg.user.services
+        // lib.mapAttrs' (n: v: lib.nameValuePair "${n}.slice" (systemd-lib.sliceToUnit n v)) cfg.user.slices
+        // lib.mapAttrs' (n: v: lib.nameValuePair "${n}.socket" (systemd-lib.socketToUnit n v)) cfg.user.sockets
+        // lib.mapAttrs' (n: v: lib.nameValuePair "${n}.target" (systemd-lib.targetToUnit n v)) cfg.user.targets
+        // lib.mapAttrs' (n: v: lib.nameValuePair "${n}.timer" (systemd-lib.timerToUnit n v)) cfg.user.timers;
+    };
 
-            for i in ${toString (lib.mapAttrsToList (n: v: v.unit) enabledUnits)}; do
-              fn=$(basename $i/*)
-              if [ -e $out/$fn ]; then
-                if [ "$(readlink -f $i/$fn)" = /dev/null ]; then
-                  ln -sfn /dev/null $out/$fn
-                else
-                  ${if allowCollisions then ''
-                    mkdir -p $out/$fn.d
-                    ln -s $i/$fn $out/$fn.d/overrides.conf
-                  '' else ''
-                    echo "Found multiple derivations configuring $fn!"
-                    exit 1
-                  ''}
-                fi
-              else
-                ln -fs $i/$fn $out/
-              fi
-            done
-
-            ${lib.concatStrings (
-              lib.mapAttrsToList (name: unit:
-                lib.concatMapStrings (name2: ''
-                  mkdir -p $out/'${name2}.wants'
-                  ln -sfn '../${name}' $out/'${name2}.wants'/
-                '') (unit.wantedBy or [])
-              ) enabledUnits)}
-
-            ${lib.concatStrings (
-              lib.mapAttrsToList (name: unit:
-                lib.concatMapStrings (name2: ''
-                  mkdir -p $out/'${name2}.requires'
-                  ln -sfn '../${name}' $out/'${name2}.requires'/
-                '') (unit.requiredBy or [])
-              ) enabledUnits)}
-          '';
+    environment.etc = {
+      "systemd/system".source = generateUnits {
+        type = "system";
+        units = lib.filterAttrs (_: unit: unit.enable) cfg.units;
       };
+
+      "systemd/user".source = generateUnits {
+        type = "user";
+        units = lib.filterAttrs (_: unit: unit.enable) cfg.user.units;
+      };
+    };
   };
 }
