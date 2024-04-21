@@ -22,9 +22,14 @@ to install Nix, like [the official installer][official-installer] or this
 
 ## Usage with flakes
 
+First, create a flake.nix file. You can place that anywhere in your file system, conventional places are 
+/etc/nix/flake.nix __or__ /nix/flake.nix 
+`sudo touch /etc/nix/flake.nix` / `sudo touch /nix/flake.nix`
+
 ### Defining the configuration
 
 A basic Nix flake using System Manager would look something like this:
+
 
 ```nix
 {
