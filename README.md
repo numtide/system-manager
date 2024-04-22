@@ -92,7 +92,7 @@ A simple System Manager module could look something like this:
 
 ### Activating the configuration
 
-Once the configuration defined, you can activate it using the `system-manager` CLI:
+Once the configuration is defined, you can activate it using the `system-manager` CLI:
 ```sh
 nix run 'github:numtide/system-manager' -- switch --flake '.'
 ```
@@ -101,6 +101,23 @@ nix run 'github:numtide/system-manager' -- switch --flake '.'
 
 Currently it is possible to configure files under `/etc/` and systemd services.
 More features may follow later.
+
+## Supported Systems
+
+System Manger is currently only supported on NixOS and Ubuntu. However, it can be used on other distributions by enabling the following:
+
+```nix
+{ config, lib, pkgs, ... }:
+
+{
+  config = {
+          system-manager.allowAnyDistro = true;
+  }
+}
+```
+
+> [!WARNING]
+> This is unsupported and untested. Use at your own risk.
 
 ## Commercial support
 
