@@ -107,11 +107,9 @@ More features may follow later.
 System Manger is currently only supported on NixOS and Ubuntu. However, it can be used on other distributions by enabling the following:
 
 ```nix
-{ config, lib, pkgs, ... }:
-
 {
   config = {
-          system-manager.allowAnyDistro = true;
+    system-manager.allowAnyDistro = true;
   }
 }
 ```
