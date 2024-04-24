@@ -35,9 +35,9 @@ struct Args {
 
 #[derive(clap::Args, Debug)]
 struct InitArgs {
-    #[arg(long = "flake", name = "FLAKE_URI")]
-    /// The flake URI defining the system-manager profile
-    flake_uri: Option<String>,
+    #[arg(long = "config_dir", name = "CONFIG_DIR")]
+    /// The configuration directory in which to initialize the system-manager flake
+    config_dir: Option<String>,
 }
 
 #[derive(clap::Args, Debug)]
@@ -167,7 +167,7 @@ fn go(args: Args) -> Result<()> {
     }));
 
     match action {
-        Action::Init { init_args } => do_init(init_args.flake_uri),
+        Action::Init { init_args } => do_init(init_args.config_dir),
         Action::PrePopulate {
             store_or_flake_args,
             activation_args: ActivationArgs { ephemeral },
