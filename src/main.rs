@@ -1,4 +1,4 @@
-use anyhow::{bail, Result};
+use anyhow::Result;
 use clap::Parser;
 use std::ffi::OsString;
 use std::fs::{create_dir_all, File};
@@ -220,7 +220,7 @@ fn do_init(path: Option<String>) -> Result<()> {
     };
 
     if config_path.exists() {
-        bail!(
+        anyhow::bail!(
             "System-manager config directory already exists at {}",
             config_path.display()
         )
