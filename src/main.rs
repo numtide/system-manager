@@ -1,6 +1,8 @@
-use anyhow::Result;
+use anyhow::{bail, Result};
 use clap::Parser;
 use std::ffi::OsString;
+use std::fs::{create_dir_all, File};
+use std::io::Write;
 use std::mem;
 use std::path::{Path, PathBuf};
 use std::process::{self, ExitCode};
@@ -32,10 +34,17 @@ struct Args {
 }
 
 #[derive(clap::Args, Debug)]
+struct InitArgs {
+    #[arg(long = "flake", name = "FLAKE_URI")]
+    /// The flake URI defining the system-manager profile
+    flake_uri: Option<String>,
+}
+
+#[derive(clap::Args, Debug)]
 struct BuildArgs {
     #[arg(long = "flake", name = "FLAKE_URI")]
     /// The flake URI defining the system-manager profile
-    flake_uri: String,
+    flake_uri: Option<String>,
 }
 
 #[derive(clap::Args, Debug)]
@@ -83,6 +92,13 @@ struct StoreOrFlakeArgs {
 
 #[derive(clap::Subcommand, Debug)]
 enum Action {
+    /// Initialize a new system-manager flake
+    Init {
+        /// The path to the directory containing the system-manager flake
+        #[command(flatten)]
+        init_args: InitArgs,
+    },
+
     /// Build a new system-manager generation, register it as the active profile, and activate it
     Switch {
         #[command(flatten)]
@@ -151,6 +167,7 @@ fn go(args: Args) -> Result<()> {
     }));
 
     match action {
+        Action::Init { init_args } => do_init(init_args.flake_uri),
         Action::PrePopulate {
             store_or_flake_args,
             activation_args: ActivationArgs { ephemeral },
@@ -196,6 +213,48 @@ fn go(args: Args) -> Result<()> {
     }
 }
 
+fn do_init(path: Option<String>) -> Result<()> {
+    let config_path = match path {
+        Some(p) => PathBuf::from(p),
+        None => default_config_path(),
+    };
+
+    if config_path.exists() {
+        bail!(
+            "System-manager config directory already exists at {}",
+            config_path.display()
+        )
+    }
+
+    create_dir_all(&config_path)?;
+
+    let flake_path = config_path.join("flake.nix");
+    let mut flake_file = File::create(&flake_path)?;
+    let flake_text = r#"{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+
+    system-manager = {
+      url = "github:numtide/system-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+  };
+
+  outputs = { self, flake-utils, nixpkgs, system-manager }: {
+    systemConfigs.default = system-manager.lib.makeSystemConfig {
+      modules = [
+        ./modules
+      ];
+    };
+  };
+}"#;
+    write!(flake_file, "{}", flake_text)?;
+
+    println!("Created system-manager flake at {}", config_path.display());
+
+    Ok(())
+}
+
 fn print_store_path<SP: AsRef<StorePath>>(store_path: SP) -> Result<()> {
     // Print the raw store path to stdout
     println!("{}", store_path.as_ref());
@@ -203,7 +262,7 @@ fn print_store_path<SP: AsRef<StorePath>>(store_path: SP) -> Result<()> {
 }
 
 fn build(
-    flake_uri: &str,
+    flake_uri: &Option<String>,
     target_host: &Option<String>,
     nix_options: &NixOptions,
 ) -> Result<StorePath> {
@@ -212,8 +271,15 @@ fn build(
     Ok(store_path)
 }
 
-fn do_build(flake_uri: &str, nix_options: &NixOptions) -> Result<StorePath> {
-    system_manager::register::build(flake_uri, nix_options)
+fn do_build(flake_uri: &Option<String>, nix_options: &NixOptions) -> Result<StorePath> {
+    let flake_path = match flake_uri {
+        Some(f) => f.to_string(),
+        None => default_config_path()
+            .into_os_string()
+            .into_string()
+            .unwrap(),
+    };
+    system_manager::register::build(&flake_path, nix_options)
 }
 
 fn register(
@@ -233,7 +299,7 @@ fn register(
                     maybe_flake_uri: Some(flake_uri),
                 },
         } => {
-            let store_path = do_build(&flake_uri, nix_options)?;
+            let store_path = do_build(&Some(flake_uri), nix_options)?;
             copy_closure(&store_path, target_host)?;
             do_register(&store_path, target_host, use_remote_sudo, nix_options)?;
             Ok(store_path)
@@ -325,7 +391,7 @@ fn prepopulate(
                     maybe_flake_uri: Some(flake_uri),
                 },
         } => {
-            let store_path = do_build(&flake_uri, nix_options)?;
+            let store_path = do_build(&Some(flake_uri), nix_options)?;
             copy_closure(&store_path, target_host)?;
             do_register(&store_path, target_host, use_remote_sudo, nix_options)?;
             do_prepopulate(&store_path, ephemeral, target_host, use_remote_sudo)?;
@@ -457,4 +523,8 @@ fn handle_toplevel_error<T>(r: Result<T>) -> ExitCode {
         return ExitCode::FAILURE;
     }
     ExitCode::SUCCESS
+}
+
+fn default_config_path() -> PathBuf {
+    PathBuf::from("/etc/system-manager")
 }
