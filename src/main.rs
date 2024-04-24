@@ -229,7 +229,7 @@ fn do_init(path: Option<String>) -> Result<()> {
     create_dir_all(&config_path)?;
 
     let flake_path = config_path.join("flake.nix");
-    let mut flake_file = File::create(&flake_path)?;
+    let mut flake_file = File::create(flake_path)?;
     let flake_text = r#"{
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
