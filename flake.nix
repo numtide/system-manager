@@ -32,6 +32,11 @@
       url = "github:numtide/treefmt-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    nix-vm-test = {
+      url = "github:numtide/nix-vm-test/extra-paths-to-register";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -43,8 +48,8 @@
     , devshell
     , treefmt-nix
     , pre-commit-hooks
-    ,
-    }:
+    , ...
+    }@inputs:
     {
       lib = import ./nix/lib.nix {
         inherit nixpkgs self;
@@ -248,6 +253,7 @@
           pkgs.lib.optionalAttrs enableVmTests (import ./test/nix/modules {
             inherit system;
             inherit (pkgs) lib;
+            inherit (inputs) nix-vm-test;
             system-manager = self;
           });
       })

@@ -114,6 +114,27 @@
         "type": "github"
       }
     },
+    "nix-vm-test": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1714393121,
+        "narHash": "sha256-A6PosvO4ideG5ACRlqW9/Z4cQUFVCrrHBXQxMoB3sTM=",
+        "owner": "numtide",
+        "repo": "nix-vm-test",
+        "rev": "95e2b50b0544a44dea3c85d33d6cff492ac8ee44",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "ref": "extra-paths-to-register",
+        "repo": "nix-vm-test",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1712439257,
@@ -177,6 +198,7 @@
         "crane": "crane",
         "devshell": "devshell",
         "flake-utils": "flake-utils_2",
+        "nix-vm-test": "nix-vm-test",
         "nixpkgs": "nixpkgs",
         "pre-commit-hooks": "pre-commit-hooks",
         "rust-overlay": "rust-overlay",
