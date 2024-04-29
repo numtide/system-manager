@@ -1,11 +1,44 @@
 { lib
 , system-manager
 , system
+, nix-vm-test
 }:
 
 let
-  images = lib.importJSON ../images.json;
-  forEachUbuntuImage = lib.flip lib.mapAttrs' images.ubuntu.${system};
+  forEachUbuntuImage =
+    name:
+    { modules
+    , testScriptFunction
+    , extraPathsToRegister ? [ ]
+    , projectTest ? test: test.sandboxed
+    }:
+    let
+      ubuntu = nix-vm-test.lib.${system}.ubuntu;
+    in
+    lib.listToAttrs (lib.flip map (lib.attrNames ubuntu.images)
+      (imageVersion:
+      let
+        toplevel = (system-manager.lib.makeSystemConfig {
+          modules = modules ++ [
+            ({ lib, pkgs, ... }: {
+              options.hostPkgs = lib.mkOption { type = lib.types.raw; readOnly = true; };
+              config.hostPkgs = pkgs;
+            })
+          ];
+        });
+        inherit (toplevel.config) hostPkgs;
+      in
+      lib.nameValuePair "ubuntu-${imageVersion}-${name}"
+        (projectTest
+          (ubuntu.${imageVersion} {
+            testScript = testScriptFunction { inherit toplevel hostPkgs; };
+            extraPathsToRegister = extraPathsToRegister ++ [
+              toplevel
+            ];
+            sharedDirs = { };
+          }))
+      )
+    );
 
   # To test reload and restart, we include two services, one that can be reloaded
   # and one that cannot.
@@ -84,212 +117,149 @@ let
       })
     ];
   };
+
 in
 
-forEachUbuntuImage
-  (imgName: image: lib.nameValuePair
-    "vm-test-example-${imgName}"
-    (system-manager.lib.make-vm-test "vm-test-example-${imgName}" {
-      inherit system;
-      modules = [
-        ({ config, ... }:
-          let
-            inherit (config) hostPkgs;
-          in
-          {
-            nodes = {
-              node1 = { config, ... }: {
-                modules = [
-                  (testModule "old")
-                  ../../../examples/example.nix
-                ];
+forEachUbuntuImage "example"
+  {
+    modules = [
+      (testModule "old")
+      ../../../examples/example.nix
+    ];
+    extraPathsToRegister = [ newConfig ];
+    testScriptFunction = { toplevel, ... }: ''
+      # Start all machines in parallel
+      start_all()
 
-                virtualisation.rootImage = system-manager.lib.prepareUbuntuImage {
-                  inherit hostPkgs image;
-                  nodeConfig = config;
-                };
-              };
-            };
+      vm.wait_for_unit("default.target")
 
-            testScript = ''
-              # Start all machines in parallel
-              start_all()
+      vm.succeed("touch /etc/foo_test")
+      vm.succeed("${toplevel}/bin/activate 2>&1 | tee /tmp/output.log")
+      vm.succeed("grep -F 'Error while creating file in /etc: Unmanaged path already exists in filesystem, please remove it and run system-manager again: /etc/foo_test' /tmp/output.log")
+      vm.succeed("rm /etc/foo_test")
 
-              node1.wait_for_unit("default.target")
+      ${system-manager.lib.activateProfileSnippet { node = "vm"; profile = toplevel; }}
+      vm.wait_for_unit("system-manager.target")
 
-              node1.succeed("touch /etc/foo_test")
-              node1.succeed("/system-manager-profile/bin/activate 2>&1 | tee /tmp/output.log")
-              node1.succeed("grep -F 'Error while creating file in /etc: Unmanaged path already exists in filesystem, please remove it and run system-manager again: /etc/foo_test' /tmp/output.log")
-              node1.succeed("rm /etc/foo_test")
+      vm.succeed("systemctl status service-9.service")
+      vm.succeed("test -f /etc/baz/bar/foo2")
+      vm.succeed("test -f /etc/a/nested/example/foo3")
+      vm.succeed("test -f /etc/foo.conf")
+      vm.succeed("grep -F 'launch_the_rockets = true' /etc/foo.conf")
+      vm.fail("grep -F 'launch_the_rockets = false' /etc/foo.conf")
 
-              ${system-manager.lib.activateProfileSnippet { node = "node1"; }}
-              node1.wait_for_unit("system-manager.target")
+      vm.succeed("test -d /var/tmp/system-manager")
 
-              node1.succeed("systemctl status service-9.service")
-              node1.succeed("test -f /etc/baz/bar/foo2")
-              node1.succeed("test -f /etc/a/nested/example/foo3")
-              node1.succeed("test -f /etc/foo.conf")
-              node1.succeed("grep -F 'launch_the_rockets = true' /etc/foo.conf")
-              node1.fail("grep -F 'launch_the_rockets = false' /etc/foo.conf")
+      ${system-manager.lib.activateProfileSnippet { node = "vm"; profile = newConfig; }}
+      vm.succeed("systemctl status new-service.service")
+      vm.fail("systemctl status service-9.service")
+      vm.fail("test -f /etc/a/nested/example/foo3")
+      vm.fail("test -f /etc/baz/bar/foo2")
+      vm.fail("test -f /etc/systemd/system/nginx.service")
+      vm.succeed("test -f /etc/foo_new")
 
-              node1.succeed("test -d /var/tmp/system-manager")
+      vm.succeed("test -d /var/tmp/system-manager")
+      vm.succeed("touch /var/tmp/system-manager/foo1")
 
-              ${system-manager.lib.activateProfileSnippet { node = "node1"; profile = newConfig; }}
-              node1.succeed("systemctl status new-service.service")
-              node1.fail("systemctl status service-9.service")
-              node1.fail("test -f /etc/a/nested/example/foo3")
-              node1.fail("test -f /etc/baz/bar/foo2")
-              node1.fail("test -f /etc/systemd/system/nginx.service")
-              node1.succeed("test -f /etc/foo_new")
+      # Simulate a reboot, to check that the services defined with
+      # system-manager start correctly after a reboot.
+      # TODO: can we find an easy way to really reboot the VM and not
+      # loose the root FS state?
+      vm.systemctl("isolate rescue.target")
+      # We need to send a return character to dismiss the rescue-mode prompt
+      vm.send_key("ret")
+      vm.systemctl("isolate default.target")
+      vm.wait_for_unit("default.target")
 
-              node1.succeed("test -d /var/tmp/system-manager")
-              node1.succeed("touch /var/tmp/system-manager/foo1")
+      vm.succeed("systemctl status new-service.service")
+      vm.fail("systemctl status service-9.service")
+      vm.fail("test -f /etc/a/nested/example/foo3")
+      vm.fail("test -f /etc/baz/bar/foo2")
+      vm.succeed("test -f /etc/foo_new")
 
-              # Simulate a reboot, to check that the services defined with
-              # system-manager start correctly after a reboot.
-              # TODO: can we find an easy way to really reboot the VM and not
-              # loose the root FS state?
-              node1.systemctl("isolate rescue.target")
-              # We need to send a return character to dismiss the rescue-mode prompt
-              node1.send_key("ret")
-              node1.systemctl("isolate default.target")
-              node1.wait_for_unit("default.target")
-
-              node1.succeed("systemctl status new-service.service")
-              node1.fail("systemctl status service-9.service")
-              node1.fail("test -f /etc/a/nested/example/foo3")
-              node1.fail("test -f /etc/baz/bar/foo2")
-              node1.succeed("test -f /etc/foo_new")
-
-              ${system-manager.lib.deactivateProfileSnippet { node = "node1"; profile = newConfig; }}
-              node1.fail("systemctl status new-service.service")
-              node1.fail("test -f /etc/foo_new")
-              #node1.fail("test -f /var/tmp/system-manager/foo1")
-            '';
-          })
-      ];
-    })
-  )
+      ${system-manager.lib.deactivateProfileSnippet { node = "vm"; profile = newConfig; }}
+      vm.fail("systemctl status new-service.service")
+      vm.fail("test -f /etc/foo_new")
+      #vm.fail("test -f /var/tmp/system-manager/foo1")
+    '';
+  }
 
 //
 
-forEachUbuntuImage
-  (imgName: image: lib.nameValuePair
-    "vm-test-prepopulate-${imgName}"
-    (system-manager.lib.make-vm-test "vm-test-prepopulate-${imgName}" {
-      inherit system;
-      modules = [
-        ({ config, ... }:
-          let
-            inherit (config) hostPkgs;
-          in
-          {
-            nodes = {
-              node1 = { config, ... }: {
-                modules = [
-                  ../../../examples/example.nix
-                ];
+forEachUbuntuImage "prepopulate" {
+  modules = [
+    (testModule "old")
+    ../../../examples/example.nix
+  ];
+  extraPathsToRegister = [ newConfig ];
+  testScriptFunction = { toplevel, ... }: ''
+    # Start all machines in parallel
+    start_all()
 
-                virtualisation.rootImage = system-manager.lib.prepareUbuntuImage {
-                  inherit hostPkgs image;
-                  nodeConfig = config;
-                };
-              };
-            };
+    vm.wait_for_unit("default.target")
 
-            testScript = ''
-              # Start all machines in parallel
-              start_all()
+    ${system-manager.lib.prepopulateProfileSnippet { node = "vm"; profile = toplevel; }}
+    vm.systemctl("daemon-reload")
 
-              node1.wait_for_unit("default.target")
+    # Simulate a reboot, to check that the services defined with
+    # system-manager start correctly after a reboot.
+    # TODO: can we find an easy way to really reboot the VM and not
+    # loose the root FS state?
+    vm.systemctl("isolate rescue.target")
+    # We need to send a return character to dismiss the rescue-mode prompt
+    vm.send_key("ret")
+    vm.systemctl("isolate default.target")
+    vm.wait_for_unit("system-manager.target")
 
-              ${system-manager.lib.prepopulateProfileSnippet { node = "node1"; }}
-              node1.systemctl("daemon-reload")
+    vm.succeed("systemctl status service-9.service")
+    vm.succeed("test -f /etc/baz/bar/foo2")
+    vm.succeed("test -f /etc/a/nested/example/foo3")
+    vm.succeed("test -f /etc/foo.conf")
+    vm.succeed("grep -F 'launch_the_rockets = true' /etc/foo.conf")
+    vm.fail("grep -F 'launch_the_rockets = false' /etc/foo.conf")
 
-              # Simulate a reboot, to check that the services defined with
-              # system-manager start correctly after a reboot.
-              # TODO: can we find an easy way to really reboot the VM and not
-              # loose the root FS state?
-              node1.systemctl("isolate rescue.target")
-              # We need to send a return character to dismiss the rescue-mode prompt
-              node1.send_key("ret")
-              node1.systemctl("isolate default.target")
-              node1.wait_for_unit("system-manager.target")
+    ${system-manager.lib.activateProfileSnippet { node = "vm"; profile = newConfig; }}
+    vm.succeed("systemctl status new-service.service")
+    vm.fail("systemctl status service-9.service")
+    vm.fail("test -f /etc/a/nested/example/foo3")
+    vm.fail("test -f /etc/baz/bar/foo2")
+    vm.succeed("test -f /etc/foo_new")
 
-              node1.succeed("systemctl status service-9.service")
-              node1.succeed("test -f /etc/baz/bar/foo2")
-              node1.succeed("test -f /etc/a/nested/example/foo3")
-              node1.succeed("test -f /etc/foo.conf")
-              node1.succeed("grep -F 'launch_the_rockets = true' /etc/foo.conf")
-              node1.fail("grep -F 'launch_the_rockets = false' /etc/foo.conf")
-
-              ${system-manager.lib.activateProfileSnippet { node = "node1"; profile = newConfig; }}
-              node1.succeed("systemctl status new-service.service")
-              node1.fail("systemctl status service-9.service")
-              node1.fail("test -f /etc/a/nested/example/foo3")
-              node1.fail("test -f /etc/baz/bar/foo2")
-              node1.succeed("test -f /etc/foo_new")
-
-              ${system-manager.lib.deactivateProfileSnippet { node = "node1"; profile = newConfig; }}
-              node1.fail("systemctl status new-service.service")
-              node1.fail("test -f /etc/foo_new")
-            '';
-          }
-        )
-      ];
-    })
-  )
+    ${system-manager.lib.deactivateProfileSnippet { node = "vm"; profile = newConfig; }}
+    vm.fail("systemctl status new-service.service")
+    vm.fail("test -f /etc/foo_new")
+  '';
+}
 
   //
 
-forEachUbuntuImage
-  (imgName: image: lib.nameValuePair
-    "vm-test-system-path-${imgName}"
-    (system-manager.lib.make-vm-test "vm-test-system-path-${imgName}" {
-      inherit system;
-      modules = [
-        ({ config, ... }:
-          let
-            inherit (config) hostPkgs;
-          in
-          {
-            nodes = {
-              node1 = { config, ... }: {
-                modules = [
-                  ../../../examples/example.nix
-                ];
+forEachUbuntuImage "system-path" {
+  modules = [
+    (testModule "old")
+    ../../../examples/example.nix
+  ];
+  extraPathsToRegister = [ newConfig ];
+  testScriptFunction = { toplevel, hostPkgs, ... }: ''
+    # Start all machines in parallel
+    start_all()
+    vm.wait_for_unit("default.target")
 
-                virtualisation.rootImage = system-manager.lib.prepareUbuntuImage {
-                  inherit hostPkgs image;
-                  nodeConfig = config;
-                };
-              };
-            };
+    vm.fail("bash --login -c '$(which rg)'")
+    vm.fail("bash --login -c '$(which fd)'")
 
-            testScript = ''
-              # Start all machines in parallel
-              start_all()
-              node1.wait_for_unit("default.target")
+    ${system-manager.lib.activateProfileSnippet { node = "vm"; profile = toplevel; }}
 
-              node1.fail("bash --login -c '$(which rg)'")
-              node1.fail("bash --login -c '$(which fd)'")
+    vm.wait_for_unit("system-manager.target")
+    vm.wait_for_unit("system-manager-path.service")
 
-              ${system-manager.lib.activateProfileSnippet { node = "node1"; }}
+    #vm.fail("bash --login -c '$(which fish)'")
+    vm.succeed("bash --login -c 'realpath $(which rg) | grep -F ${hostPkgs.ripgrep}/bin/rg'")
+    vm.succeed("bash --login -c 'realpath $(which fd) | grep -F ${hostPkgs.fd}/bin/fd'")
 
-              node1.wait_for_unit("system-manager.target")
-              node1.wait_for_unit("system-manager-path.service")
+    ${system-manager.lib.activateProfileSnippet { node = "vm"; profile = newConfig; }}
 
-              node1.fail("bash --login -c '$(which fish)'")
-              node1.succeed("bash --login -c 'realpath $(which rg) | grep -F ${hostPkgs.ripgrep}/bin/rg'")
-              node1.succeed("bash --login -c 'realpath $(which fd) | grep -F ${hostPkgs.fd}/bin/fd'")
-
-              ${system-manager.lib.activateProfileSnippet { node = "node1"; profile = newConfig; }}
-
-              node1.fail("bash --login -c '$(which rg)'")
-              node1.fail("bash --login -c '$(which fd)'")
-              node1.succeed("bash --login -c 'realpath $(which fish) | grep -F ${hostPkgs.fish}/bin/fish'")
-            '';
-          })
-      ];
-    })
-  )
+    vm.fail("bash --login -c '$(which rg)'")
+    vm.fail("bash --login -c '$(which fd)'")
+    vm.succeed("bash --login -c 'realpath $(which fish) | grep -F ${hostPkgs.fish}/bin/fish'")
+  '';
+}
