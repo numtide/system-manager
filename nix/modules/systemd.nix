@@ -139,21 +139,21 @@ in
           (lib.filterAttrs (name: service: service.enable && service.startAt != [ ]) cfg.services);
 
       units =
-        lib.mapAttrs' (n: v: lib.nameValuePair "${n}.path" (systemd-lib.pathToUnit n v)) cfg.paths
-        // lib.mapAttrs' (n: v: lib.nameValuePair "${n}.service" (systemd-lib.serviceToUnit n v)) cfg.services
-        // lib.mapAttrs' (n: v: lib.nameValuePair "${n}.slice" (systemd-lib.sliceToUnit n v)) cfg.slices
-        // lib.mapAttrs' (n: v: lib.nameValuePair "${n}.socket" (systemd-lib.socketToUnit n v)) cfg.sockets
-        // lib.mapAttrs' (n: v: lib.nameValuePair "${n}.target" (systemd-lib.targetToUnit n v)) cfg.targets
-        // lib.mapAttrs' (n: v: lib.nameValuePair "${n}.timer" (systemd-lib.timerToUnit n v)) cfg.timers
+        lib.mapAttrs' (n: v: lib.nameValuePair "${n}.path" (systemd-lib.pathToUnit v)) cfg.paths
+        // lib.mapAttrs' (n: v: lib.nameValuePair "${n}.service" (systemd-lib.serviceToUnit v)) cfg.services
+        // lib.mapAttrs' (n: v: lib.nameValuePair "${n}.slice" (systemd-lib.sliceToUnit v)) cfg.slices
+        // lib.mapAttrs' (n: v: lib.nameValuePair "${n}.socket" (systemd-lib.socketToUnit v)) cfg.sockets
+        // lib.mapAttrs' (n: v: lib.nameValuePair "${n}.target" (systemd-lib.targetToUnit v)) cfg.targets
+        // lib.mapAttrs' (n: v: lib.nameValuePair "${n}.timer" (systemd-lib.timerToUnit v)) cfg.timers
         // lib.listToAttrs (map
           (v:
             let n = utils.escapeSystemdPath v.where;
-            in lib.nameValuePair "${n}.mount" (systemd-lib.mountToUnit n v))
+            in lib.nameValuePair "${n}.mount" (systemd-lib.mountToUnit v))
           cfg.mounts)
         // lib.listToAttrs (map
           (v:
             let n = utils.escapeSystemdPath v.where;
-            in lib.nameValuePair "${n}.automount" (systemd-lib.automountToUnit n v))
+            in lib.nameValuePair "${n}.automount" (systemd-lib.automountToUnit v))
           cfg.automounts);
     };
 
