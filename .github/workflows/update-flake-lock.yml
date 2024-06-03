@@ -2,14 +2,14 @@ name: update-flake-lock
 on:
   workflow_dispatch:
   schedule:
-    - cron: '45 3 * * 1' # runs weekly every Monday at 03:45 UTC
+    - cron: "45 3 * * 1" # runs weekly every Monday at 03:45 UTC
 
 jobs:
   lockfile:
     runs-on: "ubuntu-latest"
     steps:
       - name: "Checkout the repo"
-        uses: "actions/checkout@v3"
+        uses: "actions/checkout@v4"
       - name: "Install the Nix package manager"
         uses: "cachix/install-nix-action@master"
         with:
