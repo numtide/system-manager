@@ -12,7 +12,6 @@
       url = "github:cachix/pre-commit-hooks.nix";
       inputs = {
         nixpkgs.follows = "nixpkgs";
-        flake-utils.follows = "flake-utils";
       };
     };
     rust-overlay = {
@@ -34,7 +33,7 @@
     };
 
     nix-vm-test = {
-      url = "github:numtide/nix-vm-test/extra-paths-to-register";
+      url = "github:numtide/nix-vm-test";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
