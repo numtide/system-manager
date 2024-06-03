@@ -34,7 +34,7 @@
     };
 
     nix-vm-test = {
-      url = "github:numtide/nix-vm-test/extra-paths-to-register";
+      url = "github:numtide/nix-vm-test";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
