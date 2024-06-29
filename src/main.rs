@@ -359,7 +359,7 @@ fn do_prepopulate(
     if let Some(target_host) = target_host {
         invoke_remote_script(
             &store_path.store_path,
-            "pre-populate",
+            "prepopulate",
             target_host,
             use_remote_sudo,
         )?;
