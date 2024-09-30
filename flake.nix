@@ -147,7 +147,7 @@
         treefmt.config = {
           projectRootFile = "flake.nix";
           programs = {
-            nixpkgs-fmt.enable = true;
+            nixfmt.enable = true;
             rustfmt = {
               enable = true;
               package = rust.rustfmt;
