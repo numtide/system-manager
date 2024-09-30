@@ -24,7 +24,7 @@ clap = { version = "4.1.4", features = ["derive"] }
 dbus = "0.9.7"
 env_logger = "0.10.0"
 im = { version = "15.1.0", features = ["serde"] }
-itertools = "0.10.5"
+itertools = "0.13.0"
 log = "0.4.17"
 nix = "0.26.2"
 serde = { version = "1.0.152", features = ["derive"] }
