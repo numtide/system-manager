@@ -5,4 +5,3 @@ let
   };
 in
 (import compat { src = ./.; }).shellNix.default
-
