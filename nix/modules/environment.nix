@@ -1,4 +1,9 @@
-{ lib, config, pkgs, ... }:
+{
+  lib,
+  config,
+  pkgs,
+  ...
+}:
 
 {
   options.environment = {
@@ -24,10 +29,9 @@
         ];
 
         etc = {
-          "profile.d/system-manager-path.sh".source =
-            pkgs.writeText "system-manager-path.sh" ''
-              export PATH=${pathDir}/bin/:''${PATH}
-            '';
+          "profile.d/system-manager-path.sh".source = pkgs.writeText "system-manager-path.sh" ''
+            export PATH=${pathDir}/bin/:''${PATH}
+          '';
 
           # TODO: figure out how to properly add fish support. We could start by
           # looking at what NixOS and HM do to set up the fish env.

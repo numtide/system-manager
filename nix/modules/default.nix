@@ -1,8 +1,9 @@
-{ lib
-, config
-, pkgs
-, system-manager
-, ...
+{
+  lib,
+  config,
+  pkgs,
+  system-manager,
+  ...
 }:
 {
   imports = [
@@ -31,7 +32,12 @@
         type = types.listOf types.unspecified;
         internal = true;
         default = [ ];
-        example = [{ assertion = false; message = "you can't enable this for that reason"; }];
+        example = [
+          {
+            assertion = false;
+            message = "you can't enable this for that reason";
+          }
+        ];
         description = lib.mdDoc ''
           This option allows modules to express conditions that must
           hold for the evaluation of the system configuration to
@@ -95,20 +101,27 @@
         allowAnyDistro = lib.mkEnableOption "the usage of system-manager on untested distributions";
 
         preActivationAssertions = lib.mkOption {
-          type = with lib.types; attrsOf (submodule ({ name, ... }: {
-            options = {
-              enable = lib.mkEnableOption "the assertion";
+          type =
+            with lib.types;
+            attrsOf (
+              submodule (
+                { name, ... }:
+                {
+                  options = {
+                    enable = lib.mkEnableOption "the assertion";
 
-              name = lib.mkOption {
-                type = types.str;
-                default = name;
-              };
+                    name = lib.mkOption {
+                      type = types.str;
+                      default = name;
+                    };
 
-              script = lib.mkOption {
-                type = types.str;
-              };
-            };
-          }));
+                    script = lib.mkOption {
+                      type = types.str;
+                    };
+                  };
+                }
+              )
+            );
           default = { };
         };
       };
@@ -140,17 +153,22 @@
     system-manager.preActivationAssertions = {
       osVersion =
         let
-          supportedIds = [ "nixos" "ubuntu" ];
+          supportedIds = [
+            "nixos"
+            "ubuntu"
+          ];
         in
         {
           enable = !config.system-manager.allowAnyDistro;
           script = ''
             source /etc/os-release
-            ${lib.concatStringsSep "\n" (lib.flip map supportedIds (supportedId: ''
-              if [ $ID = "${supportedId}" ]; then
-                exit 0
-              fi
-            ''))}
+            ${lib.concatStringsSep "\n" (
+              lib.flip map supportedIds (supportedId: ''
+                if [ $ID = "${supportedId}" ]; then
+                  exit 0
+                fi
+              '')
+            )}
             echo "This OS is not currently supported."
             echo "Supported OSs are: ${lib.concatStringsSep ", " supportedIds}"
             exit 1
@@ -184,27 +202,27 @@
 
         preActivationAssertionScript =
           let
-            mkAssertion = { name, script, ... }: ''
-              # ${name}
+            mkAssertion =
+              { name, script, ... }:
+              ''
+                # ${name}
 
-              echo -e "Evaluating pre-activation assertion ${name}...\n"
-              (
-                set +e
-                ${script}
-              )
-              assertion_result=$?
-
-              if [ $assertion_result -ne 0 ]; then
-                failed_assertions+=${name}
-              fi
-            '';
-
-            mkAssertions = assertions:
-              lib.concatStringsSep "\n" (
-                lib.mapAttrsToList (name: mkAssertion) (
-                  lib.filterAttrs (name: cfg: cfg.enable)
-                    assertions
+                echo -e "Evaluating pre-activation assertion ${name}...\n"
+                (
+                  set +e
+                  ${script}
                 )
+                assertion_result=$?
+
+                if [ $assertion_result -ne 0 ]; then
+                  failed_assertions+=${name}
+                fi
+              '';
+
+            mkAssertions =
+              assertions:
+              lib.concatStringsSep "\n" (
+                lib.mapAttrsToList (name: mkAssertion) (lib.filterAttrs (name: cfg: cfg.enable) assertions)
               );
           in
           pkgs.writeShellScript "preActivationAssertions" ''
@@ -230,43 +248,40 @@
       # TODO: handle globbing
       etc =
         let
-          addToStore = name: file: pkgs.runCommandLocal "${name}-etc-link" { } ''
-            mkdir -p "$out/$(dirname "${file.target}")"
-            ln -s "${file.source}" "$out/${file.target}"
+          addToStore =
+            name: file:
+            pkgs.runCommandLocal "${name}-etc-link" { } ''
+              mkdir -p "$out/$(dirname "${file.target}")"
+              ln -s "${file.source}" "$out/${file.target}"
 
-            if [ "${file.mode}" != symlink ]; then
-              echo "${file.mode}" > "$out/${file.target}.mode"
-              echo "${file.user}" > "$out/${file.target}.uid"
-              echo "${file.group}" > "$out/${file.target}.gid"
-            fi
-          '';
+              if [ "${file.mode}" != symlink ]; then
+                echo "${file.mode}" > "$out/${file.target}.mode"
+                echo "${file.user}" > "$out/${file.target}.uid"
+                echo "${file.group}" > "$out/${file.target}.gid"
+              fi
+            '';
 
-          filteredEntries = lib.filterAttrs
-            (_name: etcFile: etcFile.enable)
-            config.environment.etc;
+          filteredEntries = lib.filterAttrs (_name: etcFile: etcFile.enable) config.environment.etc;
 
           srcDrvs = lib.mapAttrs addToStore filteredEntries;
 
-          entries = lib.mapAttrs
-            (name: file: file // { source = "${srcDrvs.${name}}"; })
-            filteredEntries;
+          entries = lib.mapAttrs (name: file: file // { source = "${srcDrvs.${name}}"; }) filteredEntries;
 
           staticEnv = pkgs.buildEnv {
             name = "etc-static-env";
             paths = lib.attrValues srcDrvs;
           };
         in
-        { inherit entries staticEnv; };
+        {
+          inherit entries staticEnv;
+        };
 
-      services =
-        lib.mapAttrs'
-          (unitName: unit:
-            lib.nameValuePair unitName {
-              storePath =
-                ''${unit.unit}/${unitName}'';
-            })
-          (lib.filterAttrs (_: unit: unit.enable)
-            config.systemd.units);
+      services = lib.mapAttrs' (
+        unitName: unit:
+        lib.nameValuePair unitName {
+          storePath = ''${unit.unit}/${unitName}'';
+        }
+      ) (lib.filterAttrs (_: unit: unit.enable) config.systemd.units);
     };
   };
 }

@@ -1,8 +1,9 @@
-{ lib
-, config
-, pkgs
-, utils
-, ...
+{
+  lib,
+  config,
+  pkgs,
+  utils,
+  ...
 }:
 
 let
@@ -19,14 +20,28 @@ in
     # We could consider copying the systemd lib from NixOS and removing the bits
     # that are not relevant to us, like this option.
     package = lib.mkOption {
-      type = lib.types.oneOf [ lib.types.str lib.types.path lib.types.package ];
+      type = lib.types.oneOf [
+        lib.types.str
+        lib.types.path
+        lib.types.package
+      ];
       default = pkgs.systemdMinimal;
     };
 
     globalEnvironment = lib.mkOption {
-      type = with lib.types; attrsOf (nullOr (oneOf [ str path package ]));
+      type =
+        with lib.types;
+        attrsOf (
+          nullOr (oneOf [
+            str
+            path
+            package
+          ])
+        );
       default = { };
-      example = { TZ = "CET"; };
+      example = {
+        TZ = "CET";
+      };
       description = lib.mdDoc ''
         Environment variables passed to *all* systemd units.
       '';
@@ -104,7 +119,9 @@ in
     generators = lib.mkOption {
       type = lib.types.attrsOf lib.types.path;
       default = { };
-      example = { systemd-gpt-auto-generator = "/dev/null"; };
+      example = {
+        systemd-gpt-auto-generator = "/dev/null";
+      };
       description = lib.mdDoc ''
         Definition of systemd generators.
         For each `NAME = VALUE` pair of the attrSet, a link is generated from
@@ -129,14 +146,10 @@ in
         wantedBy = [ "default.target" ];
       };
 
-      timers =
-        lib.mapAttrs
-          (name: service:
-            {
-              wantedBy = [ "timers.target" ];
-              timerConfig.OnCalendar = service.startAt;
-            })
-          (lib.filterAttrs (name: service: service.enable && service.startAt != [ ]) cfg.services);
+      timers = lib.mapAttrs (name: service: {
+        wantedBy = [ "timers.target" ];
+        timerConfig.OnCalendar = service.startAt;
+      }) (lib.filterAttrs (name: service: service.enable && service.startAt != [ ]) cfg.services);
 
       units =
         lib.mapAttrs' (n: v: lib.nameValuePair "${n}.path" (systemd-lib.pathToUnit v)) cfg.paths
@@ -145,16 +158,24 @@ in
         // lib.mapAttrs' (n: v: lib.nameValuePair "${n}.socket" (systemd-lib.socketToUnit v)) cfg.sockets
         // lib.mapAttrs' (n: v: lib.nameValuePair "${n}.target" (systemd-lib.targetToUnit v)) cfg.targets
         // lib.mapAttrs' (n: v: lib.nameValuePair "${n}.timer" (systemd-lib.timerToUnit v)) cfg.timers
-        // lib.listToAttrs (map
-          (v:
-            let n = utils.escapeSystemdPath v.where;
-            in lib.nameValuePair "${n}.mount" (systemd-lib.mountToUnit v))
-          cfg.mounts)
-        // lib.listToAttrs (map
-          (v:
-            let n = utils.escapeSystemdPath v.where;
-            in lib.nameValuePair "${n}.automount" (systemd-lib.automountToUnit v))
-          cfg.automounts);
+        // lib.listToAttrs (
+          map (
+            v:
+            let
+              n = utils.escapeSystemdPath v.where;
+            in
+            lib.nameValuePair "${n}.mount" (systemd-lib.mountToUnit v)
+          ) cfg.mounts
+        )
+        // lib.listToAttrs (
+          map (
+            v:
+            let
+              n = utils.escapeSystemdPath v.where;
+            in
+            lib.nameValuePair "${n}.automount" (systemd-lib.automountToUnit v)
+          ) cfg.automounts
+        );
     };
 
     environment.etc =
@@ -164,49 +185,59 @@ in
         enabledUnits = lib.filterAttrs (_: unit: unit.enable) cfg.units;
       in
       {
-        "systemd/system".source = pkgs.runCommand "system-manager-units"
-          {
-            preferLocalBuild = true;
-            allowSubstitutes = false;
-          }
-          ''
-            mkdir -p $out
+        "systemd/system".source =
+          pkgs.runCommand "system-manager-units"
+            {
+              preferLocalBuild = true;
+              allowSubstitutes = false;
+            }
+            ''
+              mkdir -p $out
 
-            for i in ${toString (lib.mapAttrsToList (n: v: v.unit) enabledUnits)}; do
-              fn=$(basename $i/*)
-              if [ -e $out/$fn ]; then
-                if [ "$(readlink -f $i/$fn)" = /dev/null ]; then
-                  ln -sfn /dev/null $out/$fn
+              for i in ${toString (lib.mapAttrsToList (n: v: v.unit) enabledUnits)}; do
+                fn=$(basename $i/*)
+                if [ -e $out/$fn ]; then
+                  if [ "$(readlink -f $i/$fn)" = /dev/null ]; then
+                    ln -sfn /dev/null $out/$fn
+                  else
+                    ${
+                      if allowCollisions then
+                        ''
+                          mkdir -p $out/$fn.d
+                          ln -s $i/$fn $out/$fn.d/overrides.conf
+                        ''
+                      else
+                        ''
+                          echo "Found multiple derivations configuring $fn!"
+                          exit 1
+                        ''
+                    }
+                  fi
                 else
-                  ${if allowCollisions then ''
-                    mkdir -p $out/$fn.d
-                    ln -s $i/$fn $out/$fn.d/overrides.conf
-                  '' else ''
-                    echo "Found multiple derivations configuring $fn!"
-                    exit 1
-                  ''}
+                  ln -fs $i/$fn $out/
                 fi
-              else
-                ln -fs $i/$fn $out/
-              fi
-            done
+              done
 
-            ${lib.concatStrings (
-              lib.mapAttrsToList (name: unit:
-                lib.concatMapStrings (name2: ''
-                  mkdir -p $out/'${name2}.wants'
-                  ln -sfn '../${name}' $out/'${name2}.wants'/
-                '') (unit.wantedBy or [])
-              ) enabledUnits)}
+              ${lib.concatStrings (
+                lib.mapAttrsToList (
+                  name: unit:
+                  lib.concatMapStrings (name2: ''
+                    mkdir -p $out/'${name2}.wants'
+                    ln -sfn '../${name}' $out/'${name2}.wants'/
+                  '') (unit.wantedBy or [ ])
+                ) enabledUnits
+              )}
 
-            ${lib.concatStrings (
-              lib.mapAttrsToList (name: unit:
-                lib.concatMapStrings (name2: ''
-                  mkdir -p $out/'${name2}.requires'
-                  ln -sfn '../${name}' $out/'${name2}.requires'/
-                '') (unit.requiredBy or [])
-              ) enabledUnits)}
-          '';
+              ${lib.concatStrings (
+                lib.mapAttrsToList (
+                  name: unit:
+                  lib.concatMapStrings (name2: ''
+                    mkdir -p $out/'${name2}.requires'
+                    ln -sfn '../${name}' $out/'${name2}.requires'/
+                  '') (unit.requiredBy or [ ])
+                ) enabledUnits
+              )}
+            '';
       };
   };
 }
