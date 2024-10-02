@@ -1,0 +1,17 @@
+default_install_hook_types: [pre-commit]
+repos:
+- repo: local
+  hooks:
+  - id: treefmt
+    name: treefmt
+    entry: treefmt --fail-on-change
+    language: system
+    pass_filenames: false
+    stages: [pre-commit]
+  - id: cargo-clippy
+    name: cargo-clippy
+    entry: cargo-clippy --workspace -- -D warnings
+    language: system
+    files: \.rs$
+    pass_filenames: false
+    stages: [pre-commit]
