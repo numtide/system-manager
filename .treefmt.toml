@@ -1,0 +1,9 @@
+# One CLI to format the code tree - https://git.numtide.com/numtide/treefmt
+
+[formatter.nixfmt]
+command = "nixfmt"
+includes = ["*.nix"]
+
+[formatter.rustfmt]
+command = "rustfmt"
+includes = ["*.rs"]
