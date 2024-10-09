@@ -31,6 +31,11 @@
         }
       );
 
+      overlays = {
+        packages = final: _prev: import ./packages.nix { pkgs = final; };
+        default = self.overlays.packages;
+      };
+
       # Only useful for quick tests
       systemConfigs.default = self.lib.makeSystemConfig {
         modules = [ ./examples/example.nix ];
