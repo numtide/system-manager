@@ -104,7 +104,7 @@ More features may follow later.
 
 ## Supported Systems
 
-System Manger is currently only supported on NixOS and Ubuntu. However, it can be used on other distributions by enabling the following:
+System Manager is currently only supported on NixOS and Ubuntu. However, it can be used on other distributions by enabling the following:
 
 ```nix
 {
