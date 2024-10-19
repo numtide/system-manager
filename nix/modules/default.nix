@@ -26,6 +26,13 @@
           example = "x86_64-linux";
           default = throw "the option nixpkgs.hostPlatform needs to be set.";
         };
+
+        pkgs = lib.mkOption {
+          type = lib.types.pkgs;
+          description = ''The pkgs module argument.'';
+          default = pkgs;
+          readOnly = true;
+        };
       };
 
       assertions = lib.mkOption {
