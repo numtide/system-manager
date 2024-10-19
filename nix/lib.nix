@@ -40,8 +40,7 @@ let
               };
               # Pass the wrapped system-manager binary down
               # TODO: Use nixpkgs version by default.
-              inherit
-                (import ../packages.nix { pkgs = import nixpkgs { system = config.nixpkgs.hostPlatform; }; })
+              inherit (import ../packages.nix { inherit pkgs; })
                 system-manager
                 ;
             };
@@ -58,9 +57,7 @@ let
             ] ++ modules;
           }).config;
 
-        # Get the system as it was defined in the modules.
-        system = config.nixpkgs.hostPlatform;
-        pkgs = import nixpkgs { inherit system; };
+        inherit (config.nixpkgs) pkgs;
 
         returnIfNoAssertions =
           drv:
