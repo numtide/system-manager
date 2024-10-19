@@ -42,7 +42,6 @@ in
         pkg-config
         makeWrapper
       ];
-      checkType = "debug"; # might not be required?
       # TODO: Is prefixing nix here the correct approach?
       postFixup = ''
         wrapProgram $out/bin/system-manager \
