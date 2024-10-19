@@ -47,6 +47,8 @@ in
       '';
     };
 
+    enableStrictShellChecks = lib.mkEnableOption "running shellcheck on the generated scripts for systemd units.";
+
     units = lib.mkOption {
       description = lib.mdDoc "Definition of systemd units.";
       default = { };
