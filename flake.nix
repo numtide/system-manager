@@ -21,8 +21,8 @@
         );
       nix-vm-test-lib = "${
         builtins.fetchTarball {
-          url = "https://github.com/numtide/nix-vm-test/archive/7901cec00670681b3e405565cb7bffe6a9368240.tar.gz";
-          sha256 = "0m82a40r3j7qinp3y6mh36da89dkwvpalz6a4znx9rqp6kh3885x";
+          url = "https://github.com/numtide/nix-vm-test/archive/21816a2e64f35a1f5b27dadd067e051606c2b451.tar.gz";
+          sha256 = "1mbs97bvi6g892b0s9dwq0yj3hszrxf0yivw9v89llvl8qxz2qi8";
         }
       }/lib.nix";
     in
