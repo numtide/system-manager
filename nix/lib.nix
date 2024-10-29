@@ -1,12 +1,9 @@
 {
-  nixpkgs, # The nixpkgs flake
-  self, # The system-manager flake
-  nixos, # The path to the nixos dir from nixpkgs
+  nixpkgs ? <nixpkgs>,
+  lib ? import "${nixpkgs}/lib",
+  nixos ? "${nixpkgs}/nixos",
 }:
-let
-  inherit (nixpkgs) lib;
-in
-{
+rec {
   # Function that can be used when defining inline modules to get better location
   # reporting in module-system errors.
   # Usage example:
@@ -34,14 +31,18 @@ in
           ...
         }:
         {
-          _file = "${self.lib.printAttrPos (builtins.unsafeGetAttrPos "a" { a = null; })}: inline module";
+          _file = "${printAttrPos (builtins.unsafeGetAttrPos "a" { a = null; })}: inline module";
           _module.args = {
-            pkgs = nixpkgs.legacyPackages.${config.nixpkgs.hostPlatform};
+            pkgs = import nixpkgs { system = config.nixpkgs.hostPlatform; };
             utils = import "${nixos}/lib/utils.nix" {
               inherit lib config pkgs;
             };
             # Pass the wrapped system-manager binary down
-            inherit (self.packages.${config.nixpkgs.hostPlatform}) system-manager;
+            # TODO: Use nixpkgs version by default.
+            inherit
+              (import ../packages.nix { pkgs = import nixpkgs { system = config.nixpkgs.hostPlatform; }; })
+              system-manager
+              ;
           };
         };
 
@@ -58,7 +59,7 @@ in
 
       # Get the system as it was defined in the modules.
       system = config.nixpkgs.hostPlatform;
-      pkgs = nixpkgs.legacyPackages.${system};
+      pkgs = import nixpkgs { inherit system; };
 
       returnIfNoAssertions =
         drv:
@@ -123,19 +124,19 @@ in
 
   activateProfileSnippet =
     { node, profile }:
-    self.lib.mkTestPreamble {
+    mkTestPreamble {
       inherit node profile;
       action = "activate";
     };
   deactivateProfileSnippet =
     { node, profile }:
-    self.lib.mkTestPreamble {
+    mkTestPreamble {
       inherit node profile;
       action = "deactivate";
     };
   prepopulateProfileSnippet =
     { node, profile }:
-    self.lib.mkTestPreamble {
+    mkTestPreamble {
       inherit node profile;
       action = "prepopulate";
     };

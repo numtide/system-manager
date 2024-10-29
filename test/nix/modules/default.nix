@@ -15,7 +15,7 @@ let
       projectTest ? test: test.sandboxed,
     }:
     let
-      ubuntu = nix-vm-test.lib.${system}.ubuntu;
+      ubuntu = nix-vm-test.ubuntu;
     in
     lib.listToAttrs (
       lib.flip map (lib.attrNames ubuntu.images) (
