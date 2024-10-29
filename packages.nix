@@ -31,6 +31,7 @@ in
       pkg-config,
       makeWrapper,
       nix,
+      clippy,
     }:
     rustPlatform.buildRustPackage {
       pname = "system-manager";
@@ -42,7 +43,15 @@ in
         pkg-config
         makeWrapper
       ];
-      checkType = "debug"; # might not be required?
+
+      nativeCheckInputs = [
+        clippy
+      ];
+
+      preCheck = ''
+        ${lib.getExe pkgs.cargo} clippy
+      '';
+
       # TODO: Is prefixing nix here the correct approach?
       postFixup = ''
         wrapProgram $out/bin/system-manager \
