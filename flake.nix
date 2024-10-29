@@ -1,17 +1,10 @@
 {
   description = "Manage system config using nix on any distro";
 
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-
-    nix-vm-test = {
-      url = "github:numtide/nix-vm-test";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-  };
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
   outputs =
-    inputs:
+    { self, nixpkgs }:
     let
       systems = [
         "aarch64-linux"
@@ -19,32 +12,38 @@
       ];
       eachSystem =
         f:
-        inputs.nixpkgs.lib.genAttrs systems (
+        nixpkgs.lib.genAttrs systems (
           system:
           f {
             inherit system;
-            pkgs = inputs.nixpkgs.legacyPackages.${system};
+            pkgs = nixpkgs.legacyPackages.${system};
           }
         );
+      nix-vm-test-lib = "${
+        builtins.fetchTarball {
+          url = "https://github.com/numtide/nix-vm-test/archive/7901cec00670681b3e405565cb7bffe6a9368240.tar.gz";
+          sha256 = "0m82a40r3j7qinp3y6mh36da89dkwvpalz6a4znx9rqp6kh3885x";
+        }
+      }/lib.nix";
     in
     {
-      lib = import ./nix/lib.nix { inherit (inputs) nixpkgs; };
+      lib = import ./nix/lib.nix { inherit nixpkgs; };
 
       packages = eachSystem (
         { pkgs, system }:
         import ./packages.nix { inherit pkgs; }
         // {
-          default = inputs.self.packages.${system}.system-manager;
+          default = self.packages.${system}.system-manager;
         }
       );
 
       overlays = {
         packages = final: _prev: import ./packages.nix { pkgs = final; };
-        default = inputs.self.overlays.packages;
+        default = self.overlays.packages;
       };
 
       # Only useful for quick tests
-      systemConfigs.default = inputs.self.lib.makeSystemConfig {
+      systemConfigs.default = self.lib.makeSystemConfig {
         modules = [ ./examples/example.nix ];
       };
 
@@ -58,11 +57,11 @@
       );
 
       checks = (
-        inputs.nixpkgs.lib.recursiveUpdate
+        nixpkgs.lib.recursiveUpdate
           (eachSystem (
             { system, ... }:
             {
-              system-manager = inputs.self.packages.${system}.system-manager;
+              system-manager = self.packages.${system}.system-manager;
             }
           ))
           {
@@ -72,9 +71,12 @@
               in
               (import ./test/nix/modules {
                 inherit system;
-                inherit (inputs.nixpkgs) lib;
-                nix-vm-test = inputs.nix-vm-test.lib.${system};
-                system-manager = inputs.self;
+                inherit (nixpkgs) lib;
+                nix-vm-test = import nix-vm-test-lib {
+                  inherit nixpkgs;
+                  inherit system;
+                };
+                system-manager = self;
               });
           }
       );
