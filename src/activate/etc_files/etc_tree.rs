@@ -27,11 +27,11 @@ impl FileStatus {
 #[serde(rename_all = "camelCase")]
 pub struct FileTree {
     status: FileStatus,
-    path: PathBuf,
+    pub(crate) path: PathBuf,
     // TODO directories and files are now both represented as a string associated with a nested
     // map. For files the nested map is simple empty.
     // We could potentially optimise this.
-    nested: HashMap<String, FileTree>,
+    pub(crate) nested: HashMap<String, FileTree>,
 }
 
 impl AsRef<FileTree> for FileTree {
