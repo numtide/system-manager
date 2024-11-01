@@ -80,5 +80,10 @@
       )
     );
     systemd.tmpfiles.rules = [ "D /var/tmp/system-manager 0755 root root -" ];
+    systemd.tmpfiles.settings.sample = {
+      "/var/tmp/sample".d = {
+        mode = "0755";
+      };
+    };
   };
 }
