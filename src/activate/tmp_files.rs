@@ -10,14 +10,14 @@ pub fn activate(etc_tree: &FileTree) -> TmpFilesActivationResult {
     let conf_files = etc_tree
         .nested
         .get("etc")
-        .unwrap()
-        .nested
-        .get("tmpfiles.d")
-        .unwrap()
-        .nested
-        .iter()
-        .map(|(_, node)| node.path.to_string_lossy().to_string())
-        .collect::<Vec<_>>();
+        .and_then(|etc| etc.nested.get("tmpfiles.d"))
+        .map_or(vec![], |tmpfiles_d| {
+            tmpfiles_d
+                .nested
+                .iter()
+                .map(|(_, node)| node.path.to_string_lossy().to_string())
+                .collect::<Vec<_>>()
+        });
     let mut cmd = process::Command::new("systemd-tmpfiles");
     cmd.arg("--create").arg("--remove").args(conf_files);
     log::debug!("running {:#?}", cmd);
