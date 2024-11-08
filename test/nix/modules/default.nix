@@ -175,6 +175,10 @@ forEachUbuntuImage "example" {
       vm.fail("grep -F 'launch_the_rockets = false' /etc/foo.conf")
 
       vm.succeed("test -d /var/tmp/system-manager")
+      vm.succeed("test -d /var/tmp/sample")
+
+      vm.succeed("test -f /etc/tmpfiles.d/sample.conf")
+      vm.succeed("test -f /etc/tmpfiles.d/00-system-manager.conf")
 
       ${system-manager.lib.activateProfileSnippet {
         node = "vm";

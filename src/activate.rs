@@ -82,7 +82,7 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
     match etc_files::activate(store_path, old_state.file_tree, ephemeral) {
         Ok(etc_tree) => {
             log::info!("Activating tmp files...");
-            match tmp_files::activate() {
+            match tmp_files::activate(&etc_tree) {
                 Ok(_) => {
                     log::debug!("Successfully created tmp files");
                 }
