@@ -1,4 +1,19 @@
-# System Manager using Nix
+<div align="center">
+
+# system-manager
+
+<img src="system-manager.svg" height="150"/>
+
+**Manage system config using nix on any distro**
+
+*A <a href="https://numtide.com/">numtide</a> project.*
+
+<p>
+<a href="https://github.com/numtide/system-manager/actions/workflows/update-flake-lock.yml"><img src="https://github.com/numtide/system-manager/actions/workflows/update-flake-lock.yml/badge.svg"/></a>
+<a href="https://app.element.io/#/room/#home:numtide.com"><img src="https://img.shields.io/badge/Support-%23numtide-blue"/></a>
+</p>
+
+</div>
 
 This project provides a basic method to manage system configuration using [Nix][nixos]
 on any Linux distribution.
