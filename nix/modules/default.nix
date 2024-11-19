@@ -27,6 +27,12 @@
           default = throw "the option nixpkgs.hostPlatform needs to be set.";
         };
 
+        config = lib.mkOption {
+          type = types.attrs;
+          description = ''Configuration used to instantiate nixpkgs.'';
+          default = {};
+        };
+
         pkgs = lib.mkOption {
           type = lib.types.pkgs;
           description = ''The pkgs module argument.'';

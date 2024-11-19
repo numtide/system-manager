@@ -34,7 +34,7 @@ let
           {
             _file = "${self.printAttrPos (builtins.unsafeGetAttrPos "a" { a = null; })}: inline module";
             _module.args = {
-              pkgs = import nixpkgs { system = config.nixpkgs.hostPlatform; };
+              pkgs = import nixpkgs { system = config.nixpkgs.hostPlatform; inherit (config.nixpkgs) config; };
               utils = import "${nixos}/lib/utils.nix" {
                 inherit lib config pkgs;
               };
