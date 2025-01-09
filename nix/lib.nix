@@ -20,6 +20,7 @@ let
     makeSystemConfig =
       {
         modules,
+        overlays ? [ ],
         extraSpecialArgs ? { },
       }:
       let
@@ -34,7 +35,23 @@ let
           {
             _file = "${self.printAttrPos (builtins.unsafeGetAttrPos "a" { a = null; })}: inline module";
             _module.args = {
-              pkgs = import nixpkgs { system = config.nixpkgs.hostPlatform; inherit (config.nixpkgs) config; };
+              pkgs = let
+                cfg = config.nixpkgs;
+                systemArgs =
+                  if cfg.buildPlatform != cfg.hostPlatform then
+                    {
+                      localSystem = cfg.buildPlatform;
+                      crossSystem = cfg.hostPlatform;
+                    }
+                  else
+                    {
+                      system = cfg.hostPlatform;
+                    };
+                in
+                import nixpkgs ({
+                  overlays = overlays ++ cfg.overlays;
+                  inherit (config.nixpkgs) config;
+                } // systemArgs);
               utils = import "${nixos}/lib/utils.nix" {
                 inherit lib config pkgs;
               };
