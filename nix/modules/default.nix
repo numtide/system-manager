@@ -20,11 +20,21 @@
     in
     {
       nixpkgs = {
-        # TODO: switch to lib.systems.parsedPlatform
-        hostPlatform = lib.mkOption {
+        buildPlatform = lib.mkOption {
           type = types.str;
           example = "x86_64-linux";
+          default = config.nixpkgs.hostPlatform;
+        };
+
+        hostPlatform = lib.mkOption {
+          type = with types; either str attrs;
+          example = "x86_64-linux";
           default = throw "the option nixpkgs.hostPlatform needs to be set.";
+        };
+
+        overlays = lib.mkOption {
+          type = with types; listOf anything;
+          default = [];
         };
 
         config = lib.mkOption {
