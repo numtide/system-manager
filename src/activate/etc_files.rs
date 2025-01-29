@@ -4,6 +4,7 @@ use im::HashMap;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::fs::{DirBuilder, Permissions};
+use std::os::unix::fs as unixfs;
 use std::os::unix::prelude::PermissionsExt;
 use std::path;
 use std::path::{Path, PathBuf};
@@ -352,6 +353,8 @@ fn create_etc_entry(
             &entry.source.store_path.join(&entry.target),
             &target_path,
             &entry.mode,
+            entry.uid,
+            entry.gid,
             old_state,
         ) {
             Ok(_) => Ok(new_state.register_managed_entry(&target_path)),
@@ -411,7 +414,8 @@ fn create_dir_recursively(dir: &Path, state: FileTree) -> EtcActivationResult {
     new_state
 }
 
-fn copy_file(source: &Path, target: &Path, mode: &str, old_state: &FileTree) -> anyhow::Result<()> {
+fn copy_file(source: &Path, target: &Path, mode: &str,
+            uid: u32, gid: u32, old_state: &FileTree) -> anyhow::Result<()> {
     let exists = target.try_exists()?;
     if !exists || old_state.is_managed(target) {
         log::debug!(
@@ -422,6 +426,7 @@ fn copy_file(source: &Path, target: &Path, mode: &str, old_state: &FileTree) -> 
         fs::copy(source, target)?;
         let mode_int = u32::from_str_radix(mode, 8)?;
         fs::set_permissions(target, Permissions::from_mode(mode_int))?;
+        unixfs::chown(target, Some(uid), Some(gid))?;
         Ok(())
     } else {
         anyhow::bail!("File {} already exists, ignoring.", target.display());
