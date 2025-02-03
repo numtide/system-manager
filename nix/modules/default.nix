@@ -34,13 +34,13 @@
 
         overlays = lib.mkOption {
           type = with types; listOf anything;
-          default = [];
+          default = [ ];
         };
 
         config = lib.mkOption {
           type = types.attrs;
           description = ''Configuration used to instantiate nixpkgs.'';
-          default = {};
+          default = { };
         };
 
         pkgs = lib.mkOption {
