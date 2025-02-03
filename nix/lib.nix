@@ -71,6 +71,10 @@ let
             modules = [
               extraArgsModule
               ./modules
+              {
+                _file = "${self.printAttrPos (builtins.unsafeGetAttrPos "a" { a = null; })}: inline module";
+                build = { inherit toplevel; };
+              }
             ] ++ modules;
           }).config;
 

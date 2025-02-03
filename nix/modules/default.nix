@@ -150,6 +150,11 @@
       };
 
       build = {
+        toplevel = lib.mkOption {
+          type = lib.types.pathInStore;
+          readOnly = true;
+        };
+
         scripts = lib.mkOption {
           type = lib.types.attrsOf lib.types.package;
         };
