@@ -150,6 +150,7 @@ forEachUbuntuImage "example" {
   extraPathsToRegister = [ newConfig ];
   testScriptFunction =
     { toplevel, ... }:
+    #python
     ''
       # Start all machines in parallel
       start_all()
@@ -173,6 +174,11 @@ forEachUbuntuImage "example" {
       vm.succeed("test -f /etc/foo.conf")
       vm.succeed("grep -F 'launch_the_rockets = true' /etc/foo.conf")
       vm.fail("grep -F 'launch_the_rockets = false' /etc/foo.conf")
+
+      uid = vm.succeed("stat -c %u /etc/test_perms").strip()
+      gid = vm.succeed("stat -c %g /etc/test_perms").strip()
+      assert uid == "5", f"uid was {uid}, expected 5"
+      assert gid == "6", f"uid was {gid}, expected 6"
 
       vm.succeed("test -d /var/tmp/system-manager")
       vm.succeed("test -d /var/tmp/sample")

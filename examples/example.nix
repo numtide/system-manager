@@ -54,6 +54,15 @@
         out-of-store = {
           source = "/run/systemd/system/";
         };
+
+        test_perms = {
+          text = ''
+            This is just a test!
+          '';
+          mode = "0755";
+          uid = 5;
+          gid = 6;
+        };
       };
     };
 
