@@ -19,12 +19,17 @@
             pkgs = nixpkgs.legacyPackages.${system};
           }
         );
-      nix-vm-test-lib = "${
-        builtins.fetchTarball {
-          url = "https://github.com/numtide/nix-vm-test/archive/21816a2e64f35a1f5b27dadd067e051606c2b451.tar.gz";
-          sha256 = "1mbs97bvi6g892b0s9dwq0yj3hszrxf0yivw9v89llvl8qxz2qi8";
-        }
-      }/lib.nix";
+      nix-vm-test-lib =
+        let
+          rev = "f01e096295c8ace5f367985e323e3263eb7f9434";
+          sha256 = "sha256:11gqxnhdrpb025wybbb0wmpy2xzjaa6ncs55zbw8i2nzchkzrfvh";
+        in
+        "${
+          builtins.fetchTarball {
+            url = "https://github.com/numtide/nix-vm-test/archive/${rev}.tar.gz";
+            inherit sha256;
+          }
+        }/lib.nix";
     in
     {
       lib = import ./nix/lib.nix { inherit nixpkgs; };
