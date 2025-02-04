@@ -411,6 +411,7 @@ dependencies = [
  "itertools",
  "log",
  "nix",
+ "regex",
  "serde",
  "serde_json",
  "thiserror",

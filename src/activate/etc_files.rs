@@ -2,12 +2,14 @@ mod etc_tree;
 
 use im::HashMap;
 use itertools::Itertools;
+use regex;
 use serde::{Deserialize, Serialize};
 use std::fs::{DirBuilder, Permissions};
 use std::os::unix::fs as unixfs;
 use std::os::unix::prelude::PermissionsExt;
 use std::path;
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
 use std::{fs, io};
 
 use self::etc_tree::FileStatus;
@@ -21,6 +23,12 @@ use crate::{
 pub use etc_tree::FileTree;
 
 type EtcActivationResult = ActivationResult<FileTree>;
+
+static UID_GID_REGEX: OnceLock<regex::Regex> = OnceLock::new();
+
+fn get_uid_gid_regex() -> &'static regex::Regex {
+    UID_GID_REGEX.get_or_init(|| regex::Regex::new(r"^\+[0-9]+$").expect("could not compile regex"))
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -352,9 +360,7 @@ fn create_etc_entry(
         match copy_file(
             &entry.source.store_path.join(&entry.target),
             &target_path,
-            &entry.mode,
-            entry.uid,
-            entry.gid,
+            entry,
             old_state,
         ) {
             Ok(_) => Ok(new_state.register_managed_entry(&target_path)),
@@ -414,8 +420,54 @@ fn create_dir_recursively(dir: &Path, state: FileTree) -> EtcActivationResult {
     new_state
 }
 
-fn copy_file(source: &Path, target: &Path, mode: &str,
-            uid: u32, gid: u32, old_state: &FileTree) -> anyhow::Result<()> {
+fn find_uid(entry: &EtcFile) -> anyhow::Result<u32> {
+    if !get_uid_gid_regex().is_match(&entry.user) {
+        nix::unistd::User::from_name(&entry.user)
+            .map(|maybe_user| {
+                maybe_user.map_or_else(
+                    || {
+                        log::warn!(
+                            "Specified user {} not found, defaulting to root",
+                            &entry.user
+                        );
+                        0
+                    },
+                    |user| user.uid.as_raw(),
+                )
+            })
+            .map_err(|err| anyhow::anyhow!(err).context("Failed to determine user"))
+    } else {
+        Ok(entry.uid)
+    }
+}
+
+fn find_gid(entry: &EtcFile) -> anyhow::Result<u32> {
+    if !get_uid_gid_regex().is_match(&entry.group) {
+        nix::unistd::Group::from_name(&entry.group)
+            .map(|maybe_group| {
+                maybe_group.map_or_else(
+                    || {
+                        log::warn!(
+                            "Specified group {} not found, defaulting to root",
+                            &entry.group
+                        );
+                        0
+                    },
+                    |group| group.gid.as_raw(),
+                )
+            })
+            .map_err(|err| anyhow::anyhow!(err).context("Failed to determine group"))
+    } else {
+        Ok(entry.gid)
+    }
+}
+
+fn copy_file(
+    source: &Path,
+    target: &Path,
+    entry: &EtcFile,
+    old_state: &FileTree,
+) -> anyhow::Result<()> {
     let exists = target.try_exists()?;
     if !exists || old_state.is_managed(target) {
         log::debug!(
@@ -424,9 +476,9 @@ fn copy_file(source: &Path, target: &Path, mode: &str,
             target.display()
         );
         fs::copy(source, target)?;
-        let mode_int = u32::from_str_radix(mode, 8)?;
+        let mode_int = u32::from_str_radix(&entry.mode, 8)?;
         fs::set_permissions(target, Permissions::from_mode(mode_int))?;
-        unixfs::chown(target, Some(uid), Some(gid))?;
+        unixfs::chown(target, Some(find_uid(entry)?), Some(find_gid(entry)?))?;
         Ok(())
     } else {
         anyhow::bail!("File {} already exists, ignoring.", target.display());

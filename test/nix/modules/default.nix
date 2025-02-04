@@ -175,10 +175,17 @@ forEachUbuntuImage "example" {
       vm.succeed("grep -F 'launch_the_rockets = true' /etc/foo.conf")
       vm.fail("grep -F 'launch_the_rockets = false' /etc/foo.conf")
 
-      uid = vm.succeed("stat -c %u /etc/test_perms").strip()
-      gid = vm.succeed("stat -c %g /etc/test_perms").strip()
+      uid = vm.succeed("stat -c %u /etc/with_ownership").strip()
+      gid = vm.succeed("stat -c %g /etc/with_ownership").strip()
       assert uid == "5", f"uid was {uid}, expected 5"
-      assert gid == "6", f"uid was {gid}, expected 6"
+      assert gid == "6", f"gid was {gid}, expected 6"
+
+      print(vm.succeed("cat /etc/passwd"))
+
+      user = vm.succeed("stat -c %U /etc/with_ownership2").strip()
+      group = vm.succeed("stat -c %G /etc/with_ownership2").strip()
+      assert user == "nobody", f"user was {user}, expected nobody"
+      assert group == "users", f"group was {group}, expected users"
 
       vm.succeed("test -d /var/tmp/system-manager")
       vm.succeed("test -d /var/tmp/sample")

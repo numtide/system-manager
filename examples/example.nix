@@ -55,13 +55,21 @@
           source = "/run/systemd/system/";
         };
 
-        test_perms = {
+        with_ownership = {
           text = ''
             This is just a test!
           '';
           mode = "0755";
           uid = 5;
           gid = 6;
+        };
+        with_ownership2 = {
+          text = ''
+            This is just a test!
+          '';
+          mode = "0755";
+          user = "nobody";
+          group = "users";
         };
       };
     };
