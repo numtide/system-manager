@@ -3,24 +3,6 @@
   lib ? pkgs.lib,
 }:
 let
-  # This project's `.gitignore` implemented for cleanSource.
-  filterGitignore =
-    orig_path: type:
-    let
-      baseName = baseNameOf (toString orig_path);
-    in
-    !(baseName == "target" && type == "directory")
-    || lib.hasSuffix ".rs.bk" baseName
-    || baseName == ".nixos-test-history"
-    || (baseName == ".direnv" && type == "directory");
-
-  cleanSourceWithGitignore =
-    src:
-    lib.cleanSourceWith {
-      src = lib.cleanSource src;
-      filter = filterGitignore;
-    };
-
   cargoManifest = (pkgs.lib.importTOML ./Cargo.toml).package;
 in
 {
@@ -36,7 +18,15 @@ in
     rustPlatform.buildRustPackage {
       pname = "system-manager";
       version = cargoManifest.version;
-      src = cleanSourceWithGitignore ./.;
+      src = lib.fileset.toSource {
+        root = ./.;
+        fileset = lib.fileset.unions [
+          ./Cargo.toml
+          ./Cargo.lock
+          ./src
+        ];
+      };
+
       cargoLock.lockFile = ./Cargo.lock;
       buildInputs = [ dbus ];
       nativeBuildInputs = [
