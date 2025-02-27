@@ -668,8 +668,8 @@ impl dbus::message::SignalArgs for OrgFreedesktopSystemd1ManagerReloading {
     const INTERFACE: &'static str = "org.freedesktop.systemd1.Manager";
 }
 
-impl<'a, T: blocking::BlockingSender, C: ::std::ops::Deref<Target = T>>
-    OrgFreedesktopSystemd1Manager for blocking::Proxy<'a, C>
+impl<T: blocking::BlockingSender, C: ::std::ops::Deref<Target = T>> OrgFreedesktopSystemd1Manager
+    for blocking::Proxy<'_, C>
 {
     fn get_unit(&self, name: &str) -> Result<dbus::Path<'static>, dbus::Error> {
         self.method_call("org.freedesktop.systemd1.Manager", "GetUnit", (name,))
