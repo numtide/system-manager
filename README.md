@@ -114,7 +114,7 @@ nix run 'github:numtide/system-manager' -- switch --flake '.'
 
 ### Reproducibility
 
-By design flakes run in [pure evaluation mode](https://nixos.wiki/wiki/Flakes#Making_your_evaluations_pure).
+By design flakes run in [pure evaluation mode](https://wiki.nixos.org/wiki/Flakes#Making_your_evaluations_pure).
 In some cases you may not want this. To run an impure evaluation of the flake, add the following option to your command:
 ```sh
 --nix-option pure-eval false
