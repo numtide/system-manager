@@ -87,7 +87,7 @@ impl AsRef<StorePath> for StorePath {
     }
 }
 
-impl<'a> From<StorePath> for Cow<'a, StorePath> {
+impl From<StorePath> for Cow<'_, StorePath> {
     fn from(value: StorePath) -> Self {
         Cow::Owned(value)
     }

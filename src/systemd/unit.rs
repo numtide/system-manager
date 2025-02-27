@@ -146,8 +146,8 @@ pub trait OrgFreedesktopSystemd1Unit {
     fn activation_details(&self) -> Result<Vec<(String, String)>, dbus::Error>;
 }
 
-impl<'a, T: blocking::BlockingSender, C: ::std::ops::Deref<Target = T>> OrgFreedesktopSystemd1Unit
-    for blocking::Proxy<'a, C>
+impl<T: blocking::BlockingSender, C: ::std::ops::Deref<Target = T>> OrgFreedesktopSystemd1Unit
+    for blocking::Proxy<'_, C>
 {
     fn start(&self, mode: &str) -> Result<dbus::Path<'static>, dbus::Error> {
         self.method_call("org.freedesktop.systemd1.Unit", "Start", (mode,))
