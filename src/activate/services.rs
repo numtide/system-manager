@@ -114,15 +114,15 @@ fn get_services_to_reload(services: Services, old_services: Services) -> Service
 
 fn systemd_system_dir(ephemeral: bool) -> PathBuf {
     if ephemeral {
-        return Path::new(path::MAIN_SEPARATOR_STR)
+        Path::new(path::MAIN_SEPARATOR_STR)
             .join("run")
             .join("systemd")
-            .join("system");
+            .join("system")
     } else {
-        return Path::new(path::MAIN_SEPARATOR_STR)
+        Path::new(path::MAIN_SEPARATOR_STR)
             .join("etc")
             .join("systemd")
-            .join("system");
+            .join("system")
     }
 }
 
