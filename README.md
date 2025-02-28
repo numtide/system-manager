@@ -23,9 +23,9 @@ It builds on the many modules that already exist in [NixOS][nixos].
 
 [nixos]: https://nixos.org
 
-# Usage
+## Usage
 
-## Getting Nix
+### Getting Nix
 
 In order to use System Manager, you will first need to install Nix.
 You can either use your distro's package manager, or use one of the different options
@@ -112,12 +112,21 @@ Once the configuration is defined, you can activate it using the `system-manager
 nix run 'github:numtide/system-manager' -- switch --flake '.'
 ```
 
-# Currently supported features
+### Reproducibility
+
+By design flakes run in [pure evaluation mode](https://wiki.nixos.org/wiki/Flakes#Making_your_evaluations_pure).
+In some cases you may not want this. To run an impure evaluation of the flake, add the following option to your command:
+```sh
+--nix-option pure-eval false
+```
+
+
+## Currently supported features
 
 Currently it is possible to configure files under `/etc/` and systemd services.
 More features may follow later.
 
-## Supported Systems
+### Supported Systems
 
 System Manager is currently only supported on NixOS and Ubuntu. However, it can be used on other distributions by enabling the following:
 
