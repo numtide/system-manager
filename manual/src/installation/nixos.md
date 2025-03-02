@@ -1,5 +1,8 @@
 # NixOS Installation
 
+This section covers how to get `system-manager`, the command line application, on your system.
+Please refer to [Usage](./usage.md) for how to handle application of modules.
+
 ## Nix Channels
 
 This is the "vanilla" NixOS experience. You can find which channels you are currently using with `nix-channel --list`.
@@ -41,24 +44,29 @@ To add `system-manager` to an existing flake based configuration, add the follow
 >
 > See [Issue #207](https://github.com/numtide/system-manager/issues/207) for progress on alleviating this problem.
 
-The `system-manager` function for creating a `system-manager` configuration is available on the `lib` field of `inputs.system-manager`.
-We can create a new system configuration for a machine that includes `system-manager` like so:
+The `system-manager` package is not available via nixpkgs at present, but we can get it from the flake's `packages` attribute.
+The following is a flake that declares a single NixOS configuration containing a module with the `system-manager`
+package added to the environment.
 
-<!-- TODO: Test this as some of this is based on logical assumptions -->
+<!-- TODO: Upstream system-manager into nixpkgs like home-manager -->
 
 ```nix
 # flake.nix
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    system-manager.url = "github:numtide/system-manager";
+    system-manager = {
+      url = "github:numtide/system-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
   outputs = inputs@{ self }: {
     let
       system = "aarch64-linux";
       host = "nixos";
     in
-    systemManagerConfigurations.${host} = inputs.system-manager.lib.makeSystemConfig {
+    nixosConfigurations.${host} = inputs.nixpkgs.lib.nixosSystem {
+      inherit system;
       modules = [
         ({ config, ... }: {
           environment.systemPackages = [
@@ -70,3 +78,13 @@ We can create a new system configuration for a machine that includes `system-man
   };
 }
 ```
+
+Switching to this configuration will install `system-manager`.
+
+```sh
+sudo nixos-rebuild switch --flake ./path/to/flake.nix#nixos
+system-manager --version
+# system_manager 0.1.0
+```
+
+> Note: In this case our host's name is `nixos`, and to reference an attribute we tack on `#` to the flake path, followed by the name of the attribute we want to reference.
