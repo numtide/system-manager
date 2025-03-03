@@ -83,6 +83,13 @@ struct StoreOrFlakeArgs {
 
 #[derive(clap::Subcommand, Debug)]
 enum Action {
+    /// Initializes a configuration in the given directory. If the directory
+    /// does not exist, then it will be created. The default directory is
+    /// '/etc/system-manager'.
+    Init {
+        #[arg(default_value = "/etc/system-manager")]
+        path: PathBuf,
+    },
     /// Build a new system-manager generation, register it as the active profile, and activate it
     Switch {
         #[command(flatten)]
@@ -177,6 +184,22 @@ fn go(args: Args) -> Result<()> {
             &nix_options,
         )
         .and_then(print_store_path),
+        Action::Init { path } => {
+            // TODO: While creating the configuration path, if permission denied is
+            // encountered we should escalate privileges. The detsys installer does
+            // this and is written in rust so will have a look there on how to do that.
+            //
+            // In the case that the user does not have internet access, it would be better
+            // (and faster) to include the bytes of the template configuration files
+            // instead of trying to use the template from the flake directly.
+            // The template for flakes can be exposed through the flake while the init
+            // function just uses the bytes from the system-manager program itself.
+            println!(
+                "Initializing new system-manager configuration at {:?}",
+                path
+            );
+            Ok(())
+        }
         Action::Switch {
             build_args: BuildArgs { flake_uri },
             activation_args: ActivationArgs { ephemeral },
