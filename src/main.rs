@@ -7,6 +7,15 @@ use std::process::{self, ExitCode};
 
 use system_manager::{NixOptions, StorePath};
 
+/// The bytes for the NixOS flake template is included in the binary to avoid unnecessary
+/// network calls when initializing a system-manager configuration from the command line.
+pub const NIXOS_FLAKE_TEMPLATE: &[u8; 683] = include_bytes!("../templates/nixos/flake.nix");
+
+/// The bytes for the standalone flake template is included in the binary to avoid unnecessary
+/// network calls when initializing a system-manager configuration from the command line.
+pub const STANDALONE_FLAKE_TEMPLATE: &[u8; 739] =
+    include_bytes!("../templates/standalone/flake.nix");
+
 #[derive(clap::Parser, Debug)]
 #[command(
     author,
@@ -190,12 +199,14 @@ fn go(args: Args) -> Result<()> {
             // instead of trying to use the template from the flake directly.
             // The template for flakes can be exposed through the flake while the init
             // function just uses the bytes from the system-manager program itself.
+            //
+            // TODO: Check if the user has flakes enabled
             println!(
-                "Initializing new system-manager configuration at {:?}",
+                "Initializing new system-manager configuration at '{}'",
                 // canonicalize returns an error if the path doesn't exist
                 // TODO: add logic for canonicalizing ~ and creating .config/system-manager
                 // if it doesn't exist
-                path.as_path().canonicalize()?
+                path.as_path().canonicalize()?.display()
             );
             Ok(())
         }
