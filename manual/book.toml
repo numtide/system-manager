@@ -1,0 +1,6 @@
+[book]
+authors = ["numtide-contributors"]
+language = "en"
+multilingual = false
+src = "src"
+title = "System Manager Manual"
