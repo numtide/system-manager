@@ -23,6 +23,7 @@ let
         ./Cargo.lock
         ./src
         ./test/rust
+        ./templates
       ];
     };
 
