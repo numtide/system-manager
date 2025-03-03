@@ -25,12 +25,19 @@ It builds on the many modules that already exist in [NixOS][nixos].
 
 ## Usage
 
-### Getting Nix
+### Install Nix
 
 In order to use System Manager, you will first need to install Nix.
-You can either use your distro's package manager, or use one of the different options
-to install Nix, like [the official installer][official-installer] or this
-[new installer][detsys-installer].
+You can either use your distro's package manager, or use one of the available options
+to install Nix.
+
+- [Official Nix Installer][official-installer] - The canonical source for installing nix.
+- [Determinate Nix Installer][detsys-installer] - A wrapper around the official installer that has SELinux support, and enables flake features by default.
+
+> Note: Be advised that the Determinate Systems installer has the option for the official
+> Nix as well as Determinate's own variant of Nix (Determinate Nix). It will prompt you
+> for which one you want to install. System Manager is not tested against Determinate Nix.
+> It's recommended to use the official Nix if installing via the Determinate Nix Installer.
 
 [official-installer]: https://nixos.org/download.html
 [detsys-installer]: https://github.com/DeterminateSystems/nix-installer
