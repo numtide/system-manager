@@ -1,6 +1,8 @@
-use anyhow::Result;
+use anyhow::{anyhow, bail, Result};
 use clap::Parser;
 use std::ffi::OsString;
+use std::fs::{create_dir_all, File, OpenOptions};
+use std::io::Write;
 use std::mem;
 use std::path::{Path, PathBuf};
 use std::process::{self, ExitCode};
@@ -15,6 +17,10 @@ pub const NIXOS_FLAKE_TEMPLATE: &[u8; 683] = include_bytes!("../templates/nixos/
 /// network calls when initializing a system-manager configuration from the command line.
 pub const STANDALONE_FLAKE_TEMPLATE: &[u8; 739] =
     include_bytes!("../templates/standalone/flake.nix");
+
+/// The bytes for the standalone flake template is included in the binary to avoid unnecessary
+/// network calls when initializing a system-manager configuration from the command line.
+pub const SYSTEM_MODULE_TEMPLATE: &[u8; 1153] = include_bytes!("../templates/system.nix");
 
 #[derive(clap::Parser, Debug)]
 #[command(
@@ -96,6 +102,7 @@ enum Action {
     /// does not exist, then it will be created. The default directory is
     /// '~/.config/system-manager'.
     Init {
+        // TODO: Fix default value here
         #[arg(default_value = "~/.config/system-manager")]
         path: PathBuf,
     },
@@ -193,21 +200,70 @@ fn go(args: Args) -> Result<()> {
             &nix_options,
         )
         .and_then(print_store_path),
-        Action::Init { path } => {
-            // TODO: In the case that the user does not have internet access, it would be better
-            // (and faster) to include the bytes of the template configuration files
-            // instead of trying to use the template from the flake directly.
-            // The template for flakes can be exposed through the flake while the init
-            // function just uses the bytes from the system-manager program itself.
-            //
-            // TODO: Check if the user has flakes enabled
+        Action::Init { mut path } => {
+            path = path.canonicalize().map_err(|err| {
+                // TODO: Handle edge case where the directory does not exist
+                // and only a portion of the path is able to be made absolute.
+                //
+                // Example: ~/.config/system-manager
+                //
+                // `~` can be canonicalized to `/home/user` and `.config/system-manager`
+                // doesn't exist yet.
+                anyhow!(
+                    "failed to resolve '{}' into an absolute path: {err:?}",
+                    path.display()
+                )
+            })?;
+
+            // Create a new file that will fail if the file already exists
+            fn new_file_with_opts(filepath: &PathBuf) -> Result<File, std::io::Error> {
+                OpenOptions::new()
+                    .create_new(true)
+                    .write(true)
+                    .truncate(false)
+                    .open(filepath)
+            }
+
+            let _is_nixos = dbg!(process::Command::new("nixos-version")
+                .output()
+                .is_ok_and(|output| !output.stdout.is_empty()));
+            let _has_flake_support = dbg!({
+                let output = process::Command::new("nix").arg("show-config").output()?;
+                let out_str = String::from_utf8_lossy(&output.stdout).to_string();
+                out_str.contains("experimental-features")
+                    && out_str.contains("flakes")
+                    && out_str.contains("nix-command")
+            });
+
+            if !path.exists() {
+                create_dir_all(&path)?
+            }
+
             println!(
                 "Initializing new system-manager configuration at '{}'",
-                // canonicalize returns an error if the path doesn't exist
-                // TODO: add logic for canonicalizing ~ and creating .config/system-manager
-                // if it doesn't exist
-                path.as_path().canonicalize()?.display()
+                path.display()
             );
+
+            let system_filepath = {
+                let mut buf = path.clone();
+                buf.push("system.nix");
+                buf
+            };
+            match new_file_with_opts(&system_filepath) {
+                Ok(mut file) => file.write_all(SYSTEM_MODULE_TEMPLATE)?,
+                Err(err) if matches!(err.kind(), std::io::ErrorKind::AlreadyExists) => {
+                    eprintln!(
+                        "'{}' already exists, skipping...",
+                        system_filepath.display()
+                    )
+                }
+                Err(err) => {
+                    bail!(
+                        "failed to initialize system configuration at '{}': {err:?}",
+                        system_filepath.display()
+                    )
+                }
+            }
             Ok(())
         }
         Action::Switch {
