@@ -24,6 +24,7 @@ in
           ./Cargo.toml
           ./Cargo.lock
           ./src
+          ./templates
         ];
       };
 
