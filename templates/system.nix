@@ -9,12 +9,12 @@
     };
 
     environment = {
-      # Packages that should be installed
-      # on a system
-      systemPackages = [ pkgs.hello ];
+      # Packages that should be installed on a system
+      systemPackages = [
+        # pkgs.hello
+      ];
 
-      # Add directories and files to `/etc`
-      # and set their permissions
+      # Add directories and files to `/etc` and set their permissions
       etc = {
         # with_ownership = {
         #   text = ''
