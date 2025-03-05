@@ -1,7 +1,7 @@
 use anyhow::{anyhow, bail, Result};
 use clap::Parser;
 use std::ffi::OsString;
-use std::fs::{create_dir_all, File, OpenOptions};
+use std::fs::{create_dir_all, OpenOptions};
 use std::io::Write;
 use std::mem;
 use std::path::{Path, PathBuf};
@@ -44,6 +44,34 @@ struct Args {
 
     #[clap(long = "nix-option", num_args = 2, global = true)]
     nix_options: Option<Vec<String>>,
+}
+
+#[derive(clap::Args, Debug)]
+struct InitArgs {
+    /// The path to initialize the configuration at.
+    #[arg(
+        // The default_value is not resolved at this point so we must
+        // parse it ourselves with a value_parser closure.
+        default_value = "~/.config/system-manager",
+        value_parser = |src: &str| -> Result<PathBuf> {
+            if src.starts_with("~") {
+                if let Some(home) = std::env::home_dir() {
+                    let expanded = src.replace("~", &home.to_string_lossy());
+                    return Ok(PathBuf::from(expanded));
+                }
+                bail!("Failed to determine a home directory to initialize the configuration in.")
+            }
+            Ok(PathBuf::from(src))
+        },
+    )]
+    path: PathBuf,
+    /// Whether or not to include a 'flake.nix' as part of the new configuration.
+    /// By default, if the host has the 'flakes' and 'nix-command' experimental features
+    /// enabled, a 'flake.nix' will be included. A flake template is automatically selected
+    /// by checking the host system's features. Flake templates are available on the system-manager
+    /// flake attribute 'outputs.templates'.
+    #[arg(long, default_value = "false")]
+    no_flake: bool,
 }
 
 #[derive(clap::Args, Debug)]
@@ -102,9 +130,8 @@ enum Action {
     /// does not exist, then it will be created. The default directory is
     /// '~/.config/system-manager'.
     Init {
-        // TODO: Fix default value here
-        #[arg(default_value = "~/.config/system-manager")]
-        path: PathBuf,
+        #[command(flatten)]
+        init_args: InitArgs,
     },
     /// Build a new system-manager generation, register it as the active profile, and activate it
     Switch {
@@ -200,70 +227,58 @@ fn go(args: Args) -> Result<()> {
             &nix_options,
         )
         .and_then(print_store_path),
-        Action::Init { mut path } => {
+        Action::Init {
+            init_args: InitArgs { mut path, no_flake },
+        } => {
+            create_dir_all(&path).map_err(|err| {
+                anyhow!(
+                    "encountered an error while creating configuration directory '{}': {err:?}",
+                    path.display()
+                )
+            })?;
             path = path.canonicalize().map_err(|err| {
-                // TODO: Handle edge case where the directory does not exist
-                // and only a portion of the path is able to be made absolute.
-                //
-                // Example: ~/.config/system-manager
-                //
-                // `~` can be canonicalized to `/home/user` and `.config/system-manager`
-                // doesn't exist yet.
                 anyhow!(
                     "failed to resolve '{}' into an absolute path: {err:?}",
                     path.display()
                 )
             })?;
-
-            // Create a new file that will fail if the file already exists
-            fn new_file_with_opts(filepath: &PathBuf) -> Result<File, std::io::Error> {
-                OpenOptions::new()
-                    .create_new(true)
-                    .write(true)
-                    .truncate(false)
-                    .open(filepath)
-            }
-
-            let _is_nixos = dbg!(process::Command::new("nixos-version")
-                .output()
-                .is_ok_and(|output| !output.stdout.is_empty()));
-            let _has_flake_support = dbg!({
-                let output = process::Command::new("nix").arg("show-config").output()?;
-                let out_str = String::from_utf8_lossy(&output.stdout).to_string();
-                out_str.contains("experimental-features")
-                    && out_str.contains("flakes")
-                    && out_str.contains("nix-command")
-            });
-
-            if !path.exists() {
-                create_dir_all(&path)?
-            }
-
-            println!(
+            log::info!(
                 "Initializing new system-manager configuration at '{}'",
                 path.display()
             );
 
-            let system_filepath = {
+            let system_config_filepath = {
                 let mut buf = path.clone();
                 buf.push("system.nix");
                 buf
             };
-            match new_file_with_opts(&system_filepath) {
-                Ok(mut file) => file.write_all(SYSTEM_MODULE_TEMPLATE)?,
-                Err(err) if matches!(err.kind(), std::io::ErrorKind::AlreadyExists) => {
-                    eprintln!(
-                        "'{}' already exists, skipping...",
-                        system_filepath.display()
-                    )
-                }
-                Err(err) => {
-                    bail!(
-                        "failed to initialize system configuration at '{}': {err:?}",
-                        system_filepath.display()
-                    )
+            init_config_file(&system_config_filepath, SYSTEM_MODULE_TEMPLATE)?;
+
+            let has_flake_support = process::Command::new("nix")
+                .arg("show-config")
+                .output()
+                .is_ok_and(|output| {
+                    let out_str = String::from_utf8_lossy(&output.stdout);
+                    out_str.contains("experimental-features")
+                        && out_str.contains("flakes")
+                        && out_str.contains("nix-command")
+                });
+            if !no_flake && has_flake_support {
+                let flake_config_filepath = {
+                    let mut buf = path.clone();
+                    buf.push("flake.nix");
+                    buf
+                };
+                let is_nixos = process::Command::new("nixos-version")
+                    .output()
+                    .is_ok_and(|output| !output.stdout.is_empty());
+                if is_nixos {
+                    init_config_file(&flake_config_filepath, NIXOS_FLAKE_TEMPLATE)?
+                } else {
+                    init_config_file(&flake_config_filepath, STANDALONE_FLAKE_TEMPLATE)?
                 }
             }
+            log::info!("Configuration '{}' ready for activation!", path.display());
             Ok(())
         }
         Action::Switch {
@@ -283,6 +298,34 @@ fn go(args: Args) -> Result<()> {
             activate(&store_path, ephemeral, &target_host, use_remote_sudo)
         }
     }
+}
+
+/// Create and write all bytes from a buffer into a new config file if it doesn't already exist.
+fn init_config_file(filepath: &PathBuf, buf: &[u8]) -> Result<()> {
+    match OpenOptions::new()
+        .create_new(true)
+        .write(true)
+        .truncate(false)
+        .open(filepath)
+    {
+        Ok(mut file) => {
+            file.write_all(buf)?;
+            log::info!("{}B written to '{}'", buf.len(), filepath.display())
+        }
+        Err(err) if matches!(err.kind(), std::io::ErrorKind::AlreadyExists) => {
+            log::warn!(
+                "'{}' already exists, leaving it unchanged...",
+                filepath.display()
+            )
+        }
+        Err(err) => {
+            bail!(
+                "failed to initialize system configuration at '{}': {err:?}",
+                filepath.display()
+            )
+        }
+    }
+    Ok(())
 }
 
 fn print_store_path<SP: AsRef<StorePath>>(store_path: SP) -> Result<()> {
