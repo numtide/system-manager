@@ -4,14 +4,11 @@
 }:
 let
   cargoManifest = (pkgs.lib.importTOML ./Cargo.toml).package;
-in
-{
-  system-manager = pkgs.callPackage (
+  system-manager-unwrapped = pkgs.callPackage (
     {
       rustPlatform,
       dbus,
       pkg-config,
-      makeWrapper,
       nix,
       clippy,
     }:
@@ -31,7 +28,6 @@ in
       buildInputs = [ dbus ];
       nativeBuildInputs = [
         pkg-config
-        makeWrapper
       ];
 
       nativeCheckInputs = [
@@ -41,12 +37,20 @@ in
       preCheck = ''
         ${lib.getExe pkgs.cargo} clippy
       '';
-
-      # TODO: Is prefixing nix here the correct approach?
-      postFixup = ''
-        wrapProgram $out/bin/system-manager \
-          --prefix PATH : ${lib.makeBinPath [ nix ]}
-      '';
     }
   ) { };
+in
+{
+  inherit system-manager-unwrapped;
+  system-manager =
+    pkgs.runCommand "system-manager"
+      {
+        nativeBuildInputs = [ pkgs.makeBinaryWrapper ];
+      }
+      ''
+        makeWrapper \
+          ${system-manager-unwrapped}/bin/system-manager \
+          $out/bin/system-manager \
+          --prefix PATH : ${lib.makeBinPath [ pkgs.nix ]}
+      '';
 }
