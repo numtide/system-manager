@@ -24,9 +24,7 @@
     in
     {
       environment = {
-        pathsToLink = [
-          "/bin"
-        ];
+        pathsToLink = [ "/bin" ];
 
         etc = {
           "profile.d/system-manager-path.sh".source = pkgs.writeText "system-manager-path.sh" ''

@@ -133,7 +133,6 @@ let
   );
 
   mkRuleFileContent = paths: concatStrings (pathsToRules paths);
-
 in
 {
   options = {
@@ -169,7 +168,6 @@ in
         and if that does not exist either, the default output will be used.
       '';
     };
-
   };
 
   config = {

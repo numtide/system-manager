@@ -1,6 +1,7 @@
 [package]
 name = "system_manager"
-version = "0.1.0"
+version = "0.1.0+nixpkgs-24.05"
+rust-version = "1.77"
 edition = "2021"
 license = "MIT"
 authors = [

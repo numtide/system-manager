@@ -45,9 +45,7 @@ let
                         crossSystem = cfg.hostPlatform;
                       }
                     else
-                      {
-                        system = cfg.hostPlatform;
-                      };
+                      { system = cfg.hostPlatform; };
                 in
                 import nixpkgs (
                   {
@@ -56,14 +54,10 @@ let
                   }
                   // systemArgs
                 );
-              utils = import "${nixos}/lib/utils.nix" {
-                inherit lib config pkgs;
-              };
+              utils = import "${nixos}/lib/utils.nix" { inherit lib config pkgs; };
               # Pass the wrapped system-manager binary down
               # TODO: Use nixpkgs version by default.
-              inherit (import ../packages.nix { inherit pkgs; })
-                system-manager
-                ;
+              inherit (import ../packages.nix { inherit pkgs; }) system-manager;
             };
           };
 
@@ -77,7 +71,9 @@ let
               ./modules
               {
                 _file = "${self.printAttrPos (builtins.unsafeGetAttrPos "a" { a = null; })}: inline module";
-                build = { inherit toplevel; };
+                build = {
+                  inherit toplevel;
+                };
               }
             ] ++ modules;
           }).config;

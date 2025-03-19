@@ -24,9 +24,7 @@ pkgs.mkShellNoCC {
       ]
     }"
   '';
-  buildInputs = with pkgs; [
-    dbus
-  ];
+  buildInputs = with pkgs; [ dbus ];
   nativeBuildInputs = with pkgs; [
     llvm.clang
     pkg-config

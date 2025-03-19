@@ -81,9 +81,7 @@
           enable = true;
           description = "service-${toString ix}";
           wants = [ "network-online.target" ];
-          after = [
-            "network-online.target"
-          ];
+          after = [ "network-online.target" ];
           serviceConfig = {
             Type = "oneshot";
             RemainAfterExit = true;

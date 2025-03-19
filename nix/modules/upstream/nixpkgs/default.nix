@@ -1,13 +1,7 @@
-{
-  nixosModulesPath,
-  lib,
-  ...
-}:
+{ nixosModulesPath, lib, ... }:
 {
   imports =
-    [
-      ./nginx.nix
-    ]
+    [ ./nginx.nix ]
     ++
     # List of imported NixOS modules
     # TODO: how will we manage this in the long term?
@@ -23,9 +17,6 @@
     # TODO: can we print an informational message for things like kernel modules
     # to inform users that they need to be enabled in the host system?
     {
-      boot = lib.mkOption {
-        type = lib.types.raw;
-      };
+      boot = lib.mkOption { type = lib.types.raw; };
     };
-
 }

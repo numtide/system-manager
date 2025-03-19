@@ -138,9 +138,7 @@
                       default = name;
                     };
 
-                    script = lib.mkOption {
-                      type = types.str;
-                    };
+                    script = lib.mkOption { type = types.str; };
                   };
                 }
               )
@@ -155,14 +153,10 @@
           readOnly = true;
         };
 
-        scripts = lib.mkOption {
-          type = lib.types.attrsOf lib.types.package;
-        };
+        scripts = lib.mkOption { type = lib.types.attrsOf lib.types.package; };
 
         etc = {
-          staticEnv = lib.mkOption {
-            type = lib.types.package;
-          };
+          staticEnv = lib.mkOption { type = lib.types.package; };
 
           entries = lib.mkOption {
             # TODO: better type
@@ -305,10 +299,7 @@
         };
 
       services = lib.mapAttrs' (
-        unitName: unit:
-        lib.nameValuePair unitName {
-          storePath = ''${unit.unit}/${unitName}'';
-        }
+        unitName: unit: lib.nameValuePair unitName { storePath = ''${unit.unit}/${unitName}''; }
       ) (lib.filterAttrs (_: unit: unit.enable) config.systemd.units);
     };
   };

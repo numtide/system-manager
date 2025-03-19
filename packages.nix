@@ -30,9 +30,7 @@ let
         pkg-config
       ];
 
-      nativeCheckInputs = [
-        clippy
-      ];
+      nativeCheckInputs = [ clippy ];
 
       preCheck = ''
         ${lib.getExe pkgs.cargo} clippy

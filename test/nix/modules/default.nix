@@ -43,9 +43,7 @@ let
           projectTest (
             ubuntu.${imageVersion} {
               testScript = testScriptFunction { inherit toplevel hostPkgs; };
-              extraPathsToRegister = extraPathsToRegister ++ [
-                toplevel
-              ];
+              extraPathsToRegister = extraPathsToRegister ++ [ toplevel ];
               sharedDirs = { };
             }
           )
@@ -111,9 +109,7 @@ let
                 };
               };
 
-              systemPackages = [
-                pkgs.fish
-              ];
+              systemPackages = [ pkgs.fish ];
             };
 
             systemd.services = {
@@ -139,7 +135,6 @@ let
       )
     ];
   };
-
 in
 
 forEachUbuntuImage "example" {

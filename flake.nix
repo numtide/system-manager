@@ -1,7 +1,7 @@
 {
   description = "Manage system config using nix on any distro";
 
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/24.05";
 
   outputs =
     { self, nixpkgs }:
@@ -40,10 +40,7 @@
       # part of its runtime closure.
       packages = eachSystem (
         { pkgs, system }:
-        import ./packages.nix { inherit pkgs; }
-        // {
-          default = self.packages.${system}.system-manager;
-        }
+        import ./packages.nix { inherit pkgs; } // { default = self.packages.${system}.system-manager; }
       );
 
       overlays = {
@@ -52,9 +49,7 @@
       };
 
       # Only useful for quick tests
-      systemConfigs.default = self.lib.makeSystemConfig {
-        modules = [ ./examples/example.nix ];
-      };
+      systemConfigs.default = self.lib.makeSystemConfig { modules = [ ./examples/example.nix ]; };
 
       formatter = eachSystem ({ pkgs, ... }: pkgs.treefmt);
 
