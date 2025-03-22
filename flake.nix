@@ -1,5 +1,5 @@
 {
-  description = "Manage system config using nix on any distro";
+  description = "Manage system configurations using Nix on any Linux distribution.";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
@@ -89,5 +89,21 @@
               });
           }
       );
+
+      nixosModules = rec {
+        system-manager = ./nix/modules;
+        default = system-manager;
+      };
+
+      templates = {
+        standalone = {
+          path = ./templates/standalone;
+          description = "System Manager standalone setup";
+        };
+        nixos = {
+          path = ./templates/nixos;
+          description = "System Manager as a NixOS module";
+        };
+      };
     };
 }
