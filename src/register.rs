@@ -173,7 +173,7 @@ fn try_nix_eval(flake: &str, attr: &str, nix_options: &NixOptions) -> Result<boo
         .arg(format!("{flake}#{FLAKE_ATTR}"))
         .arg("--json")
         .arg("--apply")
-        .arg(format!("a: a ? \"{attr}\""));
+        .arg(format!("_: _ ? {attr}"));
 
     log::debug!("Running nix command: {cmd:?}");
 
@@ -196,4 +196,20 @@ fn nix_cmd(nix_options: &NixOptions) -> process::Command {
         cmd.arg("--option").arg(&option.0).arg(&option.1);
     });
     cmd
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_try_nix_eval() {
+        let flake = "./test/rust/register";
+        let nix_options = &NixOptions::new(vec![]);
+
+        assert!(try_nix_eval(flake, "identifier-key", nix_options).unwrap());
+        assert!(try_nix_eval(flake, "\"string.literal/key\"", nix_options).unwrap());
+        assert!(!try_nix_eval(flake, "_identifier-key", nix_options).unwrap());
+        assert!(!try_nix_eval(flake, "\"_string.literal/key\"", nix_options).unwrap());
+    }
 }

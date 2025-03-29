@@ -21,6 +21,7 @@ let
           ./Cargo.toml
           ./Cargo.lock
           ./src
+          ./test/rust
         ];
       };
 
@@ -32,10 +33,16 @@ let
 
       nativeCheckInputs = [
         clippy
+        nix
       ];
 
       preCheck = ''
         ${lib.getExe pkgs.cargo} clippy
+
+        # Stop the Nix command from trying to create /nix/var/nix/profiles.
+        #
+        # https://nix.dev/manual/nix/2.24/command-ref/new-cli/nix3-profile#profiles
+        export NIX_STATE_DIR=$TMPDIR
       '';
     }
   ) { };
