@@ -38,5 +38,7 @@ pkgs.mkShellNoCC {
     nixfmt-rfc-style
     rustfmt
     clippy
+    mdbook
+    mdformat
   ];
 }
