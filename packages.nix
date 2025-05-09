@@ -52,7 +52,7 @@ in
   system-manager =
     pkgs.runCommand "system-manager"
       {
-        nativeBuildInputs = [ pkgs.makeBinaryWrapper ];
+        nativeBuildInputs = [ pkgs.pkgsBuildHost.makeBinaryWrapper ];
       }
       ''
         makeWrapper \
