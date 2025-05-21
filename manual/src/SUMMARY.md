@@ -5,10 +5,10 @@
 - [Introduction](./introduction.md)
 - [Installation](./installation.md)
   - [Standalone Installation](./installation/standalone.md)
-  - [NixOS Module](./installation/nixos.md)
+  - [NixOS](./installation/nixos.md)
 - [Usage](./usage.md)
-  - [Flakes](./usage/flakes.md)
-  - [Writing Service Modules](./usage/writing-service-modules.md)
+  - [Environment](./usage/environment.md)
+  - [Systemd Services](./usage/systemd-services.md)
 - [Contributing](./contributing.md)
   - [Extending System Manager](./contributing/extending-system-manager.md)
 

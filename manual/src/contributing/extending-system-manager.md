@@ -59,9 +59,9 @@ git checkout -b release-24.05
   }
 ```
 
-# Adding New Distributions
+## Adding New Distributions
 
-This section assumes you have an existing nix installation. Otherwise, refer to the project README for installation instructions.
+> This section assumes you have an existing nix installation. Otherwise, refer to the [Installation](../installation.md) section of the manual for installation instructions.
 
 To add a new distribution, first initialize a new flake repository with `nix run 'github:numtide/system-manager' -- init --flake --allow-any-distro`.
 Once the flake is initialized, switch to the new configuration with `nix run 'github:numtide/system-manager' -- switch --flake '.'`. It is not unlikely
