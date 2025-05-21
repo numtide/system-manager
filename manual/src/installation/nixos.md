@@ -1,45 +1,7 @@
 # NixOS Installation
 
 This section covers how to get `system-manager`, the command line application, on your system.
-Please refer to [Usage](./usage.md) for how to handle application of modules.
-
-## Nix Channels
-
-This is the "vanilla" NixOS experience. You can find which channels you are currently using with `nix-channel --list`.
-The configuration that NixOS uses with channels is at `/etc/nixos/configuration.nix`.
-
-<!--
-  @channels
-  Remove after #207 is completed.
--->
-
-Currently, there isn't a release plan for `system-manager` that is in tandem with nixpkgs releases. This has been an issue
-in some cases that have caused failures in [_version mismatches_](https://github.com/numtide/system-manager/issues/172).
-
-The only available archive is the `main` branch, which is pinned to `nixos-unstable`.
-If you are currently using the unstable channel already and wish to use channels specifically you could do the following:
-
-```sh
-nix-channel --add https://github.com/numtide/system-manager/archive/main.tar.gz system-manager
-nix-channel --update
-nix-channel --list
-# system-manager https://github.com/numtide/system-manager/archive/main.tar.gz
-```
-
-<!-- TODO: Test this, as I am just speculating that this is possible. -->
-
-It should then be possible to add the following to `imports` in `/etc/nixos/configuration.nix` and gain access to the [`system-manager` options](https://github.com/numtide/system-manager/blob/2e5bcfaf4a8194e70bbfc9c4eda3897dc84ff3b3/nix/modules/default.nix#L17):
-
-```nix
-{ pkgs, ... }: {
-  imports = [
-    <system-manager/nix/modules>
-    ./hardware-configuration.nix
-  ];
-}
-```
-
-> _**NOTICE**_: Until a release schedule is put in place that can support nix channels, it is advised to follow the guide for [flake based configurations](#flake-based-configurations) instead.
+Please refer to [Usage](./usage.md) for how to handle creation and application of modules, and management of files.
 
 ## Flake Based Configurations
 
@@ -80,13 +42,11 @@ To add `system-manager` to an existing flake based configuration, add the follow
 > }
 > ```
 >
-> See [Issue #207](https://github.com/numtide/system-manager/issues/207) for progress on alleviating this problem.
+> See [Issue #207](https://github.com/numtide/system-manager/issues/207) for progress on alleviating this problem, or [create an ad-hoc release](../contributing/extending-system-manager.md).
 
-The `system-manager` package is not available via nixpkgs at present, but we can get it from the flake's `packages` attribute.
+The `system-manager` package is available via the flake's `packages` attribute.
 The following is a flake that declares a single NixOS configuration containing a module with the `system-manager`
 package added to the environment.
-
-<!-- TODO: Upstream system-manager into nixpkgs like home-manager -->
 
 ```nix
 # flake.nix
@@ -126,3 +86,42 @@ system-manager --version
 ```
 
 > Note: In this case our host's name is `nixos`, and to reference an attribute we tack on `#` to the flake path, followed by the name of the attribute we want to reference.
+
+## Nix Channels
+
+> _**NOTICE**_: Until a release schedule is put in place that can support nix channels, it is advised to follow the guide for [flake based configurations](#flake-based-configurations) instead.
+> If an ad-hoc release is necessary, see [Creating an Ad-Hoc Release](../contributing/extending-system-manager.md).
+
+This is the NixOS experience without the flake features enabled. You can find which channels you are currently using with `nix-channel --list`.
+The configuration that NixOS uses with channels is at `/etc/nixos/configuration.nix`.
+
+<!--
+  @channels
+  Remove after #207 is completed.
+-->
+
+Currently, there isn't a release plan for `system-manager` that is in tandem with nixpkgs releases. This has been an issue
+in some cases that have caused failures in [_version mismatches_](https://github.com/numtide/system-manager/issues/172).
+
+The only available archive is the `main` branch, which is pinned to `nixos-unstable`.
+If you are currently using the unstable channel already and wish to use channels specifically you could do the following:
+
+```sh
+nix-channel --add https://github.com/numtide/system-manager/archive/main.tar.gz system-manager
+nix-channel --update
+nix-channel --list
+# system-manager https://github.com/numtide/system-manager/archive/main.tar.gz
+```
+
+<!-- TODO: Test this, as I am just speculating that this is possible. -->
+
+It should then be possible to add the following to `imports` in `/etc/nixos/configuration.nix` and gain access to the [`system-manager` module](../../../nix/modules/default.nix)'s `options` attribute:
+
+```nix
+{ pkgs, ... }: {
+  imports = [
+    <system-manager/nix/modules>
+    ./hardware-configuration.nix
+  ];
+}
+```
