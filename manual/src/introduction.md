@@ -6,22 +6,12 @@ to manage installation of system services on Linux distributions, such as Ubuntu
 
 ## Hello, System Manager
 
-<!--
-  TODO: People on reddit have tried the example in the readme but it doesn't function
-  so we should assume that they will also try to use this to get started. This should
-  be tested for usability, even if it is only a snippet, it should be a true reflection
-  of all other examples found in the repository. Possibly this snippet could then point
-  to an actual functioning example for those who want to try it.
--->
-
 The following snippet of nix code...
 
 ```nix
+{ pkgs, ... }:
 {
-  environment.systemPackages = [
-    pkgs.hello
-  ];
-  systemd.services.say-hello = {
+  config.systemd.services.say-hello = {
     description = "say-hello";
     enable = true;
     wantedBy = [ "system-manager.target" ];
@@ -36,11 +26,36 @@ The following snippet of nix code...
 }
 ```
 
-produces a systemd service file.
+produces a systemd service file, `/etc/systemd/system/say-hello.service`:
 
-<!-- TODO: Show the actual module file that results from this -->
+```service
+[Unit]
+Description=say-hello
 
-When the service is enabled it results in `"Hello, World!"` in the journal of the service `say-hello`.
+[Service]
+Environment="PATH=..."
+ExecStart=/nix/store/...-unit-script-say-hello-start/bin/say-hello-start
+RemainAfterExit=true
+Type=oneshot
+
+[Install]
+WantedBy=system-manager.target
+```
+
+When the service is enabled it results in `"Hello, World!"` in the journal of the service `say-hello.service`:
+
+```sh
+systemctl status say-hello.service
+● say-hello.service - say-hello
+     Loaded: loaded (/etc/systemd/system/say-hello.service; enabled; vendor preset: enabled)
+     Active: active (exited) since Wed 2025-05-21 09:39:24 PDT; 11min ago
+   Main PID: 41644 (code=exited, status=0/SUCCESS)
+        CPU: 3ms
+
+May 21 09:39:24 ubuntu systemd[1]: Starting say-hello...
+May 21 09:39:24 ubuntu say-hello-start[41646]: Hello, world!
+May 21 09:39:24 ubuntu systemd[1]: Finished say-hello.
+```
 
 > Context omitted for clarity, see [Example Configuration](./usage/example-configuration.md)
 > for a fully functioning use case.
