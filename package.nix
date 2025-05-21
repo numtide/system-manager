@@ -1,18 +1,19 @@
 {
-  pkgs ? import <nixpkgs> { },
-  lib ? pkgs.lib,
+  lib,
+
+  rustPlatform,
+  cargo,
+  dbus,
+  pkg-config,
+  nix,
+  clippy,
+
+  runCommand,
+  makeBinaryWrapper,
 }:
 let
-  cargoManifest = (pkgs.lib.importTOML ./Cargo.toml).package;
-  system-manager-unwrapped = pkgs.callPackage (
-    {
-      rustPlatform,
-      dbus,
-      pkg-config,
-      nix,
-      clippy,
-    }:
-    rustPlatform.buildRustPackage {
+  cargoManifest = (lib.importTOML ./Cargo.toml).package;
+  system-manager-unwrapped = rustPlatform.buildRustPackage {
       pname = "system-manager";
       version = cargoManifest.version;
       src = lib.fileset.toSource {
@@ -37,27 +38,29 @@ let
       ];
 
       preCheck = ''
-        ${lib.getExe pkgs.cargo} clippy
+        ${lib.getExe cargo} clippy
 
         # Stop the Nix command from trying to create /nix/var/nix/profiles.
         #
         # https://nix.dev/manual/nix/2.24/command-ref/new-cli/nix3-profile#profiles
         export NIX_STATE_DIR=$TMPDIR
       '';
-    }
-  ) { };
+    };
 in
-{
-  inherit system-manager-unwrapped;
-  system-manager =
-    pkgs.runCommand "system-manager"
+    runCommand "system-manager"
       {
-        nativeBuildInputs = [ pkgs.pkgsBuildHost.makeBinaryWrapper ];
+        nativeBuildInputs = [ makeBinaryWrapper ];
+        passthru = {
+          # The unwrapped version takes nix from the PATH, it will fail if nix
+          # cannot be found.
+          # The wrapped version has a reference to the nix store path, so nix is
+          # part of its runtime closure.
+          unwrapped = system-manager-unwrapped;
+        };
       }
       ''
         makeWrapper \
           ${system-manager-unwrapped}/bin/system-manager \
           $out/bin/system-manager \
-          --prefix PATH : ${lib.makeBinPath [ pkgs.nix ]}
-      '';
-}
+          --prefix PATH : ${lib.makeBinPath [ nix ]}
+      ''
