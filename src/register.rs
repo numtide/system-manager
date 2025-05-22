@@ -207,7 +207,7 @@ fn get_nix_system(nix_options: &NixOptions) -> Result<String> {
 
     let output = cmd.stderr(process::Stdio::inherit()).output()?;
     if output.status.success() {
-        Ok(String::from_utf8(output.stdout)?)
+        Ok(std::str::from_utf8(&output.stdout)?.trim().to_string())
     } else {
         log::error!("{}", String::from_utf8_lossy(output.stderr.as_ref()));
         anyhow::bail!("Could not get currentSystem");
