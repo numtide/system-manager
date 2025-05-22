@@ -134,6 +134,7 @@ fn try_flake_attr(
     if let Some(result) = try_flake_attr_impl(&format!("{system}.{attr}"))? {
         Ok(Some(result))
     } else {
+        let attr = attr.strip_prefix(&format!("{FLAKE_ATTR}.")).unwrap_or(attr);
         try_flake_attr_impl(attr)
     }
 }
