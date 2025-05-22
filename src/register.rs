@@ -201,11 +201,7 @@ fn try_nix_eval(flake: &str, attr: &str, nix_options: &NixOptions) -> Result<boo
 
 fn get_nix_system(nix_options: &NixOptions) -> Result<String> {
     let mut cmd = nix_cmd(nix_options);
-    cmd.arg("eval")
-        .arg("--raw")
-        .arg("--impure")
-        .arg("--expr")
-        .arg("builtins.currentSystem");
+    cmd.arg("config").arg("show").arg("system");
 
     log::debug!("Running nix command: {cmd:?}");
 
