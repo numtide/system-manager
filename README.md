@@ -17,7 +17,7 @@
 
 This project provides a basic method to manage system configuration using [Nix][nixos]
 on any Linux distribution.
-It builds on the many modules that already exist in [NixOS].
+It builds on the many [modules that already exist in NixOS](https://github.com/NixOS/nixpkgs/tree/master/nixos/modules).
 
 *Warning*: System Manager is a work in progress, you can expect things not to work or to break.
 
@@ -47,7 +47,7 @@ A basic Nix flake using System Manager would look something like this:
     };
   };
 
-  outputs = { self, flake-utils, nixpkgs, system-manager }: {
+  outputs = { self, nixpkgs, system-manager }: {
     systemConfigs.default = system-manager.lib.makeSystemConfig {
       modules = [
         ./modules

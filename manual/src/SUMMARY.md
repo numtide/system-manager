@@ -11,10 +11,11 @@
   - [Systemd Services](./usage/systemd-services.md)
 - [Contributing](./contributing.md)
   - [Extending System Manager](./contributing/extending-system-manager.md)
+- [Troubleshooting](./troubleshooting.md)
+  - [SELinux](./troubleshooting/selinux.md)
 
 <!--
   TODO:
-  - SELinux docs for NixOS and Standalone
   - Building and deploying a configuration to remote machine
   - Docker guide
 -->

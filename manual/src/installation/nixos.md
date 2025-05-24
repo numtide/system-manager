@@ -89,39 +89,58 @@ system-manager --version
 
 ## Nix Channels
 
-> _**NOTICE**_: Until a release schedule is put in place that can support nix channels, it is advised to follow the guide for [flake based configurations](#flake-based-configurations) instead.
+> _**NOTICE**_: The `system-manager` application currently only supports flakes. Until a release schedule is put in place that can support nix channels, it is advised to follow the guide for [flake based configurations](#flake-based-configurations) instead.
 > If an ad-hoc release is necessary, see [Creating an Ad-Hoc Release](../contributing/extending-system-manager.md).
 
-This is the NixOS experience without the flake features enabled. You can find which channels you are currently using with `nix-channel --list`.
-The configuration that NixOS uses with channels is at `/etc/nixos/configuration.nix`.
+<!-- This is the NixOS experience without the flake features enabled. You can find which channels you are currently using with `nix-channel --list`. -->
 
-<!--
-  @channels
-  Remove after #207 is completed.
--->
+<!-- The configuration that NixOS uses with channels is at `/etc/nixos/configuration.nix`. -->
 
-Currently, there isn't a release plan for `system-manager` that is in tandem with nixpkgs releases. This has been an issue
-in some cases that have caused failures in [_version mismatches_](https://github.com/numtide/system-manager/issues/172).
+<!-- <!-- -->
 
-The only available archive is the `main` branch, which is pinned to `nixos-unstable`.
-If you are currently using the unstable channel already and wish to use channels specifically you could do the following:
+<!-- @channels -->
 
-```sh
-nix-channel --add https://github.com/numtide/system-manager/archive/main.tar.gz system-manager
-nix-channel --update
-nix-channel --list
-# system-manager https://github.com/numtide/system-manager/archive/main.tar.gz
-```
+<!-- Remove after #207 is completed. -->
+
+<!-- --> -->
+
+<!-- Currently, there isn't a release plan for `system-manager` that is in tandem with nixpkgs releases. This has been an issue -->
+
+<!-- in some cases that have caused failures in [_version mismatches_](https://github.com/numtide/system-manager/issues/172). -->
+
+<!-- The only available archive is the `main` branch, which is pinned to `nixos-unstable`. -->
+
+<!-- If you are currently using the unstable channel already and wish to use channels specifically you could do the following: -->
+
+<!-- ```sh -->
+
+<!-- nix-channel --add https://github.com/numtide/system-manager/archive/main.tar.gz system-manager -->
+
+<!-- nix-channel --update -->
+
+<!-- nix-channel --list -->
+
+<!-- # system-manager https://github.com/numtide/system-manager/archive/main.tar.gz -->
+
+<!-- ``` -->
 
 <!-- TODO: Test this, as I am just speculating that this is possible. -->
 
-It should then be possible to add the following to `imports` in `/etc/nixos/configuration.nix` and gain access to the [`system-manager` module](../../../nix/modules/default.nix)'s `options` attribute:
+<!-- It should then be possible to add the following to `imports` in `/etc/nixos/configuration.nix` and gain access to the [`system-manager` module](../../../nix/modules/default.nix)'s `options` attribute: -->
 
-```nix
-{ pkgs, ... }: {
-  imports = [
-    <system-manager/nix/modules>
-    ./hardware-configuration.nix
-  ];
-}
+<!-- ```nix -->
+
+<!-- { pkgs, ... }: { -->
+
+<!-- imports = [ -->
+
 ```
+<!-- <system-manager/nix/modules> -->
+<!-- ./hardware-configuration.nix -->
+```
+
+<!-- ]; -->
+
+<!-- } -->
+
+<!-- ``` -->
