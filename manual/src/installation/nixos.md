@@ -96,13 +96,10 @@ system-manager --version
 
 <!-- The configuration that NixOS uses with channels is at `/etc/nixos/configuration.nix`. -->
 
-<!-- <!-- -->
-
-<!-- @channels -->
-
-<!-- Remove after #207 is completed. -->
-
-<!-- --> -->
+<!--
+  @channels
+  Remove after #207 is completed.
+-->
 
 <!-- Currently, there isn't a release plan for `system-manager` that is in tandem with nixpkgs releases. This has been an issue -->
 
@@ -134,10 +131,13 @@ system-manager --version
 
 <!-- imports = [ -->
 
-```
+<!-- ``` -->
+
 <!-- <system-manager/nix/modules> -->
+
 <!-- ./hardware-configuration.nix -->
-```
+
+<!-- ``` -->
 
 <!-- ]; -->
 

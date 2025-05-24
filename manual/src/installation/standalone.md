@@ -74,8 +74,9 @@ package added to the environment.
 
 Switching to this configuration will install `system-manager`.
 
+Ensure that `$PATH` state is used when invoking nix via `sudo`, which is required for switching configurations.
+
 ```sh
-# Ensures that $PATH state is used when invoking nix via sudo, which is required for switching configurations.
 sudo env PATH="$PATH" nix run 'github:numtide/system-manager' -- switch --flake '.#ubuntu'
 system-manager --version
 # system_manager 0.1.0
@@ -90,13 +91,10 @@ system-manager --version
 
 <!-- This is the Nix experience without the flake features enabled. You can find which channels you are currently using with `nix-channel --list`. -->
 
-<!-- <!-- -->
-
-<!-- @channels -->
-
-<!-- Remove after #207 is completed. -->
-
-<!-- --> -->
+<!--
+  @channels
+  Remove after #207 is completed.
+-->
 
 <!-- Currently, there isn't a release plan for `system-manager` that is in tandem with nixpkgs releases. This has been an issue -->
 
@@ -128,9 +126,11 @@ system-manager --version
 
 <!-- imports = [ -->
 
-```
+<!-- ``` -->
+
 <!-- <system-manager/nix/modules> -->
-```
+
+<!-- ``` -->
 
 <!-- ]; -->
 

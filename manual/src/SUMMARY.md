@@ -7,6 +7,7 @@
   - [Standalone Installation](./installation/standalone.md)
   - [NixOS](./installation/nixos.md)
 - [Usage](./usage.md)
+  - [Example Configuration](./usage/example-configuration.md)
   - [Environment](./usage/environment.md)
   - [Systemd Services](./usage/systemd-services.md)
 - [Contributing](./contributing.md)

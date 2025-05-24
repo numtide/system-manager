@@ -9,7 +9,7 @@ to manage installation of system services on Linux distributions, such as Ubuntu
 The following snippet of nix code...
 
 ```nix
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 {
   config.systemd.services.say-hello = {
     description = "say-hello";
