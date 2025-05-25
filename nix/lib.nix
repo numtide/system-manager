@@ -61,9 +61,7 @@ let
               };
               # Pass the wrapped system-manager binary down
               # TODO: Use nixpkgs version by default.
-              inherit (import ../packages.nix { inherit pkgs; })
-                system-manager
-                ;
+              system-manager = pkgs.callPackage ../package.nix { };
             };
           };
 

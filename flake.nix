@@ -36,15 +36,15 @@
 
       packages = eachSystem (
         { pkgs, system }:
-        import ./packages.nix { inherit pkgs; }
-        // {
-          default = self.packages.${system}.system-manager;
+        {
+          default = pkgs.callPackage ./package.nix { };
         }
       );
 
       overlays = {
-        packages = final: _prev: import ./packages.nix { pkgs = final; };
-        default = self.overlays.packages;
+        default = final: _prev: {
+          system-manager = final.callPackage ./package.nix { };
+        };
       };
 
       # Only useful for quick tests
@@ -66,7 +66,7 @@
           (eachSystem (
             { system, ... }:
             {
-              system-manager = self.packages.${system}.system-manager;
+              system-manager = self.packages.${system}.default;
             }
           ))
           {
