@@ -4,5 +4,5 @@
 }:
 {
   lib = import ./nix/lib.nix { inherit nixpkgs; };
+  system-manager = pkgs.callPackage ./package.nix { };
 }
-// import ./packages.nix { inherit pkgs; }
