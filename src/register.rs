@@ -78,10 +78,6 @@ pub fn build(flake_uri: &str, nix_options: &NixOptions) -> Result<StorePath> {
 }
 
 fn find_flake_attr(flake_uri: &str, nix_options: &NixOptions) -> Result<String> {
-    fn full_uri(flake: &str, attr: &str) -> String {
-        format!("{flake}#{FLAKE_ATTR}.{attr}")
-    }
-
     let flake_uri = flake_uri.trim_end_matches('#');
     let mut splitted = flake_uri.split('#');
     let flake = splitted
@@ -93,39 +89,54 @@ fn find_flake_attr(flake_uri: &str, nix_options: &NixOptions) -> Result<String> 
         anyhow::bail!("Invalid flake URI, too many '#'s: {flake_uri}");
     }
 
+    let system = get_nix_system(nix_options)?;
+
     if let Some(attr) = attr {
-        if try_flake_attr(flake, attr, nix_options)? {
-            return Ok(full_uri(flake, attr));
-        } else {
+        let Some(full_uri) = try_flake_attr(flake, attr, nix_options, &system)? else {
             anyhow::bail!(
                 "Explicitly provided flake URI does not point to a valid system-manager configuration: {}",
                 format!("{flake}#{attr}")
             )
-        }
+        };
+        return Ok(full_uri);
     }
 
     let hostname_os = nix::unistd::gethostname()?;
     let hostname = hostname_os.to_string_lossy();
     let default = "default";
 
-    if try_flake_attr(flake, &hostname, nix_options)? {
-        return Ok(full_uri(flake, &hostname));
-    } else if try_flake_attr(flake, default, nix_options)? {
-        return Ok(full_uri(flake, default));
+    if let Some(full_uri) = try_flake_attr(flake, &hostname, nix_options, &system)? {
+        return Ok(full_uri);
+    } else if let Some(full_uri) = try_flake_attr(flake, default, nix_options, &system)? {
+        return Ok(full_uri);
     };
     anyhow::bail!("No suitable flake attribute found, giving up.");
 }
 
-fn try_flake_attr(flake: &str, attr: &str, nix_options: &NixOptions) -> Result<bool> {
-    let full_uri = format!("{flake}#{FLAKE_ATTR}.{attr}");
-    log::info!("Trying flake URI: {full_uri}...");
-    let status = try_nix_eval(flake, attr, nix_options)?;
-    if status {
-        log::info!("Success, using {full_uri}");
-    } else {
-        log::info!("Attribute {full_uri} not found in flake.");
+fn try_flake_attr(
+    flake: &str,
+    attr: &str,
+    nix_options: &NixOptions,
+    system: &str,
+) -> Result<Option<String>> {
+    let try_flake_attr_impl = |attr: &str| {
+        let full_uri = format!("{flake}#{FLAKE_ATTR}.{attr}");
+        log::info!("Trying flake URI: {full_uri}...");
+        let status = try_nix_eval(flake, attr, nix_options)?;
+        if status {
+            log::info!("Success, using {full_uri}");
+            Ok(Some(full_uri))
+        } else {
+            log::info!("Attribute {full_uri} not found in flake.");
+            Ok(None)
+        }
     };
-    Ok(status)
+    if let Some(result) = try_flake_attr_impl(&format!("{system}.{attr}"))? {
+        Ok(Some(result))
+    } else {
+        let attr = attr.strip_prefix(&format!("{FLAKE_ATTR}.")).unwrap_or(attr);
+        try_flake_attr_impl(attr)
+    }
 }
 
 fn get_store_path(nix_build_result: process::Output) -> Result<StorePath> {
@@ -185,6 +196,21 @@ fn try_nix_eval(flake: &str, attr: &str, nix_options: &NixOptions) -> Result<boo
     } else {
         log::debug!("{}", String::from_utf8_lossy(output.stderr.as_ref()));
         Ok(false)
+    }
+}
+
+fn get_nix_system(nix_options: &NixOptions) -> Result<String> {
+    let mut cmd = nix_cmd(nix_options);
+    cmd.arg("config").arg("show").arg("system");
+
+    log::debug!("Running nix command: {cmd:?}");
+
+    let output = cmd.stderr(process::Stdio::inherit()).output()?;
+    if output.status.success() {
+        Ok(std::str::from_utf8(&output.stdout)?.trim().to_string())
+    } else {
+        log::error!("{}", String::from_utf8_lossy(output.stderr.as_ref()));
+        anyhow::bail!("Could not get currentSystem");
     }
 }
 
