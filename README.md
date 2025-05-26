@@ -17,11 +17,9 @@
 
 This project provides a basic method to manage system configuration using [Nix][nixos]
 on any Linux distribution.
-It builds on the many modules that already exist in [NixOS][nixos].
+It builds on the many [modules that already exist in NixOS](https://github.com/NixOS/nixpkgs/tree/master/nixos/modules).
 
 *Warning*: System Manager is a work in progress, you can expect things not to work or to break.
-
-[nixos]: https://nixos.org
 
 ## Usage
 
@@ -38,9 +36,6 @@ to install Nix.
 > Nix as well as Determinate's own variant of Nix (Determinate Nix). It will prompt you
 > for which one you want to install. System Manager is not tested against Determinate Nix.
 > It's recommended to use the official Nix if installing via the Determinate Nix Installer.
-
-[official-installer]: https://nixos.org/download.html
-[detsys-installer]: https://github.com/DeterminateSystems/nix-installer
 
 ## Usage with flakes
 
@@ -59,7 +54,7 @@ A basic Nix flake using System Manager would look something like this:
     };
   };
 
-  outputs = { self, flake-utils, nixpkgs, system-manager }: {
+  outputs = { self, nixpkgs, system-manager }: {
     systemConfigs.default = system-manager.lib.makeSystemConfig {
       modules = [
         ./modules
@@ -115,6 +110,7 @@ A simple System Manager module could look something like this:
 ### Activating the configuration
 
 Once the configuration is defined, you can activate it using the `system-manager` CLI:
+
 ```sh
 nix run 'github:numtide/system-manager' -- switch --flake '.'
 ```
@@ -123,10 +119,10 @@ nix run 'github:numtide/system-manager' -- switch --flake '.'
 
 By design flakes run in [pure evaluation mode](https://wiki.nixos.org/wiki/Flakes#Making_your_evaluations_pure).
 In some cases you may not want this. To run an impure evaluation of the flake, add the following option to your command:
+
 ```sh
 --nix-option pure-eval false
 ```
-
 
 ## Currently supported features
 
@@ -145,7 +141,7 @@ System Manager is currently only supported on NixOS and Ubuntu. However, it can 
 }
 ```
 
-> [!WARNING]
+> \[!WARNING\]
 > This is unsupported and untested. Use at your own risk.
 
 ## Commercial support
@@ -154,3 +150,7 @@ Looking for help or customization?
 
 Get in touch with Numtide to get a quote. We make it easy for companies to
 work with Open Source projects: <https://numtide.com/contact>
+
+[detsys-installer]: https://github.com/DeterminateSystems/nix-installer
+[nixos]: https://nixos.org
+[official-installer]: https://nixos.org/download.html
