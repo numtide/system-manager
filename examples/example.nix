@@ -3,6 +3,8 @@
   config = {
     nixpkgs.hostPlatform = "x86_64-linux";
 
+    programs.direnv.enable = true;
+
     services.nginx.enable = true;
 
     environment = {
