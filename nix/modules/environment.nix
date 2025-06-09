@@ -5,6 +5,15 @@
   ...
 }:
 
+let
+  cfg = config.environment;
+
+  aliases = builtins.concatStringsSep "\n" (
+    lib.mapAttrsToList (k: v: "alias -- ${k}=${lib.escapeShellArg v}") (
+      lib.filterAttrs (k: v: v != null) cfg.shellAliases
+    )
+  );
+in
 {
   options.environment = {
     systemPackages = lib.mkOption {
@@ -15,6 +24,21 @@
     pathsToLink = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
+    };
+
+    shellAliases = lib.mkOption {
+      type = with lib.types; attrsOf (nullOr (either str path));
+      default = { };
+      example = {
+        nr = "nixpkgs-review pr";
+        ".." = "cd ..";
+      };
+      description = ''
+        An attribute set that maps aliases (the top level attribute names in
+        this option) to command strings or directly to build outputs. The
+        aliases are added to all users' shells.
+        Aliases mapped to `null` are ignored.
+      '';
     };
   };
 
@@ -31,6 +55,10 @@
         etc = {
           "profile.d/system-manager-path.sh".source = pkgs.writeText "system-manager-path.sh" ''
             export PATH=${pathDir}/bin/:''${PATH}
+          '';
+
+          "profile.d/shell-aliases.sh".source = pkgs.writeText "shell-aliases.sh" ''
+            ${aliases}
           '';
 
           # TODO: figure out how to properly add fish support. We could start by
