@@ -321,6 +321,8 @@ forEachUbuntuImage "example" {
         vm.succeed("bash --login -c 'realpath $(which rg) | grep -F ${hostPkgs.ripgrep}/bin/rg'")
         vm.succeed("bash --login -c 'realpath $(which fd) | grep -F ${hostPkgs.fd}/bin/fd'")
 
+        vm.succeed("bash --login -c 'type nr'")
+
         ${system-manager.lib.activateProfileSnippet {
           node = "vm";
           profile = newConfig;
