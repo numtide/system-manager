@@ -102,7 +102,7 @@ fn find_flake_attr(flake_uri: &str, nix_options: &NixOptions) -> Result<String> 
     }
 
     let hostname_os = nix::unistd::gethostname()?;
-    let hostname = hostname_os.to_string_lossy();
+    let hostname = escape_nix_string(&hostname_os.to_string_lossy());
     let default = "default";
 
     if let Some(full_uri) = try_flake_attr(flake, &hostname, nix_options, &system)? {
@@ -111,6 +111,19 @@ fn find_flake_attr(flake_uri: &str, nix_options: &NixOptions) -> Result<String> 
         return Ok(full_uri);
     };
     anyhow::bail!("No suitable flake attribute found, giving up.");
+}
+
+fn escape_nix_string(s: &str) -> String {
+    let mut out = String::with_capacity(s.len() + 2);
+    out.push('"');
+    let mut i = 0;
+    for (j, _) in s.match_indices(['"', '\\']) {
+        out += &s[i..j];
+        i = j;
+    }
+    out += &s[i..];
+    out.push('"');
+    out
 }
 
 fn try_flake_attr(
