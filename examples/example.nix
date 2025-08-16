@@ -11,6 +11,10 @@
         pkgs.fd
       ];
 
+      shellAliases = {
+        nr = "nixpkgs-review pr";
+      };
+
       etc = {
         foo = {
           text = ''
