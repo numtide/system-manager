@@ -141,7 +141,7 @@ System Manager is currently only supported on NixOS and Ubuntu. However, it can 
 }
 ```
 
-> \[!WARNING\]
+> [!WARNING]
 > This is unsupported and untested. Use at your own risk.
 
 ## Commercial support
