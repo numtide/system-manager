@@ -82,18 +82,16 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
     match etc_files::activate(store_path, old_state.file_tree, ephemeral) {
         Ok(etc_tree) => {
             log::info!("Activating tmp files...");
-            match tmp_files::activate(&etc_tree) {
-                Ok(_) => {
-                    log::debug!("Successfully created tmp files");
-                }
-                Err(e) => {
-                    log::error!("Error during activation of tmp files");
-                    log::error!("{e}");
-                }
-            };
+            let tmp_result = tmp_files::activate(&etc_tree);
+            if let Err(e) = &tmp_result {
+                log::error!("Error during activation of tmp files");
+                log::error!("{e}");
+            } else {
+                log::debug!("Successfully created tmp files");
+            }
 
             log::info!("Activating systemd services...");
-            match services::activate(store_path, old_state.services, ephemeral) {
+            let final_state = match services::activate(store_path, old_state.services, ephemeral) {
                 Ok(services) => State {
                     file_tree: etc_tree,
                     services,
@@ -105,19 +103,25 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
                         services: result,
                     }
                 }
+            };
+            final_state.write_to_file(state_file)?;
+
+            if let Err(e) = tmp_result {
+                return Err(e.into());
             }
+
+            Ok(())
         }
         Err(ActivationError::WithPartialResult { result, source }) => {
             log::error!("Error during activation: {source:?}");
-            State {
+            let final_state = State {
                 file_tree: result,
                 ..old_state
-            }
+            };
+            final_state.write_to_file(state_file)?;
+            Ok(())
         }
     }
-    .write_to_file(state_file)?;
-
-    Ok(())
 }
 
 pub fn prepopulate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
