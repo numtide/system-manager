@@ -8,6 +8,7 @@
     [
       ./nginx.nix
       ./nix.nix
+      ./activation-script.nix
     ]
     ++
     # List of imported NixOS modules
