@@ -7,6 +7,7 @@
   imports =
     [
       ./nginx.nix
+      ./nix.nix
     ]
     ++
     # List of imported NixOS modules
@@ -15,6 +16,8 @@
       "/misc/meta.nix"
       "/security/acme/"
       "/services/web-servers/nginx/"
+      # nix settings
+      "/config/nix.nix"
     ];
 
   options =
