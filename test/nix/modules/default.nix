@@ -134,6 +134,16 @@ let
                 '';
               };
             };
+
+            nix = {
+              settings = {
+                experimental-features = [
+                  "nix-command"
+                  "flakes"
+                ];
+                trusted-users = [ "zimbatm" ];
+              };
+            };
           };
         }
       )
@@ -149,7 +159,7 @@ forEachUbuntuImage "example" {
   ];
   extraPathsToRegister = [ newConfig ];
   testScriptFunction =
-    { toplevel, ... }:
+    { toplevel, hostPkgs, ... }:
     #python
     ''
       # Start all machines in parallel
@@ -222,6 +232,9 @@ forEachUbuntuImage "example" {
       vm.fail("test -f /etc/a/nested/example/foo3")
       vm.fail("test -f /etc/baz/bar/foo2")
       vm.succeed("test -f /etc/foo_new")
+
+      nix_trusted_users = vm.succeed("${hostPkgs.nix}/bin/nix config show trusted-users").strip()
+      assert "zimbatm" in nix_trusted_users, f"Expected 'zimbatm' to be in trusted-users, got {nix_trusted_users}"
 
       ${system-manager.lib.deactivateProfileSnippet {
         node = "vm";
