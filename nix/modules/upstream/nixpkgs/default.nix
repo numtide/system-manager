@@ -8,16 +8,19 @@
     ./nginx.nix
     ./nix.nix
     ./activation-script.nix
+    ./users-groups.nix
   ]
   ++
     # List of imported NixOS modules
     # TODO: how will we manage this in the long term?
     map (path: nixosModulesPath + path) [
       "/misc/meta.nix"
+      "/misc/ids.nix"
       "/security/acme/"
       "/services/web-servers/nginx/"
       # nix settings
       "/config/nix.nix"
+      "/services/system/userborn.nix"
     ];
 
   options =

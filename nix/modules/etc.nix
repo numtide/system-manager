@@ -5,6 +5,19 @@
 }:
 {
   options = {
+    system.etc = {
+      overlay = {
+        enable = lib.mkEnableOption "systemd-sysusers" // {
+          description = ''
+            If enabled, users are created with systemd-sysusers instead of with
+            the custom `update-users-groups.pl` script.
+
+            Note: This is experimental.
+          '';
+        };
+      };
+    };
+
     environment.etc = lib.mkOption {
       default = { };
       example = lib.literalExpression ''
@@ -122,5 +135,8 @@
         )
       );
     };
+  };
+  config = {
+    system.etc.overlay.enable = false;
   };
 }

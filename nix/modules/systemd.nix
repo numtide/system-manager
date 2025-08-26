@@ -140,10 +140,23 @@ in
         `/etc/systemd/system-shutdown/NAME` to `VALUE`.
       '';
     };
+
+    sysusers = {
+      enable = lib.mkEnableOption "systemd-sysusers" // {
+        description = ''
+          If enabled, users are created with systemd-sysusers instead of with
+          the custom `update-users-groups.pl` script.
+
+          Note: This is experimental.
+        '';
+      };
+    };
   };
 
   config = {
     systemd = {
+      sysusers.enable = false;
+
       targets.system-manager = {
         wantedBy = [ "default.target" ];
       };
