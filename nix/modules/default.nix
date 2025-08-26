@@ -82,23 +82,23 @@
 
       # Statically assigned UIDs and GIDs.
       # Ideally we use DynamicUser as much as possible to avoid the need for these.
-      ids = {
-        uids = lib.mkOption {
-          internal = true;
-          description = lib.mdDoc ''
-            The user IDs used by system-manager.
-          '';
-          type = types.attrsOf types.int;
-        };
-
-        gids = lib.mkOption {
-          internal = true;
-          description = lib.mdDoc ''
-            The group IDs used by system-manager.
-          '';
-          type = types.attrsOf types.int;
-        };
-      };
+      # ids = {
+      #   uids = lib.mkOption {
+      #     internal = true;
+      #     description = lib.mdDoc ''
+      #       The user IDs used by system-manager.
+      #     '';
+      #     type = types.attrsOf types.int;
+      #   };
+      #
+      #   gids = lib.mkOption {
+      #     internal = true;
+      #     description = lib.mdDoc ''
+      #       The group IDs used by system-manager.
+      #     '';
+      #     type = types.attrsOf types.int;
+      #   };
+      # };
 
       # No-op option for now.
       # TODO: should we include the settings in /etc/logrotate.d ?
@@ -109,12 +109,12 @@
       };
 
       # No-op option for now.
-      users = lib.mkOption {
-        internal = true;
-        default = { };
-        type = types.attrs;
-      };
-
+      # users = lib.mkOption {
+      #   internal = true;
+      #   default = { };
+      #   type = types.attrs;
+      # };
+      #
       networking = {
         enableIPv6 = lib.mkEnableOption "IPv6" // {
           default = true;

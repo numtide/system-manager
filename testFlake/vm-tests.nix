@@ -104,6 +104,7 @@ let
             nixpkgs.hostPlatform = system;
 
             services.nginx.enable = false;
+            services.userborn.enable = true;
 
             environment = {
               etc = {
@@ -154,6 +155,11 @@ let
                   touch /tmp/file-created-by-system-activation-script
                 '';
               };
+            };
+
+            users.users.zimbatm = {
+              isNormalUser = true;
+              extraGroups = [ "wheel" ];
             };
           };
         }
