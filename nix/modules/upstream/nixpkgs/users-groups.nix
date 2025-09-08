@@ -877,26 +877,6 @@ in
         shadow.gid = ids.gids.shadow;
       };
 
-      system.activationScripts.users =
-        if !config.systemd.sysusers.enable then
-          {
-            supportsDryActivation = true;
-            text = ''
-              install -m 0700 -d /root
-              install -m 0755 -d /home
-
-              ${
-                pkgs.perl.withPackages (p: [
-                  p.FileSlurp
-                  p.JSON
-                ])
-              }/bin/perl \
-              -w ${./update-users-groups.pl} ${spec}
-            '';
-          }
-        else
-          ""; # keep around for backwards compatibility
-
       systemd.services.linger-users = lib.mkIf ((length lingeringUsers) > 0) {
         wantedBy = [ "multi-user.target" ];
         after = [ "systemd-logind.service" ];
@@ -928,32 +908,6 @@ in
       # Warn about user accounts with deprecated password hashing schemes
       # This does not work when the users and groups are created by
       # systemd-sysusers because the users are created too late then.
-      system.activationScripts.hashes =
-        if !config.systemd.sysusers.enable then
-          {
-            deps = [ "users" ];
-            text = ''
-              users=()
-              while IFS=: read -r user hash _; do
-                if [[ "$hash" = "$"* && ! "$hash" =~ ^\''$${cryptSchemeIdPatternGroup}\$ ]]; then
-                  users+=("$user")
-                fi
-              done </etc/shadow
-
-              if (( "''${#users[@]}" )); then
-                echo "
-              WARNING: The following user accounts rely on password hashing algorithms
-              that have been removed. They need to be renewed as soon as possible, as
-              they do prevent their users from logging in."
-                printf ' - %s\n' "''${users[@]}"
-              fi
-            '';
-          }
-        else
-          ""; # keep around for backwards compatibility
-
-      # for backwards compatibility
-      system.activationScripts.groups = stringAfter [ "users" ] "";
 
       # Install all the user shells
       environment.systemPackages = systemShells;

@@ -81,6 +81,8 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
 
     match etc_files::activate(store_path, old_state.file_tree, ephemeral) {
         Ok(etc_tree) => {
+            log::info!("Restarting sysinit-reactivation.target...");
+            services::restart_sysinit_reactivation_target()?;
             log::info!("Activating tmp files...");
             let tmp_result = tmp_files::activate(&etc_tree);
             if let Err(e) = &tmp_result {
