@@ -101,6 +101,7 @@ let
             nixpkgs.hostPlatform = system;
 
             services.nginx.enable = false;
+            services.userborn.enable = true;
 
             environment = {
               etc = {
@@ -143,6 +144,19 @@ let
                 ];
                 trusted-users = [ "zimbatm" ];
               };
+            };
+
+            system.activationScripts = {
+              "system-manager" = {
+                text = ''
+                  touch /tmp/file-created-by-system-activation-script
+                '';
+              };
+            };
+
+            users.users.zimbatm = {
+              isNormalUser = true;
+              extraGroups = [ "wheel" ];
             };
           };
         }
@@ -232,6 +246,12 @@ forEachUbuntuImage "example" {
       vm.fail("test -f /etc/a/nested/example/foo3")
       vm.fail("test -f /etc/baz/bar/foo2")
       vm.succeed("test -f /etc/foo_new")
+      vm.succeed("test -f /tmp/file-created-by-system-activation-script")
+
+      vm.succeed("id -u zimbatm")
+
+      print(vm.succeed("cat /etc/passwd"))
+
 
       nix_trusted_users = vm.succeed("${hostPkgs.nix}/bin/nix config show trusted-users").strip()
       assert "zimbatm" in nix_trusted_users, f"Expected 'zimbatm' to be in trusted-users, got {nix_trusted_users}"

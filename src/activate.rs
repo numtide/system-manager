@@ -81,6 +81,8 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
 
     match etc_files::activate(store_path, old_state.file_tree, ephemeral) {
         Ok(etc_tree) => {
+            log::info!("Restarting sysinit-reactivation.target...");
+            services::restart_sysinit_reactivation_target()?;
             log::info!("Activating tmp files...");
             let tmp_result = tmp_files::activate(&etc_tree);
             if let Err(e) = &tmp_result {
@@ -105,6 +107,19 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
                 }
             };
             final_state.write_to_file(state_file)?;
+
+            log::info!("Running system activation script...");
+            match run_system_activation_script(store_path) {
+                Ok(status) if status.success() => {
+                    log::info!("System activation script executed successfully.");
+                }
+                Ok(status) => {
+                    log::error!("System activation script failed with status: {status}");
+                }
+                Err(e) => {
+                    log::error!("Error running system activation script: {e}");
+                }
+            }
 
             if let Err(e) = tmp_result {
                 return Err(e.into());
@@ -211,6 +226,19 @@ fn run_preactivation_assertions(store_path: &StorePath) -> Result<process::ExitS
             .store_path
             .join("bin")
             .join("preActivationAssertions"),
+    )
+    .stderr(process::Stdio::inherit())
+    .stdout(process::Stdio::inherit())
+    .status()?;
+    Ok(status)
+}
+
+fn run_system_activation_script(store_path: &StorePath) -> Result<process::ExitStatus> {
+    let status = process::Command::new(
+        store_path
+            .store_path
+            .join("bin")
+            .join("systemActivationScript"),
     )
     .stderr(process::Stdio::inherit())
     .stdout(process::Stdio::inherit())
