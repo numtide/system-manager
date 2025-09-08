@@ -161,6 +161,13 @@ in
         wantedBy = [ "default.target" ];
       };
 
+      # This target only exists so that services ordered before sysinit.target
+      # are restarted in the correct order, notably BEFORE the other services,
+      # when switching configurations.
+      targets.sysinit-reactivation = {
+        description = "Reactivate sysinit units";
+      };
+
       timers = lib.mapAttrs (name: service: {
         wantedBy = [ "timers.target" ];
         timerConfig.OnCalendar = service.startAt;

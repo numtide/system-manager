@@ -248,6 +248,11 @@ forEachUbuntuImage "example" {
       vm.succeed("test -f /etc/foo_new")
       vm.succeed("test -f /tmp/file-created-by-system-activation-script")
 
+      vm.succeed("id -u zimbatm")
+
+      print(vm.succeed("cat /etc/passwd"))
+
+
       nix_trusted_users = vm.succeed("${hostPkgs.nix}/bin/nix config show trusted-users").strip()
       assert "zimbatm" in nix_trusted_users, f"Expected 'zimbatm' to be in trusted-users, got {nix_trusted_users}"
 
