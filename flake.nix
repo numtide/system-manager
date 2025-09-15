@@ -3,8 +3,15 @@
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
+  inputs.sops-nix.url = "github:Mic92/sops-nix";
+  inputs.sops-nix.inputs.nixpkgs.follows = "nixpkgs";
+
   outputs =
-    { self, nixpkgs }:
+    {
+      self,
+      nixpkgs,
+      sops-nix,
+    }:
     let
       systems = [
         "aarch64-linux"
@@ -76,6 +83,7 @@
               in
               (import ./test/nix/modules {
                 inherit system;
+                inherit sops-nix;
                 inherit (nixpkgs) lib;
                 nix-vm-test = import nix-vm-test-lib {
                   inherit nixpkgs;
