@@ -4,6 +4,7 @@
   system,
   nix-vm-test,
   userborn,
+  sops-nix,
 }:
 
 let
@@ -98,6 +99,8 @@ let
       (
         { lib, pkgs, ... }:
         {
+          imports = [ sops-nix.nixosModules.sops ];
+
           config = {
             nixpkgs.hostPlatform = system;
 
@@ -154,6 +157,17 @@ let
               extraGroups = [ "wheel" ];
               initialPassword = "test123";
             };
+
+            sops = {
+              age.generateKey = false;
+              age.keyFile = "/run/age-keys.txt";
+              defaultSopsFile = ./secrets.yaml;
+              secrets.test = { };
+            };
+            systemd.services.sops-install-secrets = {
+              before = [ "sysinit-reactivation.target" ];
+              requiredBy = [ "sysinit-reactivation.target" ];
+            };
           };
         }
       )
@@ -167,7 +181,10 @@ forEachUbuntuImage "example" {
     (testModule "old")
     ../../../examples/example.nix
   ];
-  extraPathsToRegister = [ newConfig ];
+  extraPathsToRegister = [
+    newConfig
+    ./age-keys.txt
+  ];
   testScriptFunction =
     { toplevel, hostPkgs, ... }:
     #python
@@ -176,6 +193,7 @@ forEachUbuntuImage "example" {
       start_all()
 
       vm.wait_for_unit("default.target")
+      vm.succeed("cp ${./age-keys.txt} /run/age-keys.txt")
 
       vm.succeed("touch /etc/foo_test")
       vm.succeed("${toplevel}/bin/activate 2>&1 | tee /tmp/output.log")
@@ -222,6 +240,9 @@ forEachUbuntuImage "example" {
         node = "vm";
         profile = newConfig;
       }}
+
+      print(vm.succeed("cat /run/secrets/test"))
+
       vm.succeed("systemctl status new-service.service")
       vm.fail("systemctl status service-9.service")
       vm.fail("test -f /etc/a/nested/example/foo3")
