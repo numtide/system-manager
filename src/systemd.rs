@@ -150,7 +150,7 @@ impl ServiceManager {
     }
 
     /// Builds a unit manager for the unit with the given status.
-    pub fn unit_manager(&self, unit_status: &UnitStatus) -> UnitManager {
+    pub fn unit_manager(&'_ self, unit_status: &UnitStatus) -> UnitManager<'_> {
         UnitManager {
             proxy: self.proxy.connection.with_proxy(
                 SD_DESTINATION,
@@ -160,7 +160,7 @@ impl ServiceManager {
         }
     }
 
-    pub fn monitor_jobs_init(&self) -> Result<JobMonitor, Error> {
+    pub fn monitor_jobs_init(&'_ self) -> Result<JobMonitor<'_>, Error> {
         let job_names = Arc::new(Mutex::from(im::HashSet::<String>::new()));
 
         let job_names_clone = Arc::clone(&job_names);
@@ -235,7 +235,7 @@ impl ServiceManager {
         Ok(true)
     }
 
-    pub fn reload_or_restart_unit(&self, unit_name: &str) -> Result<Job, Error> {
+    pub fn reload_or_restart_unit(&'_ self, unit_name: &str) -> Result<Job<'_>, Error> {
         Ok(Job {
             path: OrgFreedesktopSystemd1Manager::reload_or_restart_unit(
                 &self.proxy,
@@ -245,19 +245,19 @@ impl ServiceManager {
         })
     }
 
-    pub fn restart_unit(&self, unit_name: &str) -> Result<Job, Error> {
+    pub fn restart_unit(&'_ self, unit_name: &str) -> Result<Job<'_>, Error> {
         Ok(Job {
             path: OrgFreedesktopSystemd1Manager::restart_unit(&self.proxy, unit_name, "replace")?,
         })
     }
 
-    pub fn start_unit(&self, unit_name: &str) -> Result<Job, Error> {
+    pub fn start_unit(&'_ self, unit_name: &str) -> Result<Job<'_>, Error> {
         Ok(Job {
             path: OrgFreedesktopSystemd1Manager::start_unit(&self.proxy, unit_name, "replace")?,
         })
     }
 
-    pub fn stop_unit(&self, unit_name: &str) -> Result<Job, Error> {
+    pub fn stop_unit(&'_ self, unit_name: &str) -> Result<Job<'_>, Error> {
         Ok(Job {
             path: OrgFreedesktopSystemd1Manager::stop_unit(&self.proxy, unit_name, "replace")?,
         })
