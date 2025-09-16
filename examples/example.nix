@@ -1,5 +1,11 @@
-{ lib, pkgs, ... }:
 {
+  lib,
+  pkgs,
+  inputs,
+  ...
+}:
+{
+  imports = [ inputs.sops-nix.nixosModules.sops ];
   config = {
     nixpkgs.hostPlatform = "x86_64-linux";
 

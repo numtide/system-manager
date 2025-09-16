@@ -55,9 +55,7 @@
       };
 
       # Only useful for quick tests
-      systemConfigs.default = self.lib.makeSystemConfig {
-        modules = [ ./examples/example.nix ];
-      };
+      inherit (builtins.getFlake (./examples)) systemConfigs;
 
       formatter = eachSystem ({ pkgs, ... }: pkgs.treefmt);
 
