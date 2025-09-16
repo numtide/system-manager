@@ -3,7 +3,7 @@
   system-manager,
   system,
   nix-vm-test,
-  sops-nix,
+  inputs,
 }:
 
 let
@@ -36,6 +36,7 @@ let
                   }
                 )
               ];
+              extraSpecialArgs = { inherit inputs; };
             }
           );
           inherit (toplevel.config) hostPkgs;
@@ -98,8 +99,7 @@ let
       (
         { lib, pkgs, ... }:
         {
-          imports = [ sops-nix.nixosModules.sops ];
-
+          imports = [ inputs.sops-nix.nixosModules.sops ];
           config = {
             nixpkgs.hostPlatform = system;
 
@@ -175,6 +175,7 @@ let
         }
       )
     ];
+    extraSpecialArgs = { inherit inputs; };
   };
 
 in
@@ -182,7 +183,7 @@ in
 forEachUbuntuImage "example" {
   modules = [
     (testModule "old")
-    ../../../examples/example.nix
+    ../../../example.nix
   ];
   extraPathsToRegister = [
     newConfig
@@ -291,7 +292,7 @@ forEachUbuntuImage "example" {
   forEachUbuntuImage "prepopulate" {
     modules = [
       (testModule "old")
-      ../../../examples/example.nix
+      ../../../example.nix
     ];
     extraPathsToRegister = [ newConfig ];
     testScriptFunction =
@@ -349,7 +350,7 @@ forEachUbuntuImage "example" {
   forEachUbuntuImage "system-path" {
     modules = [
       (testModule "old")
-      ../../../examples/example.nix
+      ../../../example.nix
     ];
     extraPathsToRegister = [ newConfig ];
     testScriptFunction =

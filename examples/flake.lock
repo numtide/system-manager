@@ -1,6 +1,41 @@
 {
   "nodes": {
+    "nix-vm-test": {
+      "inputs": {
+        "nixpkgs": [
+          "system-manager",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1755010517,
+        "narHash": "sha256-DYyMFUPcvuO7AIXIlVhYQTN3TwFFVCCkDTHtaRJ24eI=",
+        "owner": "numtide",
+        "repo": "nix-vm-test",
+        "rev": "e34870b8dd2c2d203c05b4f931b8c33eaaf43b81",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "nix-vm-test",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
+      "locked": {
+        "lastModified": 1757935978,
+        "narHash": "sha256-xeHiYTqlibGf6VQADGrZ2GzayTOJo8G0g8D8f5zCE3Y=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "0b96957fb614f693d0cee1bd65fbfc0e610df47f",
+        "type": "github"
+      },
+      "original": {
+        "id": "nixpkgs",
+        "type": "indirect"
+      }
+    },
+    "nixpkgs_2": {
       "locked": {
         "lastModified": 1757745802,
         "narHash": "sha256-hLEO2TPj55KcUFUU1vgtHE9UEIOjRcH/4QbmfHNF820=",
@@ -16,24 +51,9 @@
         "type": "github"
       }
     },
-    "nixpkgs_2": {
-      "locked": {
-        "lastModified": 1757935978,
-        "narHash": "sha256-xeHiYTqlibGf6VQADGrZ2GzayTOJo8G0g8D8f5zCE3Y=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "0b96957fb614f693d0cee1bd65fbfc0e610df47f",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "nixpkgs-unstable",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
     "root": {
       "inputs": {
+        "nix-vm-test": "nix-vm-test",
         "nixpkgs": "nixpkgs",
         "sops-nix": "sops-nix",
         "system-manager": "system-manager"
@@ -42,6 +62,7 @@
     "sops-nix": {
       "inputs": {
         "nixpkgs": [
+          "system-manager",
           "nixpkgs"
         ]
       },
@@ -61,7 +82,10 @@
     },
     "sops-nix_2": {
       "inputs": {
-        "nixpkgs": "nixpkgs_2"
+        "nixpkgs": [
+          "system-manager",
+          "nixpkgs"
+        ]
       },
       "locked": {
         "lastModified": 1758007585,
@@ -72,15 +96,14 @@
         "type": "github"
       },
       "original": {
-        "id": "sops-nix",
-        "type": "indirect"
+        "owner": "Mic92",
+        "repo": "sops-nix",
+        "type": "github"
       }
     },
     "system-manager": {
       "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ],
+        "nixpkgs": "nixpkgs_2",
         "sops-nix": "sops-nix_2"
       },
       "locked": {

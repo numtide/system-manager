@@ -54,9 +54,6 @@
         };
       };
 
-      # Only useful for quick tests
-      inherit (builtins.getFlake (./examples)) systemConfigs;
-
       formatter = eachSystem ({ pkgs, ... }: pkgs.treefmt);
 
       devShells = eachSystem (
@@ -66,30 +63,11 @@
         }
       );
 
-      checks = (
-        nixpkgs.lib.recursiveUpdate
-          (eachSystem (
-            { system, ... }:
-            {
-              system-manager = self.packages.${system}.default;
-            }
-          ))
-          {
-            x86_64-linux =
-              let
-                system = "x86_64-linux";
-              in
-              (import ./test/nix/modules {
-                inherit system;
-                inherit sops-nix;
-                inherit (nixpkgs) lib;
-                nix-vm-test = import nix-vm-test-lib {
-                  inherit nixpkgs;
-                  inherit system;
-                };
-                system-manager = self;
-              });
-          }
+      checks = eachSystem (
+        { system, ... }:
+        {
+          system-manager = self.packages.${system}.default;
+        }
       );
     };
 }
