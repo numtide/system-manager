@@ -3,14 +3,10 @@
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-  inputs.sops-nix.url = "github:Mic92/sops-nix";
-  inputs.sops-nix.inputs.nixpkgs.follows = "nixpkgs";
-
   outputs =
     {
       self,
       nixpkgs,
-      sops-nix,
     }:
     let
       systems = [
@@ -26,17 +22,6 @@
             pkgs = nixpkgs.legacyPackages.${system};
           }
         );
-      nix-vm-test-lib =
-        let
-          rev = "e34870b8dd2c2d203c05b4f931b8c33eaaf43b81";
-          sha256 = "sha256:1qp1fq96kv9i1nj20m25057pfcs1b1c9bj4502xy7gnw8caqr30d";
-        in
-        "${
-          builtins.fetchTarball {
-            url = "https://github.com/numtide/nix-vm-test/archive/${rev}.tar.gz";
-            inherit sha256;
-          }
-        }/lib.nix";
     in
     {
       lib = import ./nix/lib.nix { inherit nixpkgs; };
