@@ -32,11 +32,6 @@ to install Nix.
 - [Official Nix Installer][official-installer] - The canonical source for installing nix.
 - [Determinate Nix Installer][detsys-installer] - A wrapper around the official installer that has SELinux support, and enables flake features by default.
 
-> Note: Be advised that the Determinate Systems installer has the option for the official
-> Nix as well as Determinate's own variant of Nix (Determinate Nix). It will prompt you
-> for which one you want to install. System Manager is not tested against Determinate Nix.
-> It's recommended to use the official Nix if installing via the Determinate Nix Installer.
-
 ## Usage with flakes
 
 ### Defining the configuration
