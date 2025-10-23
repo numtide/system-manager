@@ -187,21 +187,20 @@ in
         '';
       };
     };
-    systemd.tmpfiles.packages =
-      [
-        (pkgs.writeTextFile {
-          name = "system-manager-tmpfiles.d";
-          destination = "/lib/tmpfiles.d/00-system-manager.conf";
-          text = ''
-            # This file is created automatically and should not be modified.
-            # Please change the option ‘systemd.tmpfiles.rules’ instead.
+    systemd.tmpfiles.packages = [
+      (pkgs.writeTextFile {
+        name = "system-manager-tmpfiles.d";
+        destination = "/lib/tmpfiles.d/00-system-manager.conf";
+        text = ''
+          # This file is created automatically and should not be modified.
+          # Please change the option ‘systemd.tmpfiles.rules’ instead.
 
-            ${concatStringsSep "\n" config.systemd.tmpfiles.rules}
-          '';
-        })
-      ]
-      ++ (mapAttrsToList (
-        name: paths: pkgs.writeTextDir "lib/tmpfiles.d/${name}.conf" (mkRuleFileContent paths)
-      ) config.systemd.tmpfiles.settings);
+          ${concatStringsSep "\n" config.systemd.tmpfiles.rules}
+        '';
+      })
+    ]
+    ++ (mapAttrsToList (
+      name: paths: pkgs.writeTextDir "lib/tmpfiles.d/${name}.conf" (mkRuleFileContent paths)
+    ) config.systemd.tmpfiles.settings);
   };
 }
