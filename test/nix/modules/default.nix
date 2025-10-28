@@ -3,7 +3,6 @@
   system-manager,
   system,
   nix-vm-test,
-  inputs,
 }:
 
 let
@@ -36,7 +35,6 @@ let
                   }
                 )
               ];
-              extraSpecialArgs = { inherit inputs; };
             }
           );
           inherit (toplevel.config) hostPkgs;
@@ -150,7 +148,6 @@ let
         }
       )
     ];
-    extraSpecialArgs = { inherit inputs; };
   };
 
 in
@@ -158,11 +155,9 @@ in
 forEachUbuntuImage "example" {
   modules = [
     (testModule "old")
-    ../../../example.nix
+    ../../../examples/example.nix
   ];
-  extraPathsToRegister = [
-    newConfig
-  ];
+  extraPathsToRegister = [ newConfig ];
   testScriptFunction =
     { toplevel, hostPkgs, ... }:
     #python
@@ -256,7 +251,7 @@ forEachUbuntuImage "example" {
   forEachUbuntuImage "prepopulate" {
     modules = [
       (testModule "old")
-      ../../../example.nix
+      ../../../examples/example.nix
     ];
     extraPathsToRegister = [ newConfig ];
     testScriptFunction =
@@ -314,7 +309,7 @@ forEachUbuntuImage "example" {
   forEachUbuntuImage "system-path" {
     modules = [
       (testModule "old")
-      ../../../example.nix
+      ../../../examples/example.nix
     ];
     extraPathsToRegister = [ newConfig ];
     testScriptFunction =
