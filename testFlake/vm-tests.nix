@@ -207,7 +207,12 @@ forEachUbuntuImage "example" {
       assert uid == "5", f"uid was {uid}, expected 5"
       assert gid == "6", f"gid was {gid}, expected 6"
 
+      vm.succeed("useradd luj")
+      vm.succeed("echo test | passwd luj --stdin")
+
       print(vm.succeed("cat /etc/passwd"))
+      passwd_out = vm.succeed("passwd -S luj | awk '{print $2}'")
+      assert "P" in passwd_out
 
       user = vm.succeed("stat -c %U /etc/with_ownership2").strip()
       group = vm.succeed("stat -c %G /etc/with_ownership2").strip()
@@ -261,6 +266,8 @@ forEachUbuntuImage "example" {
       vm.succeed("id -u zimbatm")
 
       print(vm.succeed("cat /etc/passwd"))
+      passwd_out = vm.succeed("passwd -S luj | awk '{print $2}'")
+      assert "P" in passwd_out
 
 
       nix_trusted_users = vm.succeed("${hostPkgs.nix}/bin/nix config show trusted-users").strip()
