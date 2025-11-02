@@ -3,6 +3,7 @@
   system-manager,
   system,
   nix-vm-test,
+  userborn,
 }:
 
 let
@@ -105,6 +106,8 @@ let
 
             services.nginx.enable = false;
             services.userborn.enable = true;
+            services.userborn.package = userborn;
+            systemd.services.userborn.environment.USERBORN_STATEFUL = "1";
 
             environment = {
               etc = {

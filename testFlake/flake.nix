@@ -9,6 +9,7 @@
   inputs = {
     system-manager.url = "path:..";
     nixpkgs.follows = "system-manager/nixpkgs";
+    userborn.url = "github:JulienMalka/userborn/stateful-users";
     nix-vm-test = {
       url = "github:numtide/nix-vm-test";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -19,6 +20,7 @@
     {
       self,
       system-manager,
+      userborn,
       nixpkgs,
       nix-vm-test,
     }:
@@ -34,12 +36,15 @@
         inherit nixpkgs;
         system = vmTestSystem;
       };
-      vmChecks = import ./vm-tests.nix {
-        system = vmTestSystem;
-        inherit (nixpkgs) lib;
-        nix-vm-test = vmTestLib;
-        inherit system-manager;
-      };
+      vmChecks =
+        system:
+        import ./vm-tests.nix {
+          system = vmTestSystem;
+          inherit (nixpkgs) lib;
+          nix-vm-test = vmTestLib;
+          inherit system-manager;
+          userborn = userborn.packages.${system}.default;
+        };
       containerChecks =
         system:
         import ./container-tests.nix {
@@ -53,7 +58,7 @@
       checks = nixpkgs.lib.genAttrs testedSystems (
         system:
         system-manager.checks.${system}
-        // nixpkgs.lib.optionalAttrs (system == vmTestSystem) vmChecks
+        // nixpkgs.lib.optionalAttrs (system == vmTestSystem) (vmChecks system)
         // (containerChecks system)
       );
     };
