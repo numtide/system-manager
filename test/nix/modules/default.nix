@@ -208,7 +208,7 @@ forEachUbuntuImage "example" {
       assert gid == "6", f"gid was {gid}, expected 6"
 
       vm.succeed("useradd luj")
-      vm.succeed("echo test | passwd luj --stdin")
+      vm.succeed("echo \"luj:test\" | chpasswd")
 
       print(vm.succeed("cat /etc/passwd"))
       passwd_out = vm.succeed("passwd -S luj | awk '{print $2}'")
