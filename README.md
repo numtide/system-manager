@@ -15,33 +15,86 @@
 
 </div>
 
-This project provides a basic method to manage system configuration using [Nix][nixos]
-on any Linux distribution.
-It builds on the many modules that already exist in [NixOS][nixos].
+System Manager brings the power of NixOS-style declarative configuration to any Linux system. Describe what your system should look like, by specifying packages, services, and settings—in Nix, then apply it safely and atomically with a single command. Each change is reproducible and rollback-ready, just like NixOS generations.
 
-*Warning*: System Manager is a work in progress, you can expect things not to work or to break.
+If you're familiar with Home Manager, this of it as similar to Home Manager but for your entire machine. Whereas Home Manager manages user environments, System Manager manages the full system, starting at root-level configurations, packages, and services, using the same reliable, Nix-based model.
+
+System Manager builds on the many modules that already exist in [NixOS][nixos].
 
 [nixos]: https://nixos.org
 
-## Usage
+## Quick Example
+
+Assume you're using a non-NixOS distrubution (such as Ubuntu) and you have Nix already installed. In a folder create a file called `flake.nix` with the following:
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+
+    system-manager = {
+      url = "github:numtide/system-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+  };
+
+  outputs = { self, nixpkgs, system-manager }: {
+    systemConfigs.default = system-manager.lib.makeSystemConfig {
+      modules = [
+        ./modules
+      ];
+    };
+  };
+}
+```
+
+In that folder create a subfolder called `modules`; in `modules` create a file called `default.nix` with the following:
+
+```nix
+{ pkgs, ... }:
+{
+  nixpkgs.hostPlatform = "x86_64-linux";
+  
+  environment.systemPackages = with pkgs; [
+    btop          # Beautiful system monitor
+    bat           # Modern 'cat' with syntax highlighting
+  ];
+}
+
+```
+This will install a couple of tools on your system, btop and bat. To do so, execute system manager with sudo using the nix command (assuming you have experimental features nix-command and flakes turned on):
+
+```
+sudo env PATH="$PATH" nix run 'github:numtide/system-manager' -- switch --flake .
+```
+
+Notice we're passing the current PATH environment into sudo so that the elevated shell can locate the nix command.
+
+Also, note that you might need to enable nix-commands and flakes:
+
+```
+sudo env PATH="$PATH" nix --extra-experimental-features 'nix-command flakes'  run 'github:numtide/system-manager' -- switch --flake .
+```
+
+## Full Installation and setup
 
 ### Install Nix
 
-In order to use System Manager, you will first need to install Nix.
-You can either use your distro's package manager, or use one of the available options
-to install Nix.
+System manager itself does not need to be installed; but, you do need to install Nix. (However, you can optionally install system-manager locally if you prefer.)
+
+To install Nix, you can either use your distro's package manager, or use one of the following available options to install Nix.
 
 - [Official Nix Installer][official-installer] - The canonical source for installing nix.
 - [Determinate Nix Installer][detsys-installer] - A wrapper around the official installer that has SELinux support, and enables flake features by default.
 
 > **Tip:** Some Nix users have had difficulty installing Nix on Windows Subsystem for Linux (WSL) using the official installer. If you're using WSL, we recommend using Determinate Nix installer.
 
-> **Note:** Determinate Systems installer has the option for the official Nix as well as Determinate's own variant of Nix (Determinate Nix). It will prompt you for which one you want to install. Although we've used Determinate Nix several times with System Manager and it has worked fine, we have not done any official testing on it. We therefore recommend you use the official Nix if installing via the Determinate Nix Installer.
-
 [official-installer]: https://nixos.org/download.html
 [detsys-installer]: https://github.com/DeterminateSystems/nix-installer
 
 ## Usage with flakes NixOS Style
+
+[THE FOLLOWING IS AN EARLIER DRAFT UNDERGOING A COMPLETE REWRITE.]
 
 Nix has the philosophy:
 
@@ -121,17 +174,9 @@ Let's start with a basic service. We'll install TightVNC, which is a VNC server 
 
 **[Next: I have two examples ready that I'm going to describe -- a TightVNC service, and a custom node.js service]** Following is the original readme
 
-
-
-
-
-
-
-
-
 ### Defining the configuration
 
-A basic Nix flake using System Manager would look something like this:
+As mentioned above, a basic Nix flake using System Manager would look like this:
 
 ```nix
 {
@@ -154,10 +199,10 @@ A basic Nix flake using System Manager would look something like this:
 }
 ```
 
-And you would then put your System Manager modules in the `modules` directory,
-which should contain a `default.nix` file which functions as the entrance point.
+This allows you to place your configuration in the modules directory. The configuration is very similar to what you would use in NixOS.
 
-A simple System Manager module could look something like this:
+
+Here's an example configuration that creates file in etc, and installs two packages, btop and bat; it also instsalls a one-shot system service called hello.
 
 ```nix
 { config, lib, pkgs, ... }:
@@ -173,9 +218,8 @@ A simple System Manager module could look something like this:
         '';
       };
       systemPackages = [
-        pkgs.ripgrep
-        pkgs.fd
-        pkgs.hello
+        pkgs.btop
+        pkgs.bat
       ];
     };
 

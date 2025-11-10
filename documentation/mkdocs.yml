@@ -1,0 +1,79 @@
+site_name: System Manager
+site_description: Declarative system management for any Linux machine using Nix
+site_author: Numtide
+site_url: https://numtide.github.io/system-manager/
+repo_url: https://github.com/numtide/system-manager
+repo_name: numtide/system-manager
+edit_uri: edit/main/documentation/docs/
+
+docs_dir: docs
+
+theme:
+  name: material
+  logo: images/numtide-logo.svg
+  favicon: images/favicon.png
+  font:
+    text: Inter
+    code: JetBrains Mono
+  features:
+    - navigation.instant
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+    - header.autohide
+    - content.code.copy
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep orange
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep orange
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+plugins:
+  - search
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: date
+  - tags
+
+markdown_extensions:
+  - admonition
+  - def_list
+  - footnotes
+  - tables
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+      linenums: true
+      auto_title: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tilde
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/numtide
+      name: Numtide on GitHub
+    - icon: material/web
+      link: https://numtide.com
+      name: Numtide website
+
+extra_css:
+  - styles/overrides.css
