@@ -40,5 +40,6 @@ pkgs.mkShellNoCC {
     clippy
     mdbook
     mdformat
+    rust-analyzer
   ];
 }
