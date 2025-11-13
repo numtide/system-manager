@@ -78,9 +78,9 @@ Also, note that you might need to enable nix-commands and flakes:
 sudo env PATH="$PATH" nix --extra-experimental-features 'nix-command flakes' run 'github:numtide/system-manager' -- switch --flake .
 ```
 
-!!! Note:
-The first time you run system manager, it will update your path by adding an entry inthe /etc/profile.d folder. For such change to take effect, you need to log out and log back in. However, if you don't want to log out, you can simply source the file:
-`source /etc/profile.d/system-manager-path.sh`
+> [!Note]
+> The first time you run system manager, it will update your path by adding an entry inthe /etc/profile.d folder. For such change to take effect, you need to log out and log back in. However, if you don't want to log out, you can simply source the file:
+> `source /etc/profile.d/system-manager-path.sh`
 
 Want to remove a package? Simply remove it or comment it out in the `default.nix` file, and run it again. For example, if you want to remove `bat`, simply update the `default.nix` to the following:
 
@@ -183,8 +183,8 @@ Type=oneshot
 WantedBy=system-manager.target
 ```
 
-!!! Tip
-Compare the lines in the say-hello.service file with the default.nix file to see where each comes from.
+> [!Tip]
+> Compare the lines in the say-hello.service file with the default.nix file to see where each comes from.
 
 ## Example: Creating files in the /etc folder
 
