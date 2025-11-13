@@ -15,23 +15,18 @@
 
 </div>
 
-System Manager brings the power of NixOS-style declarative configuration to any Linux system.
-Describe what your system should look like, by specifying packages, services, and settings all
-in Nix, then apply it safely and atomically with a single command. Each change is reproducible
-and soon will be rollback-ready, just like NixOS generations.
+System Manager brings the power of NixOS-style declarative configuration to any Linux system. Describe what your system should look like, by specifying packages, services, and settings all in Nix, then apply it safely and atomically with a single command. Each change is reproducible and soon will be rollback-ready, just like NixOS generations.
 
-If you're familiar with Home Manager, think of it as similar to Home Manager but for your
-entire machine. Whereas Home Manager manages user environments, System Manager manages the
-full system, starting at root-level configurations, packages, and services, using the same
-reliable, Nix-based model.
+If you're familiar with Home Manager, think of it as similar to Home Manager but for your entire machine. Whereas Home Manager manages user environments, System Manager manages the full system, starting at root-level configurations, packages, and services, using the same reliable, Nix-based model.
 
 System Manager builds on the many modules that already exist in [NixOS][nixos].
 
 [nixos]: https://nixos.org
 
-## Quick Example
+## Quick Example to Get Started
 
 Assume you're using a non-NixOS distrubution (such as Ubuntu) and you have Nix already installed.
+
 In a folder create a file called `flake.nix` with the following:
 
 ```nix
@@ -55,7 +50,7 @@ In a folder create a file called `flake.nix` with the following:
 }
 ```
 
-In that folder create a subfolder called `modules`; in `modules` create a file called
+In that folder create a subfolder called `modules`. In `modules` create a file called
 `default.nix` with the following system configuration:
 
 ```nix
@@ -70,10 +65,7 @@ In that folder create a subfolder called `modules`; in `modules` create a file c
 }
 
 ```
-This specifies a configuration that includes btop and bat as installed on the system.
-(In other words, system manager will install them on your system.) To do so, execute
-system manager with sudo using the nix command (assuming you have experimental features
-nix-command and flakes turned on):
+This specifies a configuration that includes btop and bat as installed on the system. (In other words, system manager will install them on your system.) To do so, execute system manager with sudo using the nix command (assuming you have experimental features nix-command and flakes turned on):
 
 ```
 sudo env PATH="$PATH" nix run 'github:numtide/system-manager' -- switch --flake .
@@ -84,15 +76,14 @@ Notice we're passing the current PATH environment into sudo so that the elevated
 Also, note that you might need to enable nix-commands and flakes:
 
 ```
-sudo env PATH="$PATH" nix --extra-experimental-features 'nix-command flakes'  run 'github:numtide/system-manager' -- switch --flake .
+sudo env PATH="$PATH" nix --extra-experimental-features 'nix-command flakes' run 'github:numtide/system-manager' -- switch --flake .
 ```
 
 !!! Note:
     The first time you run system manager, it will update your path by adding an entry inthe /etc/profile.d folder. For such change to take effect, you need to log out and log back in. However, if you don't want to log out, you can simply source the file:
     `source /etc/profile.d/system-manager-path.sh`
 
-Want to remove a package? Simply remove it or comment it out in the `default.nix` file, and run it
-again. For example, if you want to remove `bat`, simply update the `default.nix` to the following:
+Want to remove a package? Simply remove it or comment it out in the `default.nix` file, and run it again. For example, if you want to remove `bat`, simply update the `default.nix` to the following:
 
 ```nix
 { pkgs, ... }:
@@ -106,128 +97,30 @@ again. For example, if you want to remove `bat`, simply update the `default.nix`
 }
 ```
 
-## Full Installation and setup
+# Full Installation and setup
 
-### Install Nix
+## Install Nix
 
-System manager itself does not need to be installed; but, you do need to install Nix. (However,
-you can optionally install system-manager locally if you prefer.)
+System manager itself does not need to be installed; but, you do need to install Nix. (However, you can optionally install system-manager locally if you prefer.)
 
-To install Nix, you can either use your distro's package manager, or use one of the following
-available options to install Nix.
+To install Nix, you can either use your distro's package manager, or use one of the following available options to install Nix.
 
 - [Official Nix Installer][official-installer] - The canonical source for installing nix.
 - [Determinate Nix Installer][detsys-installer] - A wrapper around the official installer that has
 SELinux support, and enables flake features by default.
 
-> **Tip:** Some Nix users have had difficulty installing Nix on Windows Subsystem for Linux (WSL)
-using the official installer. If you're using WSL, we recommend using Determinate Nix installer.
+> **Tip:** Some Nix users have had difficulty installing Nix on Windows Subsystem for Linux (WSL) using the official installer. If you're using WSL, we recommend using Determinate Nix installer.
 
 [official-installer]: https://nixos.org/download.html
 [detsys-installer]: https://github.com/DeterminateSystems/nix-installer
 
-## Usage with flakes NixOS Style
+## Example: Configuring System Services
 
-[THE FOLLOWING IS AN EARLIER DRAFT UNDERGOING A COMPLETE REWRITE.]
+The following example demonstrates how to specify a system service and activate it.
 
-Nix has the philosophy:
-
-> "If it's not in the config, it's not real."
-
-Normally on Ubuntu and other distros that use systemd, you enable, start, stop, or disable a system service by typing:
+As before, create a folder, and place the following `flake.nix` in it:
 
 ```
-sudo systemctl enable foo.service   # to enable the service to start on boot
-sudo systemctl start foo.service    # to start the service immediately
-sudo systemctl stop foo.service     # to stop the service
-sudo systemctl disable foo.service  # to prevent it from starting on boot
-```
-
-This approach is called "imperative" — meaning you're telling the system what to do right now, and
-the system will remember your choice by mutating internal state (like creating symlinks in /etc/systemd/system/).
-
-But this method has some downsides:
-
-* There's no central place where your desired system state is defined.
-
-* If someone else logs in and changes something, there's no record.
-
-* You can’t easily back up, reproduce, or version-control your system configuration.
-
-
-Now let's consider how this is done on NixOS (even though you're using Ubuntu or similar). With NixOS,
-you manage services declaratively using configuration files tracked in Git. In a flake-based setup on
-NixOS, you define services like this:
-
-```
-{
-  systemd.services.foo.enable = true;
-}
-```
-
-Then you apply the config with:
-```
-sudo nixos-rebuild switch --flake .
-```
-
-Nix builds the desired system state from your flake and makes it real, enabling, disabling, and
-managing services automatically. No imperative commands. No hidden state. Just one source of truth: your config.
-
-Now of course, this assumes you have a service file that's already been created. On a traditional
-system such as Ubuntu, you're often stuck having to create one yourself (or downloading one), and
-saving it in a path like `/etc/systemd/system/foo.service`. Then you use the systemd commands we
-talked about earlier.
-
-NixOS on the other hand, handles this declaratively in which you define the entire system configuration
-in your flake file, like so (this is just part of the code):
-
-```nix
-systemd.services.foo = {
-  enable = true;
-  description = "My custom service";
-  serviceConfig = {
-    ExecStart = "/path/to/executable";
-    Restart = "always";
-  };
-  wantedBy = [ "multi-user.target" ];
-};
-```
-
-Then on NixOS, to rebuild your system with this flake you type:
-
-```
-sudo nixos-rebuild switch --flake .
-```
-
-Nix takes care of everything — writing the unit file, reloading systemd, enabling it on boot,
-and starting it if needed.
-
-Also, notice the format of the command: we run `nixos-rebuild`, followed by the `switch` subcommand,
-and then pass `--flake .`, where the dot (.) refers to the current directory containing your flake.
-
-Putting your service declarations inside a flake file offers huge advantages over manually creating
-and managing system service files. Your entire setup — from services to packages to user settings — 
-can live in a Git repo, making it easy to track changes, collaborate, and "version-control" your
-system like code. Need to set up a second machine just like the first? Just clone the repo and run
-a single command and you're good to go. And thanks to Nix’s built-in rollback capabilities, you can
-safely experiment, knowing you can always revert to a known-good configuration.
-
-And... now with system manager you can do the same with Ubuntu and other systemd-based repos.
-
-## Meet System Manager: Manage systemd the NixOS way 
-
-With System Manager, you can configure system services almost exactly the way you do in NixOS. You
-create flakes that declare your intention, and you run a command that's effectively the same as the NixOS way.
-
-Let's start with a basic service. We'll install TightVNC, which is a VNC server allowing you to log in with a GUI and desktop manager.
-
-**[Next: I have two examples ready that I'm going to describe -- a TightVNC service, and a custom node.js service]** Following is the original readme
-
-### Defining the configuration
-
-As mentioned above, a basic Nix flake using System Manager would look like this:
-
-```nix
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -238,7 +131,7 @@ As mentioned above, a basic Nix flake using System Manager would look like this:
     };
   };
 
-  outputs = { self, flake-utils, nixpkgs, system-manager }: {
+  outputs = { self, nixpkgs, system-manager }: {
     systemConfigs.default = system-manager.lib.makeSystemConfig {
       modules = [
         ./modules
@@ -248,70 +141,123 @@ As mentioned above, a basic Nix flake using System Manager would look like this:
 }
 ```
 
-This allows you to place your configuration in the modules directory. The configuration is very
-similar to what you would use in NixOS.
-
-
-Here's an example configuration that creates file in etc, and installs two packages, btop and bat;
-it also installs a one-shot system service called hello.
+Then create a modules folder under this folder, and place the following inside your default.nix:
 
 ```nix
-{ config, lib, pkgs, ... }:
-
+{ lib, pkgs, ... }:
 {
-  config = {
-    nixpkgs.hostPlatform = "x86_64-linux";
-
-    environment = {
-      etc = {
-        "foo.conf".text = ''
-          launch_the_rockets = true
-        '';
-      };
-      systemPackages = [
-        pkgs.btop
-        pkgs.bat
-      ];
+  config.systemd.services.say-hello = {
+    description = "say-hello";
+    enable = true;
+    wantedBy = [ "system-manager.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
     };
+    script = ''
+      ${lib.getBin pkgs.hello}/bin/hello
+    '';
+  };
+}
+```
 
-    systemd.services = {
-      foo = {
-        enable = true;
-        serviceConfig = {
-          Type = "oneshot";
-          RemainAfterExit = true;
-        };
-        wantedBy = [ "system-manager.target" ];
-        script = ''
-          ${lib.getBin pkgs.hello}/bin/hello
-          echo "We launched the rockets!"
-        '';
-      };
+Activate it using the same nix command as earlier:
+
+```
+sudo env PATH="$PATH" nix run 'github:numtide/system-manager' -- switch --flake .
+```
+
+This will create a system service called "say-hello" (which comes from the line `config.systemd.services.say-hello`) in a unit file at `/etc/systemd/system/say-hello.service` with the following inside it:
+
+```
+[Unit]
+Description=say-hello
+
+[Service]
+Environment="PATH=/nix/store/xs8scz9w9jp4hpqycx3n3bah5y07ymgj-coreutils-9.8/bin:/nix/store/qqvfnxa9jg71wp4hfg1l63r4m78iwvl9-findutils-4.10.0/bin:/nix/store/22r4s6lqhl43jkazn51f3c18qwk894g4-gnugrep-3.12/bin:
+/nix/store/zppkx0lkizglyqa9h26wf495qkllrjgy-gnused-4.9/bin:/nix/store/g48529av5z0vcsyl4d2wbh9kl58c7p73-systemd-minimal-258/bin:/nix/store/xs8scz9w9jp4hpqycx3n3bah5y07ymgj-coreutils-9.8/sbin:/nix/store/qqvfn
+xa9jg71wp4hfg1l63r4m78iwvl9-findutils-4.10.0/sbin:/nix/store/22r4s6lqhl43jkazn51f3c18qwk894g4-gnugrep-3.12/sbin:/nix/store/zppkx0lkizglyqa9h26wf495qkllrjgy-gnused-4.9/sbin:/nix/store/g48529av5z0vcsyl4d2wbh9
+kl58c7p73-systemd-minimal-258/sbin"
+ExecStart=/nix/store/d8rjglbhinylg8v6s780byaa60k6jpz1-unit-script-say-hello-start/bin/say-hello-start 
+RemainAfterExit=true
+Type=oneshot
+
+[Install]
+WantedBy=system-manager.target
+```
+
+!!! Tip
+    Compare the lines in the say-hello.service file with the default.nix file to see where each comes from.
+
+
+## Example: Creating files in the /etc folder
+
+Oftentimes when you're creating a system service, you need to create a configuration file in the /etc file that accompanies the service. System manager allows you to do that as well.
+
+As before, start with the following `flake.nix`:
+
+```
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+
+    system-manager = {
+      url = "github:numtide/system-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+  };
+
+  outputs = { self, nixpkgs, system-manager }: {
+    systemConfigs.default = system-manager.lib.makeSystemConfig {
+      modules = [
+        ./modules
+      ];
     };
   };
 }
 ```
 
-### Activating the configuration
+Then, in a subfolder called `modules` place the following in `default.nix`:
 
-Once the configuration is defined, you can activate it using the `system-manager` CLI:
-```sh
-nix run 'github:numtide/system-manager' -- switch --flake '.'
+```
+{ lib, pkgs, ... }:
+{
+  config = {
+    nixpkgs.hostPlatform = "x86_64-linux";
+  };
+  config.environment.etc = {
+    sample_configuration = {
+      text = ''
+        This is some sample configuration text
+      '';
+    };
+  };
+}
 ```
 
-### Reproducibility
+Run it as usual, and you should see the file now exists:
 
-By design flakes run in [pure evaluation mode](https://wiki.nixos.org/wiki/Flakes#Making_your_evaluations_pure).
-In some cases you may not want this. To run an impure evaluation of the flake, add the following option to your command:
-```sh
---nix-option pure-eval false
+```
+sudo env PATH="$PATH" nix run 'github:numtide/system-manager' -- switch --flake .
+ls /etc -ltr
 ```
 
+which displays the following:
+```
+lrwxrwxrwx  1 root  root  45 Nov 13 15:19 sample_configuration -> ./.system-manager-static/sample_configuration
+```
 
-## Currently supported features
+And you can view the file:
 
-Currently it is possible to configure files under `/etc/` and systemd services.
-More features may follow later.
+```
+cat /etc/sample_configuration
+```
+
+which prints out:
+
+```
+This is some sample configuration text
+```
 
 ### Supported Systems
 
@@ -325,9 +271,6 @@ distributions by enabling the following:
   }
 }
 ```
-
-> [!WARNING]
-> This is unsupported and untested. Use at your own risk.
 
 ## Commercial support
 
