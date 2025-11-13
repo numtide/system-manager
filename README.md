@@ -108,7 +108,8 @@ To install Nix, you can either use your distro's package manager, or use one of 
 - [Determinate Nix Installer][detsys-installer] - A wrapper around the official installer that has
   SELinux support, and enables flake features by default.
 
-> **Tip:** Some Nix users have had difficulty installing Nix on Windows Subsystem for Linux (WSL) using the official installer. If you're using WSL, we recommend using Determinate Nix installer.
+> [!Tip]
+> Some Nix users have had difficulty installing Nix on Windows Subsystem for Linux (WSL) using the official installer. If you're using WSL, we recommend using Determinate Nix installer.
 
 ## Example: Configuring System Services
 
