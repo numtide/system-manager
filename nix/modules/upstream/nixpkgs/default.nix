@@ -21,6 +21,7 @@
       # nix settings
       "/config/nix.nix"
       "/services/system/userborn.nix"
+      "/system/build.nix"
     ];
 
   options =
@@ -32,6 +33,14 @@
       boot = lib.mkOption {
         type = lib.types.raw;
       };
+
+      services.openssh = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+        };
+      };
+
     };
 
 }

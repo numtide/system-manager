@@ -4,11 +4,15 @@
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   inputs.userborn.url = "github:JulienMalka/userborn/stateful-users";
 
+  inputs.sops-nix.url = "github:Mic92/sops-nix";
+  inputs.sops-nix.inputs.nixpkgs.follows = "nixpkgs";
+
   outputs =
     {
       self,
       nixpkgs,
       userborn,
+      sops-nix,
     }:
     let
       systems = [
@@ -81,6 +85,7 @@
               in
               (import ./test/nix/modules {
                 inherit system;
+                inherit sops-nix;
                 inherit (nixpkgs) lib;
                 userborn = userborn.packages.${system}.default;
                 nix-vm-test = import nix-vm-test-lib {

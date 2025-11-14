@@ -120,7 +120,28 @@
     "root": {
       "inputs": {
         "nixpkgs": "nixpkgs",
+        "sops-nix": "sops-nix",
         "userborn": "userborn"
+      }
+    },
+    "sops-nix": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1763069729,
+        "narHash": "sha256-A91a+K0Q9wfdPLwL06e/kbHeAWSzPYy2EGdTDsyfb+s=",
+        "owner": "Mic92",
+        "repo": "sops-nix",
+        "rev": "a2bcd1c25c1d29e22756ccae094032ab4ada2268",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Mic92",
+        "repo": "sops-nix",
+        "type": "github"
       }
     },
     "systems": {
