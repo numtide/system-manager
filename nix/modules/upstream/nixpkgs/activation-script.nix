@@ -268,4 +268,7 @@ in
     };
 
   };
+  config = {
+    system.activationScripts.users = "";
+  };
 }
