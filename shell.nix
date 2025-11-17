@@ -41,5 +41,6 @@ pkgs.mkShellNoCC {
     mdbook
     mdformat
     rust-analyzer
+    gh
   ];
 }
