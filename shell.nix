@@ -42,5 +42,7 @@ pkgs.mkShellNoCC {
     mdformat
     rust-analyzer
     gh
+    # Testing tools
+    parallel
   ];
 }

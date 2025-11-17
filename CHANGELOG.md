@@ -86,4 +86,4 @@ Thanks to all the contributors who made this release possible:
 - Steve Dodd
 - Yvan Sraka
 
-[Unreleased]: https://github.com/numtide/system-manager/compare/HEAD...HEAD
+[unreleased]: https://github.com/numtide/system-manager/compare/HEAD...HEAD
