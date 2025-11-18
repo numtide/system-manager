@@ -363,7 +363,7 @@ Oftentimes, when you're creating a system service, you need to create a configur
 
 Add another line to your `flake.nix` file, this time for `./sample_etc.nix`:
 
-```
+```nix
 {
   description = "Standalone System Manager configuration";
 
