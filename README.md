@@ -245,7 +245,7 @@ The following example demonstrates how to specify a system service and activate 
 
 Update your flake.nix file to include a new file in the modules list, which we'll call `say_hello.nix`:
 
-```
+```nix
 {
   description = "Standalone System Manager configuration";
 
