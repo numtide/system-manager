@@ -23,7 +23,7 @@ System Manager builds on the many modules that already exist in [NixOS].
 
 ## Quick Example to Get Started
 
-Assume you're using a non-NixOS distrubution (such as Ubuntu) and you have Nix already installed.
+We will assume you're using a non-NixOS distrubution (such as Ubuntu) and you have Nix already installed.
 
 In a folder create a file called `flake.nix` with the following:
 
