@@ -408,7 +408,7 @@ Add another line to your `flake.nix` file, this time for `./sample_etc.nix`:
 
 Then, create the `sample_etc.nix` file with the following into it:
 
-```
+```nix
 { lib, pkgs, ... }:
 {
   config = {
