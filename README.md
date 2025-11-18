@@ -396,7 +396,7 @@ Add another line to your `flake.nix` file, this time for `./sample_etc.nix`:
                 nix.settings.experimental-features = "nix-command flakes";
             }
             ./cli_tools.nix 
-	    ./say_hello.nix
+            ./say_hello.nix
             ./sample_etc.nix
         ];
 
