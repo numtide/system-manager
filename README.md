@@ -188,7 +188,7 @@ WantedBy=system-manager.target
 
 ## Example: Creating files in the /etc folder
 
-Oftentimes when you're creating a system service, you need to create a configuration file in the /etc file that accompanies the service. System manager allows you to do that as well.
+Oftentimes, when you're creating a system service, you need to create a configuration file in the `/etc` directory that accompanies the service. System manager allows you to do that as well.
 
 As before, start with the following `flake.nix`:
 
