@@ -355,7 +355,7 @@ Nov 18 12:12:51 my-ubuntu systemd[1]: Finished say-hello.service - say-hello.
 ```
 
 > [!Note]
-> If you remove the `./cli_tools.nix` line from the flake.nix, System Manager will see that the configuration changed and that `btop` and `bat` are no longer in the configuration. As such, it will uninstall them. This is normal and expected behavior.
+> If you remove the `./cli_tools.nix` line from the `flake.nix`, System Manager will see that the configuration changed and that `btop` and `bat` are no longer in the configuration. As such, it will uninstall them. This is normal and expected behavior.
 
 ## Example: Creating files in the /etc folder
 
