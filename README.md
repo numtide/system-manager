@@ -17,7 +17,7 @@
 
 System Manager brings the power of NixOS-style declarative configuration to other Linux distributions. Describe what your system should look like, by specifying packages, services, and settings all in Nix, then apply it safely and atomically with a single command. Each change is reproducible and soon will be rollback-ready, just like NixOS generations.
 
-If you're familiar with Home Manager, think of it as similar to Home Manager but for your entire machine. Whereas Home Manager manages user environments, System Manager manages the full system, starting at root-level configurations, packages, and services, using the same reliable, Nix-based model.
+If you're familiar with Home Manager, think of it as being similar, but for your entire machine. Whereas Home Manager manages user environments, System Manager manages the entire system, starting at root-level configurations, packages, and services, using the same reliable, Nix-based model.
 
 System Manager builds on the many modules that already exist in [NixOS].
 
