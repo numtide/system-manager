@@ -79,7 +79,7 @@ sudo env PATH="$PATH" nix --extra-experimental-features 'nix-command flakes' run
 ```
 
 > [!Note]
-> The first time you run system manager, it will update your path by adding an entry inthe /etc/profile.d folder. For such change to take effect, you need to log out and log back in. However, if you don't want to log out, you can simply source the file:
+> The first time you run system manager, it will update your path by adding an entry in the /etc/profile.d folder. For this change to take effect, you need to log out and then log back in. However, if you don't want to log out, you can source the file:
 > `source /etc/profile.d/system-manager-path.sh`
 
 Want to remove a package? Simply remove it or comment it out in the `default.nix` file, and run it again. For example, if you want to remove `bat`, simply update the `default.nix` to the following:
