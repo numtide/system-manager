@@ -64,7 +64,7 @@ In that folder create a subfolder called `modules`. In `modules` create a file c
 
 ```
 
-This specifies a configuration that includes btop and bat as installed on the system. (In other words, system manager will install them on your system.) To do so, execute system manager with sudo using the nix command (assuming you have experimental features nix-command and flakes turned on):
+This specifies a configuration that includes `btop` and `bat`, to be installed on the system. To do so, execute system manager with `sudo` using the nix command (assuming you have experimental features nix-command and flakes turned on):
 
 ```
 sudo env PATH="$PATH" nix run 'github:numtide/system-manager' -- switch --flake .
