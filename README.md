@@ -164,7 +164,7 @@ Activate it using the same nix command as earlier:
 sudo env PATH="$PATH" nix run 'github:numtide/system-manager' -- switch --flake .
 ```
 
-This will create a system service called "say-hello" (which comes from the line `config.systemd.services.say-hello`) in a unit file at `/etc/systemd/system/say-hello.service` with the following inside it:
+This will create a system service called `say-hello` (which comes from the line `config.systemd.services.say-hello`) in a unit file at `/etc/systemd/system/say-hello.service` with the following inside it:
 
 ```
 [Unit]
