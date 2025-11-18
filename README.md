@@ -338,7 +338,7 @@ WantedBy=system-manager.target
 ```
 
 > [!Tip]
-> Compare the lines in the say-hello.service file with the default.nix file to see where each comes from.
+> Compare the lines in the say-hello.service file with the say_hello.nix file to see where each comes from.
 
 You can verify that it ran by running journalctl:
 
