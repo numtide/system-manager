@@ -70,7 +70,7 @@ This specifies a configuration that includes `btop` and `bat`, to be installed o
 sudo env PATH="$PATH" nix run 'github:numtide/system-manager' -- switch --flake .
 ```
 
-Notice we're passing the current PATH environment into sudo so that the elevated shell can locate the nix command.
+Notice we're passing the current `PATH` environment into `sudo` so that the elevated shell can locate the `nix` command.
 
 Also, note that you might need to enable nix-commands and flakes:
 
