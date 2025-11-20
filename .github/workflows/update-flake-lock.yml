@@ -9,7 +9,7 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - name: "Checkout the repo"
-        uses: "actions/checkout@v5"
+        uses: "actions/checkout@v6"
       - name: "Install the Nix package manager"
         uses: "cachix/install-nix-action@master"
         with:
