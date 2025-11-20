@@ -15,9 +15,11 @@
 
 </div>
 
-System Manager brings the power of NixOS-style declarative configuration to other Linux distributions. Describe what your system should look like, by specifying packages, services, and settings all in Nix, then apply it safely and atomically with a single command. Each change is reproducible, just like NixOS generations.
+System manager is a tool to configure Linux machines. Unlike Chef, Puppet and Ansible, it only controls a small subset, and most of its changes are done in an immutable layer, thanks to the power of Nix.
 
-If you're familiar with Home Manager, think of it as being similar, but for your entire machine. Whereas Home Manager manages user environments, System Manager manages the entire system, starting at root-level configurations, packages, and services, using the same reliable, Nix-based model.
+Using NixOS-style declarative configurations, you describe what your system should look like, by specifying packages, services, and settings all in Nix, then apply it safely and atomically with a single command. Each change is reproducible, just like NixOS generations.
+
+You don't need to be an expert in Nix to use it, as its syntax is straightforward. But if you're familiar with Nix and Home Manager, think of System Manager as being similar, but for your entire machine. Whereas Home Manager manages user environments, System Manager manages the entire system, starting at root-level configurations, packages, and services, using the same reliable, Nix-based model.
 
 System Manager builds on the many modules that already exist in [NixOS].
 
@@ -79,9 +81,6 @@ Here is what flake.nix looks like:
       system-manager,
       ...
     }:
-    let
-      system = "x86_64-linux";
-    in
     {
       systemConfigs.default = system-manager.lib.makeSystemConfig {
         # Specify your system configuration modules here, for example,
@@ -200,9 +199,6 @@ It's possible that you had a `nix.conf` file in `/etc/nix` that had experimental
       system-manager,
       ...
     }:
-    let
-      system = "x86_64-linux";
-    in
     {
       systemConfigs.default = system-manager.lib.makeSystemConfig {
         # Specify your system configuration modules here, for example,
@@ -265,9 +261,6 @@ Update your flake.nix file to include a new file in the modules list, which we'l
       system-manager,
       ...
     }:
-    let
-      system = "x86_64-linux";
-    in
     {
       systemConfigs.default = system-manager.lib.makeSystemConfig {
         # Specify your system configuration modules here, for example,
@@ -383,9 +376,6 @@ Add another line to your `flake.nix` file, this time for `./sample_etc.nix`:
       system-manager,
       ...
     }:
-    let
-      system = "x86_64-linux";
-    in
     {
       systemConfigs.default = system-manager.lib.makeSystemConfig {
         # Specify your system configuration modules here, for example,
@@ -462,6 +452,9 @@ System Manager is currently only supported on NixOS and Ubuntu. However, it can 
   }
 }
 ```
+
+> [!WARNING]
+> This is unsupported and untested. Use at your own risk.
 
 ## Commercial support
 
