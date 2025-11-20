@@ -23,7 +23,7 @@ System Manager builds on the many modules that already exist in [NixOS].
 
 ## Quick Example to Get Started
 
-We will assume you're using a non-NixOS distrubution (such as Ubuntu) and you have Nix already installed.
+We will assume you're using a non-NixOS distribution (such as Ubuntu) and you have Nix already installed, with flakes enabled.
 
 System Manager has an "init" subcommand that can build a set of starting files for you. By default, it places the files in `~/.config/system-manager`. You can run this init subcommand by typing:
 
