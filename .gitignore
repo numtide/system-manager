@@ -8,3 +8,5 @@
 /result*
 .direnv
 **/.nixos-test-history
+
+detailed_errors.txt
