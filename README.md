@@ -127,7 +127,7 @@ Create a file in the same folder called `cli_tools.nix` and add the following in
 This specifies a configuration that includes `btop` and `bat` to be installed on the system. To do so, execute System Manager with `sudo` using the nix command (assuming you have experimental features nix-command and flakes turned on):
 
 ```
-sudo env PATH="$PATH" nix run 'github:numtide/system-manager' -- switch --flake .
+nix run 'github:numtide/system-manager' -- switch --sudo --flake .
 ```
 
 Notice we're passing the current `PATH` environment into `sudo` so that the elevated shell can locate the `nix` command.
@@ -135,7 +135,7 @@ Notice we're passing the current `PATH` environment into `sudo` so that the elev
 Also, note that you might need to enable `nix-commands` and `flakes` if you don't already have them set:
 
 ```
-sudo env PATH="$PATH" nix --extra-experimental-features 'nix-command flakes' run 'github:numtide/system-manager' -- switch --flake .
+nix --extra-experimental-features 'nix-command flakes' run 'github:numtide/system-manager' -- switch --sudo --flake .
 ```
 
 > [!Note]
@@ -308,7 +308,7 @@ Then create the file called `say_hello.nix` and add the following to it:
 Activate it using the same nix command as earlier:
 
 ```
-sudo env PATH="$PATH" nix run 'github:numtide/system-manager' -- switch --flake .
+nix run 'github:numtide/system-manager' -- switch --sudo --flake .
 ```
 
 This will create a system service called `say-hello` (which comes from the line `config.systemd.services.say-hello`) in a unit file at `/etc/systemd/system/say-hello.service` with the following inside it:
@@ -418,7 +418,7 @@ Then, create the `sample_etc.nix` file with the following into it:
 Run it as usual, and you should see the file now exists:
 
 ```
-sudo env PATH="$PATH" nix run 'github:numtide/system-manager' -- switch --flake .
+nix run 'github:numtide/system-manager' -- switch --sudo --flake .
 
 ls /etc -ltr
 ```

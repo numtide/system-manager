@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Manual documentation with mdBook (#206)
 - Support for implicit `systemConfigs.${currentSystem}.*` paths (#235)
 - Support for attribute sets with string keys (#220)
+- Sudo support via `--sudo` and `--ask-sudo-password` flags (with backward compatibility for `--use-remote-sudo`)
 - File ownership (uid/gid) support for `/etc` files (#191, #192)
 - Support for `nixpkgs.config` configuration (#164)
 - Support for `buildPlatform`, `hostPlatform`, and overlays (#184)
