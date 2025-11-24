@@ -209,6 +209,8 @@ nix flake update
 And make sure you've pushed it up to the repo. (If you don't do this step, nix will try to build a flake.lock, but will be unable to write it to the same location as the other files, and will error out.)
 
 
+[todo: Let's create a repo under numtide for this instead of using mine --jeffrey]
+
 ```
 sudo env PATH="$PATH" nix run 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes' -- switch --flake git+https://github.com/frecklefacelabs/system-manager-test#default
 ```

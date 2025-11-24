@@ -56,7 +56,7 @@ Adding further configs:
 
 * Option A: Remove your current and let system-manager manage it
 
-** Then where to put your own custom configurations such as experimental features
+  * Then where to put your own custom configurations such as experimental features
 
 * Option B: Keep your own non-sym-link file, and ignore the message from system-manager
 
@@ -314,8 +314,6 @@ Glossary (flake, module, closure, profile, generation, etc.)
 
 
 A Natural Order
-
-You already have a good sequence. A possible high-level ToC could be:
 
 Introduction
 
