@@ -7,8 +7,6 @@ use std::mem;
 use std::path::{Path, PathBuf};
 use std::process::{self, ExitCode};
 
-use rpassword::prompt_password;
-
 use system_manager::{NixOptions, StorePath};
 
 /// The bytes for the NixOS flake template is included in the binary to avoid unnecessary
@@ -23,33 +21,6 @@ pub const STANDALONE_FLAKE_TEMPLATE: &[u8; 739] =
 /// The bytes for the standalone module template is included in the binary to avoid unnecessary
 /// network calls when initializing a system-manager configuration from the command line.
 pub const SYSTEM_MODULE_TEMPLATE: &[u8; 1153] = include_bytes!("../templates/system.nix");
-
-#[derive(Debug)]
-struct SudoOptions {
-    enabled: bool,
-    password: Option<String>,
-}
-
-impl SudoOptions {
-    fn new(enabled: bool, password: Option<String>) -> Self {
-        if enabled {
-            Self { enabled, password }
-        } else {
-            Self::disabled()
-        }
-    }
-
-    fn disabled() -> Self {
-        Self {
-            enabled: false,
-            password: None,
-        }
-    }
-
-    fn is_enabled(&self) -> bool {
-        self.enabled
-    }
-}
 
 #[derive(clap::Parser, Debug)]
 #[command(
@@ -67,18 +38,9 @@ struct Args {
     target_host: Option<String>,
 
     #[arg(long, action)]
-    /// Prefix remote commands (build/register/activate/etc.) with sudo.
-    /// Mostly relevant when deploying via --target-host.
-    sudo: bool,
-
-    #[arg(long = "use-remote-sudo", action, hide = true)]
-    /// Deprecated alias for --sudo
-    legacy_use_remote_sudo: bool,
-
-    #[arg(long, action)]
-    /// Prompt for the sudo password used on the target host.
-    /// Implies --sudo.
-    ask_sudo_password: bool,
+    /// Invoke the remote command with sudo.
+    /// Only useful in combination with --target-host
+    use_remote_sudo: bool,
 
     #[clap(long = "nix-option", num_args = 2, global = true)]
     nix_options: Option<Vec<String>>,
@@ -223,9 +185,7 @@ fn go(args: Args) -> Result<()> {
     let Args {
         action,
         target_host,
-        sudo,
-        legacy_use_remote_sudo,
-        ask_sudo_password,
+        use_remote_sudo,
         nix_options,
     } = args;
 
@@ -240,21 +200,6 @@ fn go(args: Args) -> Result<()> {
             .collect()
     }));
 
-    let mut sudo_enabled = sudo || legacy_use_remote_sudo;
-    if legacy_use_remote_sudo {
-        log::warn!("--use-remote-sudo is deprecated; use --sudo instead");
-    }
-    let mut sudo_password = None;
-    if ask_sudo_password {
-        sudo_enabled = true;
-        if target_host.is_some() {
-            sudo_password = Some(read_sudo_password()?);
-        } else {
-            log::warn!("--ask-sudo-password has no effect without --target-host");
-        }
-    }
-    let sudo_options = SudoOptions::new(sudo_enabled, sudo_password);
-
     match action {
         Action::PrePopulate {
             store_or_flake_args,
@@ -263,7 +208,7 @@ fn go(args: Args) -> Result<()> {
             store_or_flake_args,
             ephemeral,
             &target_host,
-            &sudo_options,
+            use_remote_sudo,
             &nix_options,
         )
         .and_then(print_store_path),
@@ -272,13 +217,13 @@ fn go(args: Args) -> Result<()> {
         } => build(&flake_uri, &target_host, &nix_options).and_then(print_store_path),
         Action::Deactivate {
             optional_store_path_args: OptionalStorePathArg { maybe_store_path },
-        } => deactivate(maybe_store_path, &target_host, &sudo_options),
+        } => deactivate(maybe_store_path, &target_host, use_remote_sudo),
         Action::Register {
             store_or_flake_args,
         } => register(
             store_or_flake_args,
             &target_host,
-            &sudo_options,
+            use_remote_sudo,
             &nix_options,
         )
         .and_then(print_store_path),
@@ -342,15 +287,15 @@ fn go(args: Args) -> Result<()> {
         } => {
             let store_path = do_build(&flake_uri, &nix_options)?;
             copy_closure(&store_path, &target_host)?;
-            do_register(&store_path, &target_host, &sudo_options, &nix_options)?;
-            activate(&store_path, ephemeral, &target_host, &sudo_options)
+            do_register(&store_path, &target_host, use_remote_sudo, &nix_options)?;
+            activate(&store_path, ephemeral, &target_host, use_remote_sudo)
         }
         Action::Activate {
             store_path,
             activation_args: ActivationArgs { ephemeral },
         } => {
             copy_closure(&store_path, &target_host)?;
-            activate(&store_path, ephemeral, &target_host, &sudo_options)
+            activate(&store_path, ephemeral, &target_host, use_remote_sudo)
         }
     }
 }
@@ -406,7 +351,7 @@ fn do_build(flake_uri: &str, nix_options: &NixOptions) -> Result<StorePath> {
 fn register(
     args: StoreOrFlakeArgs,
     target_host: &Option<String>,
-    sudo_options: &SudoOptions,
+    use_remote_sudo: bool,
     nix_options: &NixOptions,
 ) -> Result<StorePath> {
     match args {
@@ -422,7 +367,7 @@ fn register(
         } => {
             let store_path = do_build(&flake_uri, nix_options)?;
             copy_closure(&store_path, target_host)?;
-            do_register(&store_path, target_host, sudo_options, nix_options)?;
+            do_register(&store_path, target_host, use_remote_sudo, nix_options)?;
             Ok(store_path)
         }
         StoreOrFlakeArgs {
@@ -436,7 +381,7 @@ fn register(
                 },
         } => {
             copy_closure(&store_path, target_host)?;
-            do_register(&store_path, target_host, sudo_options, nix_options)?;
+            do_register(&store_path, target_host, use_remote_sudo, nix_options)?;
             Ok(store_path)
         }
         _ => {
@@ -448,7 +393,7 @@ fn register(
 fn do_register(
     store_path: &StorePath,
     target_host: &Option<String>,
-    sudo_options: &SudoOptions,
+    use_remote_sudo: bool,
     nix_options: &NixOptions,
 ) -> Result<()> {
     if let Some(target_host) = target_host {
@@ -456,7 +401,7 @@ fn do_register(
             &store_path.store_path,
             "register-profile",
             target_host,
-            sudo_options,
+            use_remote_sudo,
         )?;
         if status.success() {
             Ok(())
@@ -478,14 +423,14 @@ fn activate(
     store_path: &StorePath,
     ephemeral: bool,
     target_host: &Option<String>,
-    sudo_options: &SudoOptions,
+    use_remote_sudo: bool,
 ) -> Result<()> {
     if let Some(target_host) = target_host {
         invoke_remote_script(
             &store_path.store_path,
             "activate",
             target_host,
-            sudo_options,
+            use_remote_sudo,
         )?;
         Ok(())
     } else {
@@ -498,7 +443,7 @@ fn prepopulate(
     args: StoreOrFlakeArgs,
     ephemeral: bool,
     target_host: &Option<String>,
-    sudo_options: &SudoOptions,
+    use_remote_sudo: bool,
     nix_options: &NixOptions,
 ) -> Result<StorePath> {
     match args {
@@ -514,8 +459,8 @@ fn prepopulate(
         } => {
             let store_path = do_build(&flake_uri, nix_options)?;
             copy_closure(&store_path, target_host)?;
-            do_register(&store_path, target_host, sudo_options, nix_options)?;
-            do_prepopulate(&store_path, ephemeral, target_host, sudo_options)?;
+            do_register(&store_path, target_host, use_remote_sudo, nix_options)?;
+            do_prepopulate(&store_path, ephemeral, target_host, use_remote_sudo)?;
             Ok(store_path)
         }
         StoreOrFlakeArgs {
@@ -527,8 +472,8 @@ fn prepopulate(
         } => {
             let store_path = StorePath::try_from(store_path_or_active_profile(maybe_store_path))?;
             copy_closure(&store_path, target_host)?;
-            do_register(&store_path, target_host, sudo_options, nix_options)?;
-            do_prepopulate(&store_path, ephemeral, target_host, sudo_options)?;
+            do_register(&store_path, target_host, use_remote_sudo, nix_options)?;
+            do_prepopulate(&store_path, ephemeral, target_host, use_remote_sudo)?;
             Ok(store_path)
         }
         _ => {
@@ -541,14 +486,14 @@ fn do_prepopulate(
     store_path: &StorePath,
     ephemeral: bool,
     target_host: &Option<String>,
-    sudo_options: &SudoOptions,
+    use_remote_sudo: bool,
 ) -> Result<()> {
     if let Some(target_host) = target_host {
         invoke_remote_script(
             &store_path.store_path,
             "prepopulate",
             target_host,
-            sudo_options,
+            use_remote_sudo,
         )?;
         Ok(())
     } else {
@@ -560,21 +505,16 @@ fn do_prepopulate(
 fn deactivate(
     maybe_store_path: Option<StorePath>,
     target_host: &Option<String>,
-    sudo_options: &SudoOptions,
+    use_remote_sudo: bool,
 ) -> Result<()> {
     if let Some(target_host) = target_host {
         let store_path = store_path_or_active_profile(maybe_store_path);
-        invoke_remote_script(&store_path, "deactivate", target_host, sudo_options)?;
+        invoke_remote_script(&store_path, "deactivate", target_host, use_remote_sudo)?;
         Ok(())
     } else {
         check_root()?;
         system_manager::activate::deactivate()
     }
-}
-
-fn read_sudo_password() -> Result<String> {
-    prompt_password("Enter sudo password for target host: ")
-        .map_err(|err| anyhow!("failed to read sudo password: {err}"))
 }
 
 fn copy_closure(store_path: &StorePath, target_host: &Option<String>) -> Result<()> {
@@ -605,44 +545,24 @@ fn invoke_remote_script(
     path: &Path,
     script_name: &str,
     target_host: &str,
-    sudo_options: &SudoOptions,
+    use_remote_sudo: bool,
 ) -> Result<process::ExitStatus> {
     let mut cmd = process::Command::new("ssh");
     cmd.arg(target_host).arg("--");
-    if sudo_options.is_enabled() {
+    if use_remote_sudo {
         cmd.arg("sudo");
-        if sudo_options.password.is_some() {
-            cmd.arg("-S");
-        }
     }
-    cmd.arg(OsString::from(
-        path.join("bin")
-            .join(script_name)
-            .to_string_lossy()
-            .to_string(),
-    ))
-    .stdout(process::Stdio::inherit())
-    .stderr(process::Stdio::inherit())
-    .stdin(if sudo_options.password.is_some() {
-        process::Stdio::piped()
-    } else {
-        process::Stdio::inherit()
-    });
-
-    if let Some(password) = &sudo_options.password {
-        let mut child = cmd.spawn()?;
-        {
-            let mut stdin = child
-                .stdin
-                .take()
-                .ok_or_else(|| anyhow!("failed to pass sudo password to remote command"))?;
-            stdin.write_all(password.as_bytes())?;
-            stdin.write_all(b"\n")?;
-        }
-        Ok(child.wait()?)
-    } else {
-        Ok(cmd.status()?)
-    }
+    let status = cmd
+        .arg(OsString::from(
+            path.join("bin")
+                .join(script_name)
+                .to_string_lossy()
+                .to_string(),
+        ))
+        .stdout(process::Stdio::inherit())
+        .stderr(process::Stdio::inherit())
+        .status()?;
+    Ok(status)
 }
 
 fn check_root() -> Result<()> {
@@ -669,26 +589,4 @@ fn handle_toplevel_error<T>(r: Result<T>) -> ExitCode {
         return ExitCode::FAILURE;
     }
     ExitCode::SUCCESS
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use clap::Parser;
-
-    #[test]
-    fn legacy_use_remote_sudo_flag_is_supported() {
-        let args = Args::try_parse_from([
-            "system-manager",
-            "--use-remote-sudo",
-            "--target-host",
-            "example",
-            "switch",
-            "--flake",
-            ".#test",
-        ])
-        .expect("failed to parse args");
-
-        assert!(args.legacy_use_remote_sudo);
-    }
 }
