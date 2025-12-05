@@ -4,7 +4,31 @@
 
 To get the most out of System Manager, we're offering this guide to help you make the best decisions based on your particular situation.
 
-# Requirements
+## Table of Contents
+
+1. [System Requirements](#system-requirements)
+
+2. [Optional: Installing Locally](#optional-installing-locally)
+
+3. [Running under sudo](#running-under-sudo)
+
+4. [Setting up a folder and file structure](#setting-up-a-folder-and-file-structure)
+
+5. [Letting System Manager manage /etc/nix/nix.conf](#letting-system-manager-manage-etcnixnixconf)
+
+6. [Building system-manager .nix files](#building-system-manager-nix-files)
+
+7. []()
+
+8. []()
+
+9. []()
+
+10. []()
+
+11. []()
+
+# System Requirements
 
 [TODO: I realized I wrote this section twice, here and in the getting-started guide. I'll combine them and provide the same in both, since some people might just read one doc or the other.]
 
@@ -14,7 +38,7 @@ In order to use System Manager, you need:
 * **A Linux machine.** We've tested System Manager with Ubuntu both as standalone and under Windows Subsystem for Linux (WSL).
 * **At least 16GB Memory.** (This is primarily due to Nix; if you're using System Manager to configure, for example, small servers on the Cloud, 8GB won't be enough.)
 
-## Installing Locally
+## Optional: Installing Locally
 
 Nix allows you to run code that's stored remotely in a repo, such as in GitHub. As such, you don't have to install System Manager locally to use it. However, if you want to install locally, you can do so with the following `nix profile` command.
 
@@ -33,6 +57,49 @@ $ which system-manager
 
 [Might be nice to list some ideas about When would you install locally... I'm not sure, can anyone help?]
 
+!!! Note
+    Throughout this Guide, we do not use the local installation of System Manager; instead, we run it directly from our GitHub repository.
+
+!!! Tip
+    System Manager is still in an early state and undergoing active development. Installing locally will not immediately pick up new changes. If you decide to install locally, you'll want to periodically check our GitHub repo for changes, and re-install it if necessary by using `nix profile upgrade`.
+
+## Running under sudo
+
+System Manager needs `sudo` access to run. However, by default, Linux limits the $PATH variable when running under `sudo`. That means when you run:
+
+```
+sudo nix --version
+```
+
+you'll likely get
+
+```
+sudo: nix: command not found
+```
+
+There are many workarounds here, some of which present a bit of danger. For example, you might consider modifying the secure_path setting in the /etc/sudoers file; however, you might reconsider. A lot can go wrong:
+
+* Changes affect all sudo users
+* Scripts that rely on the standard secure_path could break
+* Other admins might not be aware of the change; or if they find it, they might reset it and break the way you're configuring the system
+* Adding paths to secure_path can result in escalation attacks
+
+And so on; there's a full laundry list of reasons not to do it.
+
+Instead, we recommend simply passing the path to the sudo environment; this is temporary for the duration of the command. Here's the general format:
+
+```
+sudo env PATH="$PATH" nix --version
+```
+
+This should print out the nix version, similar to this:
+
+```
+nix (Nix) 2.32.4
+```
+
+!!! Note
+    Adding yourself to Nix's trusted-users configuration won't help here. Trusted users have elevated privileges within the Nix daemon, but System Manager requires root filesystem permissions to modify /etc, manage services, and install system packages. You'll still need to use sudo.
 
 # Setting up a folder and file structure
 
@@ -171,7 +238,7 @@ Instead, you'll put the changes in one of your .nix files you'll be building to 
 
 The example in the next section demonstrates how to do this.
 
-# Building system-manager files
+# Building system-manager .nix files
 
 Ready for an example! For this example, we're going to use the following:
 
@@ -187,8 +254,6 @@ We'll also demonstrate how to move items from your `/etc/nix/nix.conf` file into
 
 [Coming soon: A single flake.nix file]
 
-
-
 # Managing System Services
 
 System Manager lets you manage systemd services declaratively, using the same module language you used for installing packages or creating files under /etc. Instead of manually placing service files in /etc/systemd/system or enabling them with systemctl, you describe the service in a Nix module—its command, environment, dependencies, restart behavior, and any timers or sockets it needs.
@@ -203,6 +268,23 @@ Then you can take this same `.nix` file, place it on another system, and run Sys
 
 [Examples next]
 
+
+## Specifying the wantedBy Setting
+
+The wantedBy attribute tells systemd when to automatically start a service. System Manager includes its own systemd target that you can use in the wantedBy setting to automatically start any services immediately after applying the changes, as well as after reboot. Here's an example wantedBy line in a .nix configuration file:
+
+```
+wantedBy = [ "system-manager.target" ];
+```
+
+(By allowing the service to start after applying changes, you don't need to reboot for the service to start.)
+
+But you're not limited to just this target. For example, if you're creating a system service that runs on a schedule, you might use this:
+
+```
+wantedBy = [ "timers.target" ]
+```
+
 # Managing Software Installations
 
 System Manager allows you to install software in a fully declarative way similar to installing system services. Instead of relying on a traditional package manager and running commands like apt install or dnf install, you list the packages you want in your configuration file. During a switch, System Manager builds a new system profile that includes those packages, activates it, and ensures the software is available on your PATH. This makes installations reproducible and version-controlled. If you reinstall your operating system or set up a new machine, the exact same tools will appear automatically. And because software installation is tied to your configuration (not to manual actions), System Manager prevents drift—no forgotten tools, no mismatched versions across machines, and no surprises when you rollback or update.
@@ -216,6 +298,8 @@ Many applications and services rely on configuration files stored under /etc, an
 [Examples next]
 
 [Managing permissions]
+
+# Working with Timers
 
 # Building flakes
 

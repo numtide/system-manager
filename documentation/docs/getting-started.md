@@ -25,6 +25,7 @@ Simply type
 which nix
 ```
 
+
 If you see it's installed off of your home directory, e.g.:
 
 ```
@@ -174,13 +175,15 @@ First, let's build a configuration file that installs or uninstalls apps.
 !!! Tip
     The idea is that the configuration file describes what the system should look like. Keep that in mind, as opposed to thinking that the configuration file "installs software" or "uninstalls software."
 
-To get started, we'll create another .nix file that will install a single app. Then we'll run System Manager, and verify it's installed. Then we'll add another line to the configuration file with another app; run System Manager again, and again verify its installation.
+To get started, we'll create another .nix file that will install a single app. Then we'll run System Manager, and verify it's installed.
+
+Then to demonstrate what System Manager can do, we'll add another line to the configuration file with another app; run System Manager again, and again verify its installation.
 
 Then after that we'll remove one of the apps from the configuration file, run System Manager, and verify that the app is no longer installed.
 
 This will fully demonstrate the declarative nature of these configuration files.
 
-First, in the ~/.config/system-manager folder, create a file capps apps.nix and place the following in it:
+First, in the ~/.config/system-manager folder, create a file apps.nix and place the following in it:
 
 ```nix
 { pkgs, ... }:
@@ -193,7 +196,7 @@ First, in the ~/.config/system-manager folder, create a file capps apps.nix and 
 }
 ```
 
-This configuration states that the system being configured should have the `tldr` app present, and if isn't, System Manager will install it. (Notice how we phrased that! We didn't just say this file installs the app.)
+This configuration states that the system being configured should have the `tldr` app present, and if isn't, System Manager will install it. (Notice how we phrased that! We didn't just say this file installs the app. With .nix files, it's important to get into the mindset that they state what the system should look like.)
 
 Now add the file to the modules list in flake.nix by replacing this line:
 
@@ -210,7 +213,7 @@ with
         ];
 ```
 
-Note: By default, system.nix includes starter code and some commented out examples, and nothing else. So you can leave it in the list.
+Note: By default, system.nix includes starter code and some commented out examples, and nothing else. So you can leave it in the list; in its original state, it doesn't do anything.
 
 Next, we'll run System Manager.
 
@@ -282,43 +285,11 @@ The following example demonstrates how to specify a system service and activate 
 Update your flake.nix file to include a new file in the modules list, which we'll call `say_hello.nix`:
 
 ```nix
-{
-  description = "Standalone System Manager configuration";
-
-  inputs = {
-    # Specify the source of System Manager and Nixpkgs.
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    system-manager = {
-      url = "github:numtide/system-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-  };
-
-  outputs =
-    {
-      self,
-      nixpkgs,
-      system-manager,
-      ...
-    }:
-    {
-      systemConfigs.default = system-manager.lib.makeSystemConfig {
-        # Specify your system configuration modules here, for example,
-        # the path to your system.nix.
-	
         modules = [
-            {
-                nix.settings.experimental-features = "nix-command flakes";
-            }
-            ./cli_tools.nix 
+            ./system.nix
+            ./apps.nix
             ./say_hello.nix
         ];
-
-        # Optionally specify extraSpecialArgs and overlays
-      };
-    };
-}
-
 ```
 
 Then create the file called `say_hello.nix` and add the following to it:
@@ -347,15 +318,13 @@ Then create the file called `say_hello.nix` and add the following to it:
 
 Note:
 
-This line is required:
+This line is required in the above example:
 
 ```
 wantedBy = [ "system-manager.target" ];
 ```
 
-You must have the wantedBy list to include `system-manager.target` if you want your service to run automatically.
-
-[Is the above worded correctly?]
+(There are other options for wantedBy; we discuss it in full in our Reference Guide under [Specifying WantedBy Setting](./reference-guide.md#specifying-the-wantedby-setting))
 
 Activate it using the same nix command as earlier:
 
@@ -363,7 +332,7 @@ Activate it using the same nix command as earlier:
 sudo env PATH="$PATH" nix run 'github:numtide/system-manager' -- switch --flake .
 ```
 
-This will create a system service called `say-hello` (which comes from the line `config.systemd.services.say-hello`) in a unit file at `/etc/systemd/system/say-hello.service` with the following inside it:
+This will create a system service called `say-hello` (the name comes from the line `config.systemd.services.say-hello`) in a unit file at `/etc/systemd/system/say-hello.service` with the following inside it:
 
 ```
 [Unit]
@@ -400,7 +369,7 @@ Nov 18 12:12:51 my-ubuntu systemd[1]: Finished say-hello.service - say-hello.
 ```
 
 > [!Note]
-> If you remove the `./cli_tools.nix` line from the `flake.nix`, System Manager will see that the configuration changed and that `btop` and `bat` are no longer in the configuration. As such, it will uninstall them. This is normal and expected behavior.
+> If you remove the `./apps.nix` line from the `flake.nix`, System Manager will see that the configuration changed and that the apps listed in it are no longer in the configuration. As such, it will uninstall them. This is normal and expected behavior.
 
 ## Example: Saving a file to the /etc folder
 
@@ -409,43 +378,12 @@ Oftentimes, when you're creating a system service, you need to create a configur
 Add another line to your `flake.nix` file, this time for `./sample_etc.nix`:
 
 ```nix
-{
-  description = "Standalone System Manager configuration";
-
-  inputs = {
-    # Specify the source of System Manager and Nixpkgs.
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    system-manager = {
-      url = "github:numtide/system-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-  };
-
-  outputs =
-    {
-      self,
-      nixpkgs,
-      system-manager,
-      ...
-    }:
-    {
-      systemConfigs.default = system-manager.lib.makeSystemConfig {
-        # Specify your system configuration modules here, for example,
-        # the path to your system.nix.
-	
         modules = [
-            {
-                nix.settings.experimental-features = "nix-command flakes";
-            }
-            ./cli_tools.nix 
+            ./system.nix
+            ./apps.nix
             ./say_hello.nix
             ./sample_etc.nix
         ];
-
-        # Optionally specify extraSpecialArgs and overlays
-      };
-    };
-}
 ```
 
 Then, create the `sample_etc.nix` file with the following into it:
@@ -493,9 +431,9 @@ which prints out:
 This is some sample configuration text
 ```
 
-# Storing your files on a GitHub repo
+# Alternate Method: Storing your files on a GitHub repo
 
-Another option is to store your files in a remote repo (typically GitHub) and access them remotely without even saving them locally.
+Another option is to store your files in a remote repo (typically GitHub) and let System Manager access them remotely without even needing them locally.
 
 To do this, you need to make sure you have an updated flake.lock file. Then you can simply point System Manager to the remote repo:
 
@@ -504,6 +442,7 @@ To do this, you need to make sure you have an updated flake.lock file. Then you 
 ```
 sudo env PATH="$PATH" nix run 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes' -- switch --flake git+https://github.com/frecklefacelabs/system-manager-test#default
 ```
+For additional details, see the Reference Guide section [Working with Remote Flakes](./reference-guide.md#working-with-remote-flakes).
 
 # Concepts for people new to Nix
 
