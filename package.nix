@@ -60,8 +60,15 @@ runCommand "system-manager"
     };
   }
   ''
+    # Wrap the CLI binary with nix in PATH
     makeWrapper \
       ${system-manager-unwrapped}/bin/system-manager \
       $out/bin/system-manager \
+      --prefix PATH : ${lib.makeBinPath [ nix ]}
+
+    # Wrap the engine binary with nix in PATH (needed for register command)
+    makeWrapper \
+      ${system-manager-unwrapped}/bin/system-manager-engine \
+      $out/bin/system-manager-engine \
       --prefix PATH : ${lib.makeBinPath [ nix ]}
   ''

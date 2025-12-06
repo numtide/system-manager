@@ -206,26 +206,30 @@
 
     build = {
       scripts = {
+        # These scripts call system-manager-engine directly.
+        # The engine binary handles privileged operations (activate, register, etc.)
+        # and is invoked by the system-manager CLI wrapper (with optional sudo).
+
         registerProfileScript = pkgs.writeShellScript "register-profile" ''
-          ${system-manager}/bin/system-manager register \
+          ${system-manager}/bin/system-manager-engine register \
             --store-path "$(dirname $(realpath $(dirname ''${0})))" \
             "$@"
         '';
 
         activationScript = pkgs.writeShellScript "activate" ''
-          ${system-manager}/bin/system-manager activate \
+          ${system-manager}/bin/system-manager-engine activate \
             --store-path "$(dirname $(realpath $(dirname ''${0})))" \
             "$@"
         '';
 
         prepopulateScript = pkgs.writeShellScript "prepopulate" ''
-          ${system-manager}/bin/system-manager pre-populate \
+          ${system-manager}/bin/system-manager-engine prepopulate \
             --store-path "$(dirname $(realpath $(dirname ''${0})))" \
             "$@"
         '';
 
         deactivationScript = pkgs.writeShellScript "deactivate" ''
-          ${system-manager}/bin/system-manager deactivate "$@"
+          ${system-manager}/bin/system-manager-engine deactivate "$@"
         '';
 
         preActivationAssertionScript =
