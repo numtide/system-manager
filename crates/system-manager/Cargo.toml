@@ -1,0 +1,19 @@
+[package]
+name = "system-manager"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "CLI for managing system configuration on non-NixOS Linux distributions"
+
+[[bin]]
+name = "system-manager"
+path = "src/main.rs"
+
+[dependencies]
+system-manager-engine.workspace = true
+anyhow.workspace = true
+clap.workspace = true
+env_logger.workspace = true
+log.workspace = true
+rpassword.workspace = true

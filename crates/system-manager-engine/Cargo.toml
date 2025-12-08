@@ -1,0 +1,29 @@
+[package]
+name = "system-manager-engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Engine for managing system configuration (etc files, systemd services)"
+
+[lib]
+name = "system_manager_engine"
+path = "src/lib.rs"
+
+[[bin]]
+name = "system-manager-engine"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+dbus.workspace = true
+env_logger.workspace = true
+im.workspace = true
+itertools.workspace = true
+log.workspace = true
+nix.workspace = true
+regex.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
