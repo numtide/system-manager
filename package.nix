@@ -12,17 +12,16 @@
   makeBinaryWrapper,
 }:
 let
-  cargoManifest = (lib.importTOML ./Cargo.toml).package;
+  cargoManifest = lib.importTOML ./Cargo.toml;
   system-manager-unwrapped = rustPlatform.buildRustPackage {
     pname = "system-manager";
-    version = cargoManifest.version;
+    version = cargoManifest.workspace.package.version;
     src = lib.fileset.toSource {
       root = ./.;
       fileset = lib.fileset.unions [
         ./Cargo.toml
         ./Cargo.lock
-        ./src
-        ./test/rust
+        ./crates
         ./templates
       ];
     };

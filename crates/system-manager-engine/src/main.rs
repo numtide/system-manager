@@ -14,7 +14,7 @@ use anyhow::Result;
 use clap::Parser;
 use std::process::ExitCode;
 
-use system_manager::{NixOptions, StorePath, PROFILE_DIR};
+use system_manager_engine::{NixOptions, StorePath, PROFILE_DIR};
 
 #[derive(clap::Parser, Debug)]
 #[command(
@@ -101,7 +101,7 @@ fn go(args: Args) -> Result<()> {
         Action::Activate {
             store_path_arg: StorePathArg { store_path },
             activation_args: ActivationArgs { ephemeral },
-        } => system_manager::activate::activate(&store_path, ephemeral),
+        } => system_manager_engine::activate::activate(&store_path, ephemeral),
 
         Action::Deactivate {
             store_path_arg: OptionalStorePathArg { store_path },
@@ -111,17 +111,17 @@ fn go(args: Args) -> Result<()> {
                 let path = std::path::Path::new(PROFILE_DIR).join("system-manager");
                 log::info!("No store path provided, using {}", path.display());
             }
-            system_manager::activate::deactivate()
+            system_manager_engine::activate::deactivate()
         }
 
         Action::Prepopulate {
             store_path_arg: StorePathArg { store_path },
             activation_args: ActivationArgs { ephemeral },
-        } => system_manager::activate::prepopulate(&store_path, ephemeral),
+        } => system_manager_engine::activate::prepopulate(&store_path, ephemeral),
 
         Action::Register {
             store_path_arg: StorePathArg { store_path },
-        } => system_manager::register::register(&store_path, &nix_options),
+        } => system_manager_engine::register::register(&store_path, &nix_options),
     }
 }
 

@@ -16,20 +16,20 @@ use std::mem;
 use std::path::{Path, PathBuf};
 use std::process::{self, ExitCode};
 
-use system_manager::{NixOptions, StorePath, PROFILE_DIR};
+use system_manager_engine::{NixOptions, StorePath, PROFILE_DIR};
 
 /// The bytes for the NixOS flake template is included in the binary to avoid unnecessary
 /// network calls when initializing a system-manager configuration from the command line.
-pub const NIXOS_FLAKE_TEMPLATE: &[u8; 683] = include_bytes!("../templates/nixos/flake.nix");
+pub const NIXOS_FLAKE_TEMPLATE: &[u8; 683] = include_bytes!("../../../templates/nixos/flake.nix");
 
 /// The bytes for the standalone flake template is included in the binary to avoid unnecessary
 /// network calls when initializing a system-manager configuration from the command line.
 pub const STANDALONE_FLAKE_TEMPLATE: &[u8; 739] =
-    include_bytes!("../templates/standalone/flake.nix");
+    include_bytes!("../../../templates/standalone/flake.nix");
 
 /// The bytes for the standalone module template is included in the binary to avoid unnecessary
 /// network calls when initializing a system-manager configuration from the command line.
-pub const SYSTEM_MODULE_TEMPLATE: &[u8; 1153] = include_bytes!("../templates/system.nix");
+pub const SYSTEM_MODULE_TEMPLATE: &[u8; 1153] = include_bytes!("../../../templates/system.nix");
 
 /// Name of the engine binary in the store path
 const ENGINE_BIN: &str = "system-manager-engine";
@@ -384,7 +384,7 @@ fn build(
 }
 
 fn do_build(flake_uri: &str, nix_options: &NixOptions) -> Result<StorePath> {
-    system_manager::register::build(flake_uri, nix_options)
+    system_manager_engine::register::build(flake_uri, nix_options)
 }
 
 fn register(

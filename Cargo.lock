@@ -472,7 +472,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "system_manager"
+name = "system-manager"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "env_logger",
+ "log",
+ "rpassword",
+ "system-manager-engine",
+]
+
+[[package]]
+name = "system-manager-engine"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -484,7 +496,6 @@ dependencies = [
  "log",
  "nix",
  "regex",
- "rpassword",
  "serde",
  "serde_json",
  "thiserror",

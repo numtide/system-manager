@@ -1,28 +1,17 @@
-[package]
-name = "system_manager"
+[workspace]
+resolver = "2"
+members = [
+    "crates/system-manager-engine",
+    "crates/system-manager",
+]
+
+[workspace.package]
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-authors = [
-  "Ramses <ramses@well-founded.dev>"
-]
+authors = ["Ramses <ramses@well-founded.dev>"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[[bin]]
-name = "system-manager"
-path = "src/main.rs"
-
-[[bin]]
-name = "system-manager-engine"
-path = "src/engine.rs"
-
-[profile.release]
-lto = true
-codegen-units = 1
-panic = "abort"
-
-[dependencies]
+[workspace.dependencies]
 anyhow = "1.0.68"
 clap = { version = "4.1.4", features = ["derive"] }
 dbus = "0.9.7"
@@ -36,3 +25,11 @@ rpassword = "7.3.1"
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = "1.0.91"
 thiserror = "2.0.0"
+
+# Internal crates
+system-manager-engine = { path = "crates/system-manager-engine" }
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
