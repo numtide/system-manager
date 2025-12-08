@@ -18,19 +18,40 @@ To get the most out of System Manager, we're offering this guide to help you mak
 
 6. [Building system-manager .nix files](#building-system-manager-nix-files)
 
-7. []()
+7. [Managing System Services](#managing-system-services)
 
-8. []()
+8. [Managing Software Installations](#managing-software-installations)
 
-9. []()
+9. [Working With /etc Files Declaratively](#working-with-etc-files-declaratively)
 
-10. []()
+10. [Working with Timers](#working-with-timers)
 
-11. []()
+11. [Dealing with conflicting files](#dealing-with-conflicting-files)
+
+12. [Working with remote flakes](#working-with-remote-flakes)
+
+13. [Managing a Remote System with System Manager](#managing-a-remote-system-with-system-manager)
+
+14. [Command-line Options](#command-line-options)
+
+15. [Full Examples](#full-examples)
+
+    a. [Installing PostgreSQL](#full-example-installing-postgresql)
+
+    b. [Installing Nginx](#full-example-installing-nginx)
+
+    c. [Managing a System that runs Custom Software](#full-example-managing-a-system-that-runs-custom-software)
+
+    d. [Managing a System that runs Custom Software along with an SSL Certificate](#full-example-managing-a-system-that-runs-custom-software-along-with-an-ssl-certificate)
+
+
+16. FAQ (Maybe put in its own document)
 
 # System Requirements
 
 [TODO: I realized I wrote this section twice, here and in the getting-started guide. I'll combine them and provide the same in both, since some people might just read one doc or the other.]
+
+[TODO: I tried 8GB and that wasn't enough to run System Manager. I tried 16GB, and that worked. I'll do some more testing to see if I can find the lowest number.]
 
 In order to use System Manager, you need:
 
@@ -252,6 +273,19 @@ We'll demonstrate how to install an app on your machine, then we'll add another 
 
 We'll also demonstrate how to move items from your `/etc/nix/nix.conf` file into your System Manager configuration file.
 
+## .nix configuration setup
+
+In your configuration .nix file, you'll typically set up everything under the config object. Inside this object you'll want some or all of the following:
+
+* nixpkgs.hostPlatform: This specifies the platform such as nixpkgs.hostPlatform = "x86_64-linux";
+* services
+* environment, consisting of
+  * systemPackages
+  * etc
+* systemd.services
+* systemd.tmpfiles
+
+
 [Coming soon: A single flake.nix file]
 
 # Managing System Services
@@ -265,8 +299,96 @@ Using this approach, instead of manually saving a file in `/etc/systemd/system` 
 Then you can take this same `.nix` file, place it on another system, and run System Manager again, and you'll have the service installed in a way that's identical to the first system.
 
 
+The following example demonstrates how to specify a system service and activate it.
 
-[Examples next]
+Update your flake.nix file to include a new file in the modules list, which we'll call `say_hello.nix`:
+
+```nix
+        modules = [
+            ./system.nix
+            ./apps.nix
+            ./say_hello.nix
+        ];
+```
+
+Then create the file called `say_hello.nix` and add the following to it:
+
+```nix
+{ lib, pkgs, ... }:
+{
+  config = {
+    nixpkgs.hostPlatform = "x86_64-linux";
+    
+    systemd.services.say-hello = {
+      description = "say-hello";
+      enable = true;
+      wantedBy = [ "system-manager.target" ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+      };
+      script = ''
+        ${lib.getBin pkgs.hello}/bin/hello
+      '';
+    };
+  };
+}
+```
+
+Note:
+
+This line is required in the above example:
+
+```
+wantedBy = [ "system-manager.target" ];
+```
+
+(There are other options for wantedBy; we discuss it in full in our Reference Guide under [Specifying WantedBy Setting](./reference-guide.md#specifying-the-wantedby-setting))
+
+Activate it using the same nix command as earlier:
+
+```
+sudo env PATH="$PATH" nix run 'github:numtide/system-manager' -- switch --flake .
+```
+
+This will create a system service called `say-hello` (the name comes from the line `config.systemd.services.say-hello`) in a unit file at `/etc/systemd/system/say-hello.service` with the following inside it:
+
+```
+[Unit]
+Description=say-hello
+
+[Service]
+Environment="PATH=/nix/store/xs8scz9w9jp4hpqycx3n3bah5y07ymgj-coreutils-9.8/bin:/nix/store/qqvfnxa9jg71wp4hfg1l63r4m78iwvl9-findutils-4.10.0/bin:/nix/store/22r4s6lqhl43jkazn51f3c18qwk894g4-gnugrep-3.12/bin:
+/nix/store/zppkx0lkizglyqa9h26wf495qkllrjgy-gnused-4.9/bin:/nix/store/g48529av5z0vcsyl4d2wbh9kl58c7p73-systemd-minimal-258/bin:/nix/store/xs8scz9w9jp4hpqycx3n3bah5y07ymgj-coreutils-9.8/sbin:/nix/store/qqvfn
+xa9jg71wp4hfg1l63r4m78iwvl9-findutils-4.10.0/sbin:/nix/store/22r4s6lqhl43jkazn51f3c18qwk894g4-gnugrep-3.12/sbin:/nix/store/zppkx0lkizglyqa9h26wf495qkllrjgy-gnused-4.9/sbin:/nix/store/g48529av5z0vcsyl4d2wbh9
+kl58c7p73-systemd-minimal-258/sbin"
+ExecStart=/nix/store/d8rjglbhinylg8v6s780byaa60k6jpz1-unit-script-say-hello-start/bin/say-hello-start 
+RemainAfterExit=true
+Type=oneshot
+
+[Install]
+WantedBy=system-manager.target
+```
+
+> [!Tip]
+> Compare the lines in the `say-hello.service` file with the `say_hello.nix` file to see where each comes from.
+
+You can verify that it ran by running journalctl:
+
+```
+journalctl -n 20
+```
+
+and you can find the following output in it:
+
+```
+Nov 18 12:12:51 my-ubuntu systemd[1]: Starting say-hello.service - say-hello...
+Nov 18 12:12:51 my-ubuntu say-hello-start[3488278]: Hello, world!
+Nov 18 12:12:51 my-ubuntu systemd[1]: Finished say-hello.service - say-hello.
+```
+
+> [!Note]
+> If you remove the `./apps.nix` line from the `flake.nix`, System Manager will see that the configuration changed and that the apps listed in it are no longer in the configuration. As such, it will uninstall them. This is normal and expected behavior.
 
 
 ## Specifying the wantedBy Setting
@@ -289,7 +411,63 @@ wantedBy = [ "timers.target" ]
 
 System Manager allows you to install software in a fully declarative way similar to installing system services. Instead of relying on a traditional package manager and running commands like apt install or dnf install, you list the packages you want in your configuration file. During a switch, System Manager builds a new system profile that includes those packages, activates it, and ensures the software is available on your PATH. This makes installations reproducible and version-controlled. If you reinstall your operating system or set up a new machine, the exact same tools will appear automatically. And because software installation is tied to your configuration (not to manual actions), System Manager prevents drift—no forgotten tools, no mismatched versions across machines, and no surprises when you rollback or update.
 
-[Examples next]
+Oftentimes, when you're creating a system service, you need to create a configuration file in the `/etc` directory that accompanies the service. System manager allows you to do that as well.
+
+Add another line to your `flake.nix` file, this time for `./sample_etc.nix`:
+
+```nix
+        modules = [
+            ./system.nix
+            ./apps.nix
+            ./say_hello.nix
+            ./sample_etc.nix
+        ];
+```
+
+Then, create the `sample_etc.nix` file with the following into it:
+
+```nix
+{ lib, pkgs, ... }:
+{
+  config = {
+    nixpkgs.hostPlatform = "x86_64-linux";
+    
+    environment.etc = {
+      sample_configuration = {
+        text = ''
+          This is some sample configuration text
+        '';
+      };
+    };
+  };
+}
+```
+
+Run it as usual, and you should see the file now exists:
+
+```
+sudo env PATH="$PATH" nix run 'github:numtide/system-manager' -- switch --flake .
+
+ls /etc -ltr
+```
+
+which displays the following:
+
+```
+lrwxrwxrwx  1 root  root  45 Nov 13 15:19 sample_configuration -> ./.system-manager-static/sample_configuration
+```
+
+And you can view the file:
+
+```
+cat /etc/sample_configuration
+```
+
+which prints out:
+
+```
+This is some sample configuration text
+```
 
 # Working With /etc Files Declaratively
 
@@ -299,19 +477,13 @@ Many applications and services rely on configuration files stored under /etc, an
 
 [Managing permissions]
 
+[Overriding package versions]
+
+[System manage and symlinks]
+
 # Working with Timers
 
-# Building flakes
-
-[Coming soon]
-
-## Regarding the config top-level object
-
-[Coming soon; noting the differences in how to approach config and environment.systemPackages in a single file... etc...]
-
 # Dealing with conflicting files
-
-
 
 # Working with remote flakes
 
@@ -345,10 +517,9 @@ nix flake update
 
 And make sure you've pushed it up to the repo. (If you don't do this step, nix will try to build a flake.lock, but will be unable to write it to the same location as the other files, and will error out.)
 
-
 [todo: Let's create a repo under numtide for this instead of using mine --jeffrey]
 
-```
+```b
 sudo env PATH="$PATH" nix run 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes' -- switch --flake git+https://github.com/frecklefacelabs/system-manager-test#default
 ```
 
@@ -365,10 +536,19 @@ Generally, you only need to update your flake.nix file when you want newer versi
 
 Yes, but only if the flake.nix file is local to your machine. The problem is System Manager will try to write a flake.lock file in the same location as the flake.nix file, which isn't possible (at this time) with a GitHub repo.
 
+
+
+### Ensuring success
+
+In order to ensure System Manager retrieves the correct .nix files from your repo, we recommend including either a branch or a tag along with your repo.
+
+
+
 ## Running System Manager with a remote flake
 
 !!! Tip
     Before you run this command, we recommend that you nevertheless create a folder to run it from, such as ~/.config/system-manager. 
+
 
 # Managing a Remote System with System Manager
 
@@ -388,6 +568,8 @@ So as an alternative, we've added the --sudo and --sudo-ask-password flags to al
 
 ## switch
 
+
+
 ## register
 
 ## build
@@ -402,16 +584,114 @@ So as an alternative, we've added the --sudo and --sudo-ask-password flags to al
 
 [What about the result/bin folder? I see activate  deactivate  preActivationAssertions  prepopulate  register-profile]
 
-# Full Example: Installing MySQL
+# Full Examples
 
-[Let's put this in a github repo and in its own .nix file making the installation of MySQL a snap for everyone reading this from now on... NOTE: After some research, we'll have to wait on this until the user management part is finished.]
+## Full Example: Installing PostgreSQL
 
-# Full Example: Installing Nginx
+[Let's put this in a github repo and in its own .nix file making the installation of postgres a snap for everyone reading this from now on...]
+
+Note: System Manager is still in its early state, and doesn't yet hae user management. As such, before you run this, you'll need to manually create the postgres user. Additionally, go ahead and create two directories and grant the postgres user access to them:
+
+```bash
+# Create postgres user and group
+sudo groupadd -r postgres
+sudo useradd -r -g postgres -d /var/lib/postgresql -s /bin/bash postgres
+
+# Create directories with proper permissions
+sudo mkdir -p /var/lib/postgresql
+sudo chown postgres:postgres /var/lib/postgresql
+
+sudo mkdir -p /run/postgresql
+sudo chown postgres:postgres /run/postgresql
+```
+
+Here's a flake that installs PostgreSQL.
+
+[More docs shortly; this is fully tested.]
+
+```nix
+{ config, lib, pkgs, ... }:
+{
+  config = {
+    nixpkgs.hostPlatform = "x86_64-linux";
+
+    environment.systemPackages = with pkgs; [
+      postgresql_16
+    ];
+
+    # PostgreSQL service
+    systemd.services.postgresql = {
+      description = "PostgreSQL database server";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "network.target" ];
+
+      serviceConfig = {
+        Type = "notify";
+        User = "postgres";
+        Group = "postgres";
+        ExecStart = "${pkgs.postgresql_16}/bin/postgres -D /var/lib/postgresql/16";
+        ExecReload = "${pkgs.coreutils}/bin/kill -HUP $MAINPID";
+        KillMode = "mixed";
+        KillSignal = "SIGINT";
+        TimeoutSec = 120;
+
+        # Create directories and initialize database
+        ExecStartPre = [
+          "${pkgs.coreutils}/bin/mkdir -p /var/lib/postgresql/16"
+          "${pkgs.bash}/bin/bash -c 'if [ ! -d /var/lib/postgresql/16/base ]; then ${pkgs.postgresql_16}/bin/initdb -D /var/lib/postgresql/16; fi'"
+        ];
+      };
+
+      environment = {
+        PGDATA = "/var/lib/postgresql/16";
+      };
+    };
+
+    # Initialize database and user
+    systemd.services.postgresql-init = {
+      description = "Initialize PostgreSQL database for myapp";
+      after = [ "postgresql.service" ];
+      wantedBy = [ "multi-user.target" ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        User = "postgres";
+      };
+      script = ''
+        # Wait for PostgreSQL to be ready
+        until ${pkgs.postgresql_16}/bin/pg_isready; do
+          echo "Waiting for PostgreSQL..."
+          sleep 2
+        done
+
+        # Optional: Create database if it doesn't exist
+        ${pkgs.postgresql_16}/bin/psql -lqt | ${pkgs.coreutils}/bin/cut -d \| -f 1 | ${pkgs.gnugrep}/bin/grep -qw myapp || \
+          ${pkgs.postgresql_16}/bin/createdb myapp
+
+        # Optional: Create user if it doesn't exist
+        ${pkgs.postgresql_16}/bin/psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='myapp'" | ${pkgs.gnugrep}/bin/grep -q 1 || \
+          ${pkgs.postgresql_16}/bin/createuser myapp
+
+        # Grant database privileges
+        ${pkgs.postgresql_16}/bin/psql -c "GRANT ALL PRIVILEGES ON DATABASE myapp TO myapp"
+
+        # Grant schema privileges (allows creating tables!)
+        ${pkgs.postgresql_16}/bin/psql -d myapp -c "GRANT ALL ON SCHEMA public TO myapp"
+        ${pkgs.postgresql_16}/bin/psql -d myapp -c "GRANT ALL ON ALL TABLES IN SCHEMA public TO myapp"
+        ${pkgs.postgresql_16}/bin/psql -d myapp -c "GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO myapp"
+
+        echo "PostgreSQL is ready and configured!"
+      '';
+    };
+  };
+}
+```
+
+## Full Example: Installing Nginx
 
 [docs coming soon, the following nix file is tested and works on a clean system... using the init's system.nix, but can also show as standalone]
 
-```
-
+```nix
 { lib, pkgs, ... }:
 {
   config = {
@@ -481,23 +761,6 @@ http {
 
 
         };
-        # with_ownership = {
-        #   text = ''
-        #     This is just a test!
-        #   '';
-        #   mode = "0755";
-        #   uid = 5;
-        #   gid = 6;
-        # };
-        #
-        # with_ownership2 = {
-        #   text = ''
-        #     This is just a test!
-        #   '';
-        #   mode = "0755";
-        #   user = "nobody";
-        #   group = "users";
-        # };
       };
     };
 
@@ -531,33 +794,267 @@ http {
         };
     };
 
-    # Configure systemd tmpfile settings
-    systemd.tmpfiles = {
-      # rules = [
-      #   "D /var/tmp/system-manager 0755 root root -"
-      # ];
-      #
-      # settings.sample = {
-      #   "/var/tmp/sample".d = {
-      #     mode = "0755";
-      #   };
-      # };
+
+  };
+}
+
+```
+
+## Full Example: Managing a System that runs Custom Software
+
+Here's an example where you might have custom web software living in a repository and you want to run the software on a system behind nginx.
+
+## Live example
+
+We have a complete example live that you can try out. All you need is a fresh server (such as on Amazon EC2) with at least 16GB memory. (We recommend the latest Ubuntu, with a t3Large instance, with 16GB RAM. Then allow SSH, HTTP traffic, and HTTPS traffic if you plan to build on these examples.) We have two repos:
+
+1. The sample application
+
+2. The configuration files
+
+The configuration files install both nginx and the sample app. 
+
+After you spin up an instance, install nix for all users:
+
+```
+sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --daemon
+```
+
+Next, log out and log back in so that nix is available in the system path.
+
+And then you can run System Manager and deploy the app with one command:
+
+```
+sudo env PATH="$PATH" nix run 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes' -- switch --flake github:frecklefacelabs/system-manager-custom-app-deploy/v1.0.0#default
+```
+
+(Remember, the first time System Manager runs, it takes up to five minutes or so to compile everything.)
+
+!!! Tip
+    We're specifying a tag in our URL. This is good practice to make sure you get the right version of your flakes. Also, modern Nix supports the use of a protocol called "github", and when you use that protocol, you can specify the tag behind a slash symbol, as we did here for tag v1.0.0.
+
+!!! Tip
+    If you make changes to your flakes, be sure to create a new tag. Without it, Nix sometimes refuses to load the "latest version" of the repo, and will insist on using whatever version of your repo it used first.
+
+Then, the app should be installed, with nginx sitting in front of it, and you should be able to run:
+
+```
+curl localhost
+```
+And it will print out a friendly JSON message such as:
+
+```
+{"message":"Welcome to the Bun API!","status":"running","endpoints":["/","/health","/random","/cowsay"]}
+```
+
+We even included cowsay in this sample, which you can try at `curl localhost/cowsay`. Now even though cowsay is meant for fun, the primary reason is this is a TypeScript app that uses `bun`, and we wanted to demonstrate how easy it is to include `npm` libraries. `bun` includes a feature whereby it will install dependency packages from `package.json` automatically the first time it runs, greatly simplifying the setup.
+
+One thing about the .nix files in this repo is that they in turn pull code (our TypeScript app) from another remote repo. Using this approach, you can separate concerns, placing the deployment .nix files in one repo, and the source app in a separate repo.
+
+Here are further details on the individual nix files.
+
+First we have a flake much like the usual starting point:
+
+```nix
+# flake.nix
+{
+  description = "Standalone System Manager configuration";
+
+  inputs = {
+    # Specify the source of System Manager and Nixpkgs.
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    system-manager = {
+      url = "github:numtide/system-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+  };
+
+  outputs =
+    {
+      self,
+      nixpkgs,
+      system-manager,
+      ...
+    }:
+    let
+      system = "x86_64-linux";
+    in
+    {
+      systemConfigs.default = system-manager.lib.makeSystemConfig {
+
+        # Specify your system configuration modules here, for example,
+        # the path to your system.nix.
+        modules = [
+
+          {
+            nix.settings.experimental-features = "nix-command flakes";
+            services.myapp.enable = true;
+          }
+            ./system.nix
+            ./nginx.nix
+            ./bun-app.nix
+        ];
+
+        # Optionally specify extraSpecialArgs and overlays
+      };
+    };
+}
+```
+
+Next is the .nix configuration that installs and configures nginx. This is a simple ngnix configuration, as it simply routes incoming HTTP traffic directly to the app:
+
+```
+# nginx.nix
+{ config, lib, pkgs, ... }:
+{
+  config = {
+    services.nginx = {
+      enable = true;
+
+      recommendedGzipSettings = true;
+      recommendedOptimisation = true;
+      recommendedProxySettings = true;
+      recommendedTlsSettings = true;
+
+      virtualHosts."_" = {
+        default = true;
+
+        locations."/" = {
+          proxyPass = "http://127.0.0.1:3000";
+          extraConfig = ''
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+          '';
+        };
+
+        locations."/health" = {
+          proxyPass = "http://127.0.0.1:3000/health";
+          extraConfig = ''
+            access_log off;
+          '';
+        };
+      };
+    };
+  };
+}
+```
+
+Next, here's the .nix configuration that creates a service that runs the app.
+
+```nix
+# bun-app.nix
+{ config, lib, pkgs, ... }:
+let
+  # Fetch the app from GitHub
+  appSource = pkgs.fetchFromGitHub {
+    owner = "frecklefacelabs";
+    repo = "typescript_app_for_system_manager";
+    rev = "v1.0.0";  # Use a tag
+    sha256 = "sha256-TWt/Y2B7cGxjB9pxMOApt83P29uiCBv5nVT3KyycYEA=";
+  };
+in
+{
+  config = {
+    nixpkgs.hostPlatform = "x86_64-linux";
+
+    # Install Bun
+    environment.systemPackages = with pkgs; [
+      bun
+    ];
+
+    # Simple systemd service - runs Bun directly from Nix store!
+    systemd.services.bunapp = {
+      description = "Bun TypeScript Application";
+      after = [ "network.target" ];
+      wantedBy = [ "multi-user.target" ];
+
+      serviceConfig = {
+        Type = "simple";
+        User = "ubuntu";
+        Group = "ubuntu";
+        WorkingDirectory = "${appSource}";
+        # Bun will auto-install dependencies from package.json on first run
+        ExecStart = "${pkgs.bun}/bin/bun run index.ts";
+        Restart = "always";
+        RestartSec = "10s";
+      };
+
+      environment = {
+        NODE_ENV = "production";
+      };
     };
   };
 }
 
 ```
 
+And finally, here's the `index.ts` file; it's just a simple REST app that also makes use of one third-party `npm` library.
 
-# Full Example: Managing a System that runs Custom Software
+```
+import cowsay from "cowsay";
 
-(For example, a system that's dedicated to running some server app you built, such as on AWS -- configuring without having to use software such as ansible, etc. so you can easily deploy mutliple instances)
+const messages = [
+  "Hello from System Manager!",
+  "Bun is blazingly fast! ?",
+  "Nix + Bun = Easy deployments",
+  "Making it happen!",
+  "Nix rocks!"
+];
 
+const server = Bun.serve({
+  port: 3000,
+  fetch(req) {
+    const url = new URL(req.url);
+    
+    if (url.pathname === "/") {
+      return new Response(JSON.stringify({
+        message: "Welcome to the Bun API!",
+        status: "running",
+        endpoints: ["/", "/health", "/random", "/cowsay"]
+      }), {
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    
+    if (url.pathname === "/health") {
+      return new Response(JSON.stringify({
+        status: "healthy"
+      }), {
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    
+    if (url.pathname === "/random") {
+      const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+      return new Response(JSON.stringify({
+        message: randomMessage,
+        timestamp: new Date().toISOString()
+      }), {
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    
+    if (url.pathname === "/cowsay") {
+      const cow = cowsay.say({ 
+        text: "Deployed with System Manager and Nix!" 
+      });
+      return new Response(cow, {
+        headers: { "Content-Type": "text/plain" }
+      });
+    }
+    
+    return new Response("Not Found", { status: 404 });
+  },
+});
 
+console.log(`? Server running on http://localhost:${server.port}`);
+```
 
-# Full Example: Devops Demonstration
+## Full Example: Managing a System that runs Custom Software along with an SSL Certificate
 
-[I built a small python API app and I have a flake.nix that I'm going to demonstrate a devops example and how it can fit into a CI/CD cycle.]
+[Coming soon; this is particular important, as the previous example only does HTTP, not HTTPS]
 
 # More stuff, possibly:
 
@@ -568,6 +1065,4 @@ Adding in Blueprint
 Security issues -- sudo, trusted users, etc.
 
 Troubleshooting Guide
-
-# Helpful Nix hints
 
