@@ -36,10 +36,11 @@ let
     nativeCheckInputs = [
       clippy
       nix
+      cargo
     ];
 
     preCheck = ''
-      ${lib.getExe cargo} clippy
+      cargo clippy
 
       # Stop the Nix command from trying to create /nix/var/nix/profiles.
       #
