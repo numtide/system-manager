@@ -52,17 +52,15 @@ in
 runCommand "system-manager"
   {
     nativeBuildInputs = [ makeBinaryWrapper ];
-    passthru = {
-      # The unwrapped version takes nix from the PATH, it will fail if nix
-      # cannot be found.
-      # The wrapped version has a reference to the nix store path, so nix is
-      # part of its runtime closure.
-      unwrapped = system-manager-unwrapped;
-    };
+    # The unwrapped version takes nix from the PATH, it will fail if nix
+    # cannot be found.
+    # The wrapped version has a reference to the nix store path, so nix is
+    # part of its runtime closure.
+    unwrapped = system-manager-unwrapped;
   }
   ''
     makeWrapper \
-      ${system-manager-unwrapped}/bin/system-manager \
+      $unwrapped/bin/system-manager \
       $out/bin/system-manager \
       --prefix PATH : ${lib.makeBinPath [ nix ]}
   ''
