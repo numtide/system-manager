@@ -61,6 +61,30 @@ impl SudoOptions {
     }
 }
 
+#[derive(clap::Args, Debug)]
+struct SudoArgs {
+    #[arg(long, action)]
+    /// Prefix commands with sudo for privilege escalation.
+    /// Works both locally and with --target-host.
+    sudo: bool,
+
+    #[arg(long, action)]
+    /// Prompt for the sudo password. Implies --sudo.
+    ask_sudo_password: bool,
+}
+
+impl SudoArgs {
+    fn to_sudo_options(&self) -> Result<SudoOptions> {
+        let sudo_enabled = self.sudo || self.ask_sudo_password;
+        let sudo_password = if self.ask_sudo_password {
+            Some(read_sudo_password()?)
+        } else {
+            None
+        };
+        Ok(SudoOptions::new(sudo_enabled, sudo_password))
+    }
+}
+
 #[derive(clap::Parser, Debug)]
 #[command(
     author,
@@ -76,19 +100,9 @@ struct Args {
     /// The host to deploy the system-manager profile to
     target_host: Option<String>,
 
-    #[arg(long, action)]
-    /// Prefix commands with sudo for privilege escalation.
-    /// Works both locally and with --target-host.
-    sudo: bool,
-
     #[arg(long = "use-remote-sudo", action, hide = true)]
-    /// Deprecated alias for --sudo
+    /// Deprecated: use --sudo on the subcommand instead
     legacy_use_remote_sudo: bool,
-
-    #[arg(long, action)]
-    /// Prompt for the sudo password.
-    /// Implies --sudo.
-    ask_sudo_password: bool,
 
     #[clap(long = "nix-option", num_args = 2, global = true)]
     nix_options: Option<Vec<String>>,
@@ -166,11 +180,15 @@ enum Action {
         build_args: BuildArgs,
         #[command(flatten)]
         activation_args: ActivationArgs,
+        #[command(flatten)]
+        sudo_args: SudoArgs,
     },
     /// Build a new system-manager generation and register it as the active system-manager profile
     Register {
         #[command(flatten)]
         store_or_flake_args: StoreOrFlakeArgs,
+        #[command(flatten)]
+        sudo_args: SudoArgs,
     },
     /// Build a new system-manager profile without registering it as a profile
     Build {
@@ -181,6 +199,8 @@ enum Action {
     Deactivate {
         #[command(flatten)]
         optional_store_path_args: OptionalStorePathArg,
+        #[command(flatten)]
+        sudo_args: SudoArgs,
     },
     /// Put all files defined by the given generation in place, but do not start services
     PrePopulate {
@@ -188,6 +208,8 @@ enum Action {
         store_or_flake_args: StoreOrFlakeArgs,
         #[command(flatten)]
         activation_args: ActivationArgs,
+        #[command(flatten)]
+        sudo_args: SudoArgs,
     },
     /// Activate a given system-manager profile (low-level, hidden)
     #[clap(hide = true)]
@@ -196,6 +218,8 @@ enum Action {
         store_path: StorePath,
         #[command(flatten)]
         activation_args: ActivationArgs,
+        #[command(flatten)]
+        sudo_args: SudoArgs,
     },
 }
 
@@ -208,11 +232,17 @@ fn go(args: Args) -> Result<()> {
     let Args {
         action,
         target_host,
-        sudo,
         legacy_use_remote_sudo,
-        ask_sudo_password,
         nix_options,
     } = args;
+
+    // Check for deprecated flag
+    if legacy_use_remote_sudo {
+        bail!(
+            "--use-remote-sudo has been removed. Use --sudo on the subcommand instead.\n\
+             Example: system-manager switch --sudo --flake ."
+        );
+    }
 
     let nix_options = NixOptions::new(nix_options.map_or(Vec::new(), |mut vals| {
         vals.chunks_mut(2)
@@ -225,30 +255,22 @@ fn go(args: Args) -> Result<()> {
             .collect()
     }));
 
-    // Handle sudo options
-    let mut sudo_enabled = sudo || legacy_use_remote_sudo;
-    if legacy_use_remote_sudo {
-        log::warn!("--use-remote-sudo is deprecated; use --sudo instead");
-    }
-    let mut sudo_password = None;
-    if ask_sudo_password {
-        sudo_enabled = true;
-        sudo_password = Some(read_sudo_password()?);
-    }
-    let sudo_options = SudoOptions::new(sudo_enabled, sudo_password);
-
     match action {
         Action::PrePopulate {
             store_or_flake_args,
             activation_args: ActivationArgs { ephemeral },
-        } => prepopulate(
-            store_or_flake_args,
-            ephemeral,
-            &target_host,
-            &sudo_options,
-            &nix_options,
-        )
-        .and_then(print_store_path),
+            sudo_args,
+        } => {
+            let sudo_options = sudo_args.to_sudo_options()?;
+            prepopulate(
+                store_or_flake_args,
+                ephemeral,
+                &target_host,
+                &sudo_options,
+                &nix_options,
+            )
+            .and_then(print_store_path)
+        }
 
         Action::Build {
             build_args: BuildArgs { flake_uri },
@@ -256,17 +278,25 @@ fn go(args: Args) -> Result<()> {
 
         Action::Deactivate {
             optional_store_path_args: OptionalStorePathArg { maybe_store_path },
-        } => deactivate(maybe_store_path, &target_host, &sudo_options),
+            sudo_args,
+        } => {
+            let sudo_options = sudo_args.to_sudo_options()?;
+            deactivate(maybe_store_path, &target_host, &sudo_options)
+        }
 
         Action::Register {
             store_or_flake_args,
-        } => register(
-            store_or_flake_args,
-            &target_host,
-            &sudo_options,
-            &nix_options,
-        )
-        .and_then(print_store_path),
+            sudo_args,
+        } => {
+            let sudo_options = sudo_args.to_sudo_options()?;
+            register(
+                store_or_flake_args,
+                &target_host,
+                &sudo_options,
+                &nix_options,
+            )
+            .and_then(print_store_path)
+        }
 
         Action::Init {
             init_args: InitArgs { mut path, no_flake },
@@ -318,7 +348,9 @@ fn go(args: Args) -> Result<()> {
         Action::Switch {
             build_args: BuildArgs { flake_uri },
             activation_args: ActivationArgs { ephemeral },
+            sudo_args,
         } => {
+            let sudo_options = sudo_args.to_sudo_options()?;
             let store_path = do_build(&flake_uri, &nix_options)?;
             copy_closure(&store_path, &target_host)?;
             invoke_engine_register(&store_path, &target_host, &sudo_options)?;
@@ -328,7 +360,9 @@ fn go(args: Args) -> Result<()> {
         Action::Activate {
             store_path,
             activation_args: ActivationArgs { ephemeral },
+            sudo_args,
         } => {
+            let sudo_options = sudo_args.to_sudo_options()?;
             copy_closure(&store_path, &target_host)?;
             invoke_engine_activate(&store_path, ephemeral, &target_host, &sudo_options)
         }
@@ -715,7 +749,7 @@ mod tests {
     use clap::Parser;
 
     #[test]
-    fn legacy_use_remote_sudo_flag_is_supported() {
+    fn legacy_use_remote_sudo_flag_returns_error() {
         let args = Args::try_parse_from([
             "system-manager",
             "--use-remote-sudo",
@@ -728,14 +762,33 @@ mod tests {
         .expect("failed to parse args");
 
         assert!(args.legacy_use_remote_sudo);
+
+        // Verify that go() returns an error for this flag
+        let result = go(args);
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("--use-remote-sudo has been removed"));
     }
 
     #[test]
-    fn sudo_flag_works() {
+    fn sudo_flag_works_on_subcommand() {
         let args =
-            Args::try_parse_from(["system-manager", "--sudo", "switch", "--flake", ".#test"])
+            Args::try_parse_from(["system-manager", "switch", "--sudo", "--flake", ".#test"])
                 .expect("failed to parse args");
 
-        assert!(args.sudo);
+        match args.action {
+            Action::Switch { sudo_args, .. } => {
+                assert!(sudo_args.sudo);
+            }
+            _ => panic!("Expected Switch action"),
+        }
+    }
+
+    #[test]
+    fn sudo_flag_not_available_on_build() {
+        // --sudo should not be recognized on the build subcommand
+        let result =
+            Args::try_parse_from(["system-manager", "build", "--sudo", "--flake", ".#test"]);
+        assert!(result.is_err());
     }
 }
