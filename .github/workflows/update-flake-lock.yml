@@ -24,7 +24,7 @@ jobs:
           # Commit exits with an error when there is nothing to do
           git commit -m "cargo update" || true
       - name: "Create Pull Request"
-        uses: "peter-evans/create-pull-request@v7"
+        uses: "peter-evans/create-pull-request@v8"
         with:
           branch: "auto_update_deps"
           title: "Bump flake.lock and Cargo.lock"
