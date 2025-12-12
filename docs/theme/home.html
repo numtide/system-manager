@@ -1,0 +1,115 @@
+{% extends "main.html" %} {% block header %}
+<header class="md-header" data-md-component="header">
+    <nav class="md-header__inner md-grid" aria-label="{{ lang.t('header') }}">
+        <!-- Link to home -->
+        <a
+            href="{{ config.extra.homepage | d(nav.homepage.url, true) | url }}"
+            title="{{ config.site_name | e }}"
+            class="md-header__button md-logo"
+            aria-label="{{ config.site_name }}"
+            data-md-component="logo"
+        >
+            {% include "partials/logo.html" %}
+        </a>
+
+        <!-- Header title -->
+        <div class="md-header__title" data-md-component="header-title">
+            <div class="md-header__ellipsis">
+                <div class="md-header__topic">
+                    <span class="md-ellipsis"> {{ config.site_name }} </span>
+                </div>
+                <div class="md-header__topic" data-md-component="header-topic">
+                    <span class="md-ellipsis">
+                        {% if page.meta and page.meta.title %} {{
+                        page.meta.title }} {% else %} {{ page.title }} {% endif
+                        %}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Color palette toggle -->
+        {% if config.theme.palette %} {% if not config.theme.palette is mapping
+        %} {% include "partials/palette.html" %} {% endif %} {% endif %}
+
+        <!-- User preference: color palette -->
+        {% if not config.theme.palette is mapping %} {% include
+        "partials/javascripts/palette.html" %} {% endif %}
+
+        <!-- Site language selector -->
+        {% if config.extra.alternate %} {% include "partials/alternate.html" %}
+        {% endif %}
+
+        <!-- Repository information -->
+        {% if config.repo_url %}
+        <div class="md-header__source">
+            {% include "partials/source.html" %}
+        </div>
+        {% endif %}
+    </nav>
+</header>
+{% endblock %} {% block hero %}
+
+<style>
+    .md-header {
+        position: initial;
+    }
+    .mdx-hero {
+        display: flex;
+        flex-flow: row nowrap;
+        justify-content: space-evenly;
+        align-items: center;
+        min-height: 500px;
+        height: calc(100vh - 2.4rem);
+    }
+
+    .mdx-hero__content {
+        min-width: 20rem;
+    }
+
+    .md-main {
+        display: none;
+    }
+
+    @media screen and (max-width: 60em) {
+        .mdx-hero {
+            flex-direction: column-reverse;
+        }
+        .mdx-hero__image {
+            margin-top: 4rem;
+        }
+        .mdx-hero__content {
+            min-width: unset;
+        }
+    }
+</style>
+<section class="mdx-container">
+    <div class="md-grid md-typeset">
+        <div class="mdx-hero">
+            <div class="mdx-hero__content md-content__inner">
+                <h1>System Manager</h1>
+                <p>{{ config.site_description }}</p>
+                <a
+                    href="{{ 'getting-started/' | url }}"
+                    title="Get started"
+                    class="md-button md-button--primary"
+                >
+                    Get started
+                </a>
+                <a
+                    href="{{ config.repo_url }}"
+                    title="View on GitHub"
+                    class="md-button"
+                >
+                    View on GitHub
+                </a>
+            </div>
+
+            <div class="mdx-hero__image md-content__inner">
+                <!-- Add an image or gif here when available -->
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %} {% block tabs %}{% endblock %} {% block site_nav %}{% endblock %}
+{% block content %}{% endblock %} {% block footer %}{% endblock %}

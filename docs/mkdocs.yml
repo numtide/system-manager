@@ -1,0 +1,121 @@
+# Project info
+site_name: System Manager
+site_url: https://system-manager.net
+site_description: >-
+    Declarative system management for any Linux machine using Nix.
+
+# Repository
+repo_name: numtide/system-manager
+repo_url: https://github.com/numtide/system-manager
+
+# Copyright
+copyright: >-
+    Content on this site is licensed under a <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons
+    Attribution-ShareAlike 4.0 International license</a>.
+
+validation:
+    omitted_files: warn
+    absolute_links: warn
+    unrecognized_links: warn
+
+# Configuration
+
+docs_dir: site
+site_dir: out
+
+theme:
+    name: material
+    custom_dir: theme
+
+    # logo: assets/images/logo.png
+    # favicon: assets/images/logo.png
+
+    features:
+        - content.code.annotate
+        - content.code.copy
+        - navigation.footer
+        - navigation.indexes
+        - navigation.path
+        - navigation.sections
+        - navigation.tabs
+        - navigation.tracking
+        - search.highlight
+        - search.share
+        - search.suggest
+
+    font:
+        text: Inter
+        code: JetBrains Mono
+    palette:
+        # Palette toggle for automatic mode
+        - media: "(prefers-color-scheme)"
+          toggle:
+              icon: material/brightness-auto
+              name: Switch to light mode
+
+        # Palette toggle for light mode
+        - media: "(prefers-color-scheme: light)"
+          scheme: default
+          primary: deep orange
+          accent: indigo
+          toggle:
+              icon: material/brightness-7
+              name: Switch to dark mode
+
+        # Palette toggle for dark mode
+        - media: "(prefers-color-scheme: dark)"
+          scheme: slate
+          primary: deep orange
+          accent: indigo
+          toggle:
+              icon: material/brightness-4
+              name: Switch to system preference
+
+extra:
+    version:
+        provider: mike
+    social:
+        - icon: fontawesome/brands/github
+          link: https://github.com/numtide
+        - icon: fontawesome/brands/x-twitter
+          link: https://x.com/numtide
+        - icon: fontawesome/brands/mastodon
+          link: https://fosstodon.org/@numtide
+
+extra_css:
+    - stylesheets/extra.css
+
+markdown_extensions:
+    - tables
+    - admonition
+    - attr_list
+    - footnotes
+    - md_in_html
+    - def_list
+    - meta
+    - pymdownx.emoji:
+          emoji_index: !!python/name:material.extensions.emoji.twemoji
+          emoji_generator: !!python/name:material.extensions.emoji.to_svg
+    - pymdownx.tasklist:
+          custom_checkbox: true
+    - pymdownx.superfences
+    - pymdownx.tabbed:
+          alternate_style: true
+    - pymdownx.details
+    - pymdownx.highlight:
+          use_pygments: true
+          linenums: true
+          anchor_linenums: true
+    - pymdownx.inlinehilite
+    - pymdownx.keys
+    - toc:
+          permalink: true
+
+plugins:
+    - mike
+    - search
+    - git-revision-date-localized:
+          enable_creation_date: true
+          type: date
+          fallback_to_build_date: true
+    - tags

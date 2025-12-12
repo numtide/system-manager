@@ -1,0 +1,48 @@
+{
+  "nodes": {
+    "mkdocs-numtide": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1765575816,
+        "narHash": "sha256-wbAmoxoNd2gJb3K9U+ZlGLX/J2eEKuMumjcRnPBtqmI=",
+        "owner": "numtide",
+        "repo": "mkdocs-numtide",
+        "rev": "03b3afc6d10668e340f7cc86adb59bfadc9afeda",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "mkdocs-numtide",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1764950072,
+        "narHash": "sha256-BmPWzogsG2GsXZtlT+MTcAWeDK5hkbGRZTeZNW42fwA=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "f61125a668a320878494449750330ca58b78c557",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "mkdocs-numtide": "mkdocs-numtide",
+        "nixpkgs": "nixpkgs"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

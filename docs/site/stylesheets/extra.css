@@ -1,0 +1,19 @@
+/* Custom styles for System Manager docs */
+
+/* Slightly round code blocks and tighten spacing */
+.md-typeset pre,
+.md-typeset code {
+    border-radius: 8px;
+}
+
+/* Make tables a bit more compact without losing readability */
+.md-typeset table:not([class]) th,
+.md-typeset table:not([class]) td {
+    padding: 0.5rem 0.75rem;
+}
+
+/* Subtle underline for links */
+.md-typeset a {
+    text-underline-offset: 2px;
+    text-decoration-thickness: 1.5px;
+}

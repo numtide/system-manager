@@ -7,7 +7,3 @@ includes = ["*.nix"]
 [formatter.rustfmt]
 command = "rustfmt"
 includes = ["*.rs"]
-
-[formatter.markdown]
-command = "mdformat"
-includes = ["*.md"]
