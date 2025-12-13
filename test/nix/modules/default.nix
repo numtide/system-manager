@@ -98,6 +98,10 @@ let
         { lib, pkgs, ... }:
         {
           config = {
+            imports = [ "${pkgs.path}/nixos/modules/programs/direnv.nix" ];
+
+            programs.direnv.enable = true;
+
             nixpkgs.hostPlatform = system;
 
             services.nginx.enable = false;
