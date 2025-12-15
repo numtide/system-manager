@@ -27,7 +27,7 @@ struct Args {
     action: Action,
 
     #[clap(long = "nix-option", num_args = 2, global = true)]
-    nix_options: Option<Vec<String>>,
+    nix_options: Vec<String>,
 }
 
 #[derive(clap::Args, Debug)]
@@ -86,16 +86,12 @@ fn main() -> ExitCode {
 }
 
 fn go(args: Args) -> Result<()> {
-    let nix_options = NixOptions::new(args.nix_options.map_or(Vec::new(), |mut vals| {
-        vals.chunks_mut(2)
-            .map(|slice| {
-                (
-                    std::mem::take(slice.get_mut(0).expect("Error parsing nix-option values")),
-                    std::mem::take(slice.get_mut(1).expect("Error parsing nix-option values")),
-                )
-            })
-            .collect()
-    }));
+    let nix_options = NixOptions::new(
+        args.nix_options
+            .chunks(2)
+            .map(|pair| (pair[0].clone(), pair[1].clone()))
+            .collect(),
+    );
 
     match args.action {
         Action::Activate {
