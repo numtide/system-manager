@@ -32,23 +32,23 @@ struct Args {
 
 #[derive(clap::Args, Debug)]
 struct ActivationArgs {
-    #[arg(long, action)]
     /// If true, only write under /run, otherwise write under /etc
+    #[arg(long, action)]
     ephemeral: bool,
 }
 
 #[derive(clap::Args, Debug)]
 struct StorePathArg {
-    #[arg(long = "store-path")]
     /// The store path containing the system-manager profile
+    #[arg(long = "store-path")]
     store_path: StorePath,
 }
 
 #[derive(clap::Args, Debug)]
 struct OptionalStorePathArg {
-    #[arg(long = "store-path")]
     /// The store path for the system-manager profile.
     /// If not specified, uses the active profile.
+    #[arg(long = "store-path")]
     store_path: Option<StorePath>,
 }
 
