@@ -74,8 +74,8 @@ struct SudoArgs {
 }
 
 impl SudoArgs {
-    fn to_sudo_options(&self) -> Result<SudoOptions> {
-        let sudo_enabled = self.sudo || self.ask_sudo_password;
+    fn to_sudo_options(&self, legacy_sudo: bool) -> Result<SudoOptions> {
+        let sudo_enabled = self.sudo || self.ask_sudo_password || legacy_sudo;
         let sudo_password = if self.ask_sudo_password {
             Some(read_sudo_password()?)
         } else {
@@ -236,10 +236,10 @@ fn go(args: Args) -> Result<()> {
         nix_options,
     } = args;
 
-    // Check for deprecated flag
     if legacy_use_remote_sudo {
-        bail!(
-            "--use-remote-sudo has been removed. Use --sudo on the subcommand instead.\n\
+        log::warn!(
+            "--use-remote-sudo is deprecated and will be removed in a future release. \
+             Use --sudo on the subcommand instead. \
              Example: system-manager switch --sudo --flake ."
         );
     }
@@ -261,7 +261,7 @@ fn go(args: Args) -> Result<()> {
             activation_args: ActivationArgs { ephemeral },
             sudo_args,
         } => {
-            let sudo_options = sudo_args.to_sudo_options()?;
+            let sudo_options = sudo_args.to_sudo_options(legacy_use_remote_sudo)?;
             prepopulate(
                 store_or_flake_args,
                 ephemeral,
@@ -280,7 +280,7 @@ fn go(args: Args) -> Result<()> {
             optional_store_path_args: OptionalStorePathArg { maybe_store_path },
             sudo_args,
         } => {
-            let sudo_options = sudo_args.to_sudo_options()?;
+            let sudo_options = sudo_args.to_sudo_options(legacy_use_remote_sudo)?;
             deactivate(maybe_store_path, &target_host, &sudo_options)
         }
 
@@ -288,7 +288,7 @@ fn go(args: Args) -> Result<()> {
             store_or_flake_args,
             sudo_args,
         } => {
-            let sudo_options = sudo_args.to_sudo_options()?;
+            let sudo_options = sudo_args.to_sudo_options(legacy_use_remote_sudo)?;
             register(
                 store_or_flake_args,
                 &target_host,
@@ -350,7 +350,7 @@ fn go(args: Args) -> Result<()> {
             activation_args: ActivationArgs { ephemeral },
             sudo_args,
         } => {
-            let sudo_options = sudo_args.to_sudo_options()?;
+            let sudo_options = sudo_args.to_sudo_options(legacy_use_remote_sudo)?;
             let store_path = do_build(&flake_uri, &nix_options)?;
             copy_closure(&store_path, &target_host)?;
             invoke_engine_register(&store_path, &target_host, &sudo_options)?;
@@ -362,7 +362,7 @@ fn go(args: Args) -> Result<()> {
             activation_args: ActivationArgs { ephemeral },
             sudo_args,
         } => {
-            let sudo_options = sudo_args.to_sudo_options()?;
+            let sudo_options = sudo_args.to_sudo_options(legacy_use_remote_sudo)?;
             copy_closure(&store_path, &target_host)?;
             invoke_engine_activate(&store_path, ephemeral, &target_host, &sudo_options)
         }
@@ -749,12 +749,11 @@ mod tests {
     use clap::Parser;
 
     #[test]
-    fn legacy_use_remote_sudo_flag_returns_error() {
+    fn legacy_use_remote_sudo_flag_is_accepted() {
+        // The deprecated flag should still parse successfully (emits warning at runtime)
         let args = Args::try_parse_from([
             "system-manager",
             "--use-remote-sudo",
-            "--target-host",
-            "example",
             "switch",
             "--flake",
             ".#test",
@@ -762,12 +761,6 @@ mod tests {
         .expect("failed to parse args");
 
         assert!(args.legacy_use_remote_sudo);
-
-        // Verify that go() returns an error for this flag
-        let result = go(args);
-        assert!(result.is_err());
-        let err_msg = result.unwrap_err().to_string();
-        assert!(err_msg.contains("--use-remote-sudo has been removed"));
     }
 
     #[test]
