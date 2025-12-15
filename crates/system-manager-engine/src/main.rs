@@ -40,7 +40,7 @@ struct ActivationArgs {
 #[derive(clap::Args, Debug)]
 struct StorePathArg {
     /// The store path containing the system-manager profile
-    #[arg(long = "store-path")]
+    #[arg(long)]
     store_path: StorePath,
 }
 
@@ -48,7 +48,7 @@ struct StorePathArg {
 struct OptionalStorePathArg {
     /// The store path for the system-manager profile.
     /// If not specified, uses the active profile.
-    #[arg(long = "store-path")]
+    #[arg(long)]
     store_path: Option<StorePath>,
 }
 
