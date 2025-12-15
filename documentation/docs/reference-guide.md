@@ -4,127 +4,122 @@
 
 To get the most out of System Manager, we're offering this guide to help you make the best decisions based on your particular situation.
 
-## Table of Contents
+# Table of Contents
 
-1. [System Requirements](#system-requirements)
+- [System Requirements](#system-requirements)
+- [Installation](#installation)
+  - [Regarding Experimental Features](#regarding-experimental-features)
+  - [Running under sudo](#running-under-sudo)
+  - [Command Line Usage](#command-line-usage)
+- [Setting up a folder and file structure](#setting-up-a-folder-and-file-structure)
+  - [Deciding on a folder structure](#deciding-on-a-folder-structure)
+  - [Choosing a location](#choosing-a-location)
+  - [Choosing a file structure](#choosing-a-file-structure)
+  - [Dealing with conflicting .nix files](#dealing-with-conflicting-nix-files)
+- [Letting System Manager manage `/etc/nix/nix.conf`](#letting-system-manager-manage-etcnixnixconf)
+- [Recommended Workflow for Starting Out](#recommended-workflow-for-starting-out)
+- [Building system-manager .nix files](#building-system-manager-nix-files)
+  - [The Main flake.nix File](#the-main-flakenix-file)
+- [Managing System Services](#managing-system-services)
+  - [Specifying the wantedBy Setting](#specifying-the-wantedby-setting)
+- [Managing Software Installations](#managing-software-installations)
+  - [Working with Overlays](#working-with-overlays)
+- [Working With /etc Files Declaratively](#working-with-etc-files-declaratively)
+- [Working with Timers](#working-with-timers)
+- [Working with remote flakes](#working-with-remote-flakes)
+  - [What's a flake.lock file?](#whats-a-flakelock-file)
+  - [Setting up your project for remote hosting](#setting-up-your-project-for-remote-hosting)
+  - [When should you update your flake.nix file?](#when-should-you-update-your-flakenix-file)
+  - [Can't System Manager build flake.lock for me?](#cant-system-manager-build-flakelock-for-me)
+  - [Ensuring success](#ensuring-success)
+  - [Running System Manager with a remote flake](#running-system-manager-with-a-remote-flake)
+- [Using Blueprint with System Manager](#using-blueprint-with-system-manager)
+  - [Using multiple configuration files with Blueprint](#using-multiple-configuration-files-with-blueprint)
+- [Managing a Remote System with System Manager](#managing-a-remote-system-with-system-manager)
+- [Command-line Options](#command-line-options)
+  - [init](#init)
+  - [switch](#switch)
+  - [register](#register)
+  - [build](#build)
+  - [deactivate](#deactivate)
+  - [pre-populate](#pre-populate)
+  - [sudo](#sudo)
+- [Full Examples](#full-examples)
+  - [Full Example: Installing PostgreSQL](#full-example-installing-postgresql)
+  - [Full Example: Installing Nginx](#full-example-installing-nginx)
+  - [Full Example: Managing a System that runs Custom Software](#full-example-managing-a-system-that-runs-custom-software)
+  - [Full Example: Managing a System that runs Custom Software along with an SSL Certificate](#full-example-managing-a-system-that-runs-custom-software-along-with-an-ssl-certificate)
+- [Optional: Installing Locally](#optional-installing-locally)
 
-2. [Optional: Installing Locally](#optional-installing-locally)
-
-3. [Running under sudo](#running-under-sudo)
-
-4. [Setting up a folder and file structure](#setting-up-a-folder-and-file-structure)
-
-5. [Letting System Manager manage /etc/nix/nix.conf](#letting-system-manager-manage-etcnixnixconf)
-
-6. [Building system-manager .nix files](#building-system-manager-nix-files)
-
-7. [Managing System Services](#managing-system-services)
-
-8. [Managing Software Installations](#managing-software-installations)
-
-9. [Working With /etc Files Declaratively](#working-with-etc-files-declaratively)
-
-10. [Working with Timers](#working-with-timers)
-
-11. [Dealing with conflicting files](#dealing-with-conflicting-files)
-
-12. [Working with remote flakes](#working-with-remote-flakes)
-
-13. [Managing a Remote System with System Manager](#managing-a-remote-system-with-system-manager)
-
-14. [Command-line Options](#command-line-options)
-
-15. [Full Examples](#full-examples)
-
-    a. [Installing PostgreSQL](#full-example-installing-postgresql)
-
-    b. [Installing Nginx](#full-example-installing-nginx)
-
-    c. [Managing a System that runs Custom Software](#full-example-managing-a-system-that-runs-custom-software)
-
-    d. [Managing a System that runs Custom Software along with an SSL Certificate](#full-example-managing-a-system-that-runs-custom-software-along-with-an-ssl-certificate)
-
-
-16. FAQ (Maybe put in its own document)
+- FAQ (Maybe put in its own document)
 
 # System Requirements
 
 [TODO: I realized I wrote this section twice, here and in the getting-started guide. I'll combine them and provide the same in both, since some people might just read one doc or the other.]
 
-[TODO: I tried 8GB and that wasn't enough to run System Manager. I tried 16GB, and that worked. I'll do some more testing to see if I can find the lowest number.]
-
 In order to use System Manager, you need:
 
-* **Nix installed system-wide.** (System Manager doesn't work with a per-user installation of Nix)
 * **A Linux machine.** We've tested System Manager with Ubuntu both as standalone and under Windows Subsystem for Linux (WSL).
-* **At least 16GB Memory.** (This is primarily due to Nix; if you're using System Manager to configure, for example, small servers on the Cloud, 8GB won't be enough.)
+* **At least 12GB Disk Space.** However, we recommend at least 16GB, as you will be very tight for space with under 16GB. (This is primarily due to Nix; if you're using System Manager to configure, for example, small servers on the Cloud, 8GB simply won't be enough.)
+* **Nix installed system-wide.** (System Manager doesn't work with a per-user installation of Nix)
+* **Flakes** enabled
 
-## Optional: Installing Locally
+!!! Important
+    System Manager does not work with the single-user installation option for Nix.
 
-Nix allows you to run code that's stored remotely in a repo, such as in GitHub. As such, you don't have to install System Manager locally to use it. However, if you want to install locally, you can do so with the following `nix profile` command.
+!!! Important
+    At this time, System Manager requires flakes to be enabled.
+
+# Installation
+
+Because Nix can load code (called "flakes") remotely, you don't need to download System Manager. Simply running it the first time will automatically install it in what's called the Nix Store, which is a special directory on your system (typically /nix/store) where Nix keeps all packages and their dependencies in isolation.
+
+
+## Regarding Experimental Features
+
+System Manager requires flakes to run. You can enable flakes using one of two methods:
+
+* By adding the following line to /etc/nix.conf
 
 ```
-nix profile add 'github:numtide/system-manager'
+experimental-features = nix-command flakes
 ```
 
-When you install System Manager, you might get some warnings about trusted user; this simply means you're not in the trusted user list of nix. But System Manager will still install.
-
-Then you can find it:
+* Or by adding the --extra-experimental-features option to the `nix` command line like so:
 
 ```
-$ which system-manager
-/home/ubuntu/.nix-profile/bin/system-manager
+--extra-experimental-features 'nix-command flakes'
 ```
 
-[Might be nice to list some ideas about When would you install locally... I'm not sure, can anyone help?]
+Note, however, that if you use the `init` subcommand to initialize an environment, and you do *not* have experimental features enabled in your nix.conf file, you will only get a default `system.nix` file, and not an associated `flake.nix` file.
 
-!!! Note
-    Throughout this Guide, we do not use the local installation of System Manager; instead, we run it directly from our GitHub repository.
+!!! Recommendation
+    If you need to run the init subcommand, but prefer to pass the `--extra-experimental-features` option to the command line, we recommend at least temporarily adding the aforementioned line to the `nix.conf` file.
 
-!!! Tip
-    System Manager is still in an early state and undergoing active development. Installing locally will not immediately pick up new changes. If you decide to install locally, you'll want to periodically check our GitHub repo for changes, and re-install it if necessary by using `nix profile upgrade`.
+!!! Important
+    This is optional, but ultimately System Manager prefers to manage the nix.conf file for you, after which you can declare experimental features inside the flake.nix file as shown later in [Letting System Manager manage /etc/nix/nix.conf](#letting-system-manager-manage-etcnixnixconf).
+
 
 ## Running under sudo
 
-System Manager needs `sudo` access to run. However, by default, Linux limits the $PATH variable when running under `sudo`. That means when you run:
+System Manager needs `sudo` access to run. As such, we've provided a command-line option, --sudo, that allows you to grant sudo rights to System Manager.
 
-```
-sudo nix --version
-```
-
-you'll likely get
-
-```
-sudo: nix: command not found
-```
-
-There are many workarounds here, some of which present a bit of danger. For example, you might consider modifying the secure_path setting in the /etc/sudoers file; however, you might reconsider. A lot can go wrong:
-
-* Changes affect all sudo users
-* Scripts that rely on the standard secure_path could break
-* Other admins might not be aware of the change; or if they find it, they might reset it and break the way you're configuring the system
-* Adding paths to secure_path can result in escalation attacks
-
-And so on; there's a full laundry list of reasons not to do it.
-
-Instead, we recommend simply passing the path to the sudo environment; this is temporary for the duration of the command. Here's the general format:
-
-```
-sudo env PATH="$PATH" nix --version
-```
-
-This should print out the nix version, similar to this:
-
-```
-nix (Nix) 2.32.4
-```
+**System Manager is still in early development, and for now the --sudo commmand line option is required.**
 
 !!! Note
     Adding yourself to Nix's trusted-users configuration won't help here. Trusted users have elevated privileges within the Nix daemon, but System Manager requires root filesystem permissions to modify /etc, manage services, and install system packages. You'll still need to use sudo.
 
-# Setting up a folder and file structure
+## Command Line Usage
 
-[TEAM: SHOULD THIS GO HERE OR IN THE GETTING STARTED GUIDE? I DON'T WANT TO WEIGH DOWN THE GETTING STARTED GUIDE TOO MUCH, BUT MAYBE IT STILL BELONGS THERE? --JEFFREY]
+The basic command looks like this:
+
+```nix
+nix run 'github:numtide/system-manager' -- switch --flake . --sudo
+```
+
+This is the most common scenario you'll use. See [Command Line Options](#command-line-options) for more information.
+
+# Setting up a folder and file structure
 
 Before you begin with System Manager, you'll need to decide on your folder structure.
 
@@ -140,7 +135,7 @@ Technically, you are free to set up your folders and files however you like; Sys
 
 You’ll need to choose where your System Manager configuration will live. Here are two main organizational patterns we recommend.
 
-* **Option A**: A single folder for all your configuration (recommended)
+* **Option A**: A single folder for all your configuration
 
 A single folder keeps everything together. This offers a clean long-term solution, along with easy version control. It's also convenient for replicating between machines.
 
@@ -159,6 +154,8 @@ For example, you might keep:
 * and yet another for monitoring and observability packages.
 
 In this manner, you can then build up a system by picking and choosing which services you need for a particular machine, and pull each one down from GitHub.
+
+To make this happen, however, requires careful consideration [as we discuss later](#dealing-with-conflicting-nix-files). 
 
 ## Choosing a location
 
@@ -249,6 +246,78 @@ system-manager/
     users.nix
 ```
 
+This also lends itself well to having multiple "recipes". For example, you might want to add nginx and postgres to your system. You might have them preconfigured somewhere, and simply "drop" them in like so:
+
+```
+system-manager/
+  flake.nix
+  modules/
+    default.nix
+    service-1.nix
+    service-2.nix
+    users.nix
+    nginx.nix
+    postgres.nix
+```
+
+!!! Tip
+    This is the approach we use in our examples in this document. That way each isolated "recipe" is repeatable and can be re-used across multiple systems.
+
+
+### Dealing with conflicting .nix files
+
+If you have multiple flakes throughout your computer, you can run into a situation where one might install some software, and the other might install a different software -- but uninstall what was in the other configuration.
+
+For example; suppose you have one configuration file that includes this list of apps:
+
+```nix
+    environment = {
+      systemPackages = [
+        pkgs.bat
+        pkgs.nginx
+        pkgs.mysql84
+      ];
+```
+
+And you run System Manager, which installs the three apps.
+
+Then you separately in another folder have another flake with a different configuration and set of apps:
+
+```nix
+    environment = {
+      systemPackages = [
+        pkgs.hello
+        pkgs.postgresql_18
+        pkgs.vscode
+      ];
+```
+
+Then in this folder your run System Manager.
+
+System Manager does not track files, and see this as a changed configuration:
+
+* The configuration **no longer has** bat, nginx, and mysql84.
+* The configuration does have hello, postgresql_18, and vscode.
+
+The end result is that System Manager will **remove** bat, nginx, and mysql84, and install hello, postgresql_18, and vscode.
+
+The fix to this problem is to instead have a single main flake.nix file, which loads all of the different .nix files, allowing you to run System Manager from a single location.
+
+This is because Nix has the ability to merge together objects in separate files into a single object; the above would then merge into:
+
+```nix
+      systemPackages = [
+        pkgs.bat
+        pkgs.nginx
+        pkgs.mysql84
+        pkgs.hello
+        pkgs.postgresql_18
+        pkgs.vscode
+      ];
+```
+
+We describe this technique in [Building System Manager .nix Files](#building-system-manager-nix-files).
+
 # Letting System Manager manage `/etc/nix/nix.conf`
 
 System Manager can optionally manage your `/etc/nix/nix.conf` file for you.
@@ -257,7 +326,73 @@ If you have an existing `/etc/nix/nix.conf` file, it will be overwritten and you
 
 Instead, you'll put the changes in one of your .nix files you'll be building to configure System Manager.
 
-The example in the next section demonstrates how to do this.
+For example:
+
+
+# Recommended Workflow for Starting Out
+
+As described previously, System Manager wants to manage your /etc/nix.conf file for you, after which you can instead place your configurations directly in the flake.nix file, including specifying experimental features.
+
+To do so requires a careful set of steps. Follow these steps precisely when starting out with a fresh system.
+
+!!! Note
+    We will first run System Manager to create an initial flake.nix and system.nix file; we will then delete the `/etc/nix/nix.conf` file, and instead add the flags to the flake.nix file. Then we will run System Manager again to start managing your system, inluding the `/etc/nix/nix.conf` file.
+
+1. Temporarily run Run system manager init with experimental features enabled by including the following line in /etc/nix/nix.conf; this way `init` will generate a `flake.nix` file:
+
+```
+experimental-features = nix-command flakes
+```
+
+And then running System Manager with the init subcommand:
+
+```
+nix run 'github:numtide/system-manager' -- init
+```
+
+(For this step, do not simply add the flag for experimental features; otherwise init won't create the flake.nix file.)
+
+2. Under ~/.config/system-manager, edit the `flake.nix` file, replacing this line:
+
+```
+ modules = [ ./system.nix ];
+```
+
+with this:
+
+```nix
+modules = [
+    {
+        nix.settings.experimental-features = "nix-command flakes";
+    }
+    ./system.nix
+];
+```
+
+3. Delete the /etc/nix.conf file, optionally backing it up first:
+
+```
+sudo cp /etc/nix/nix.conf /etc/nix/nix_old # optional
+sudo rm /etc/nix/nix.conf
+```
+
+4. Run System Manager to initialize your system, with the experimental flags set this one time in the command-line:
+
+[Need updated --sudo command]
+```
+cd ~/.config/system-manager
+sudo env PATH="$PATH" nix run 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes' -- switch --flake .
+```
+
+System Manager is now managing your system for you, including the /etc/nix/nix.conf file. And experimental features are required and turned on through the flake.nix file, meaning you do not need to include the --extra-experimental-features flag when you run System Manager:
+
+```
+sudo env PATH="$PATH" nix run 'github:numtide/system-manager' -- switch --flake .
+```
+
+Next, if you want to make sure experimental features are always on, you can add it to your flake as such:
+
+[coming soon]
 
 # Building system-manager .nix files
 
@@ -273,9 +408,50 @@ We'll demonstrate how to install an app on your machine, then we'll add another 
 
 We'll also demonstrate how to move items from your `/etc/nix/nix.conf` file into your System Manager configuration file.
 
-## .nix configuration setup
+## The Main flake.nix File
 
-In your configuration .nix file, you'll typically set up everything under the config object. Inside this object you'll want some or all of the following:
+We recommend you start with a basic flake.nix file similar to this:
+
+```nix
+{
+  description = "Standalone System Manager configuration";
+
+  inputs = {
+    # Specify the source of System Manager and Nixpkgs.
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    system-manager = {
+      url = "github:numtide/system-manager/sudo-v2";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+  };
+
+  outputs =
+    {
+      self,
+      nixpkgs,
+      system-manager,
+      ...
+    }:
+    let
+      system = "x86_64-linux";
+    in
+    {
+      systemConfigs.default = system-manager.lib.makeSystemConfig {
+        # Specify your system configuration modules here, for example,
+        # the path to your system.nix.
+        modules = [ ./system.nix ];
+
+        # Optionally specify extraSpecialArgs and overlays
+      };
+    };
+}
+```
+
+This is a typical flake with an `inputs` and an `outputs` section. The inputs loads in `nixpkgs` and `system-manager`. The outputs part has one primary job: It calls System Manager's makeSystemConfig function, passing in any number of .nix modules.
+
+Each module, in turn, must specify a config object, containing configuration settings. These can be in separate files, and Nix will merge them into a single config object that gets passed into `makeSystemConfig`.
+
+Your config objects can have:
 
 * nixpkgs.hostPlatform: This specifies the platform such as nixpkgs.hostPlatform = "x86_64-linux";
 * services
@@ -285,8 +461,61 @@ In your configuration .nix file, you'll typically set up everything under the co
 * systemd.services
 * systemd.tmpfiles
 
+For example, you could then replace the 
 
-[Coming soon: A single flake.nix file]
+```
+modules = [ ./system.nix ];
+```
+
+line with individual .nix files. For example, you might have one file that installs the `bat` command, and another file that installs the `tree` command.
+
+As an example, let's put these two files in a `modules` folder under the folder holding `flake.nix`. Replace the modules line with this:
+
+```nix
+modules = [
+  {
+    nixpkgs.hostPlatform = "x86_64-linux";
+  }
+  ./modules/tree.nix
+  ./modules/bat.nix
+];
+```
+
+Then here are the individual "recipe" files.
+
+**modules/bat.nix**
+
+```nix
+{ lib, pkgs, ... }:
+{
+  config = {
+    environment = {
+      # Packages that should be installed on a system
+      systemPackages = [
+        pkgs.bat
+      ];
+    };
+  };
+}
+```
+
+**modules/tree.nix**
+
+```nix
+{ lib, pkgs, ... }:
+{
+  config = {
+    environment = {
+      # Packages that should be installed on a system
+      systemPackages = [
+        pkgs.tree
+      ];
+    };
+  };
+}
+```
+
+Why take this approach? Because you could, for example, have many different recipes stored in a GitHub repo (or anywhere, really), and you could easily drop them into your system, adding a single line in flake.nix for each. Each one would have their own software installations. And this solves the problem described in [Dealing with Conflicting Nix Files](#dealing-with-conflicting-nix-files)
 
 # Managing System Services
 
@@ -301,17 +530,8 @@ Then you can take this same `.nix` file, place it on another system, and run Sys
 
 The following example demonstrates how to specify a system service and activate it.
 
-Update your flake.nix file to include a new file in the modules list, which we'll call `say_hello.nix`:
+We're assuming you're using a flake.nix similar to what's found in [The Main flake.nix File](#the-main-flakenix-file).
 
-```nix
-        modules = [
-            ./system.nix
-            ./apps.nix
-            ./say_hello.nix
-        ];
-```
-
-Then create the file called `say_hello.nix` and add the following to it:
 
 ```nix
 { lib, pkgs, ... }:
@@ -469,6 +689,10 @@ which prints out:
 This is some sample configuration text
 ```
 
+## Working with Overlays
+
+[coming soon]
+
 # Working With /etc Files Declaratively
 
 Many applications and services rely on configuration files stored under /etc, and System Manager lets you manage those files declaratively as well. Instead of manually editing files like /etc/some_config, you define them in your Nix configuration and let System Manager write them during a switch. This ensures that your system state is always consistent with your configuration and avoids accidental edits or configuration drift. If you ever rebuild your machine, those files are recreated exactly as before—permissions, contents, and paths included. And because System Manager keeps previous generations, you can safely roll back to earlier versions of /etc files if needed. Declarative /etc management is especially powerful in shared or multi-machine environments, where consistency and repeatability matter most.
@@ -483,7 +707,6 @@ Many applications and services rely on configuration files stored under /etc, an
 
 # Working with Timers
 
-# Dealing with conflicting files
 
 # Working with remote flakes
 
@@ -550,39 +773,266 @@ In order to ensure System Manager retrieves the correct .nix files from your rep
     Before you run this command, we recommend that you nevertheless create a folder to run it from, such as ~/.config/system-manager. 
 
 
+# Using Blueprint with System Manager
+
+Blueprint is an opinionated library that maps a standard folder structure to flake outputs, allowing you to divide up your flake into individual files across these folders. This allows you to modularize and isolate these files so that they can be maintained individually and even shared across multiple projects.
+
+Blueprint has bulit-in support for System Manager, which means:
+
+* You do not need to call system-manager.lib.makeSystemConfig; Blueprint calls this for you
+* You must follow Blueprint's folder structure by placing your files under the hosts folder, and you must name your files `system-configuration.nix`.
+* You can have multiple folders under the `hosts` folder (but one level deep), and you can access these using the standard nix specifier, e.g. `.#folder-name.`
+
+In this section we should you how to use Blueprint with System Manager.
+
+Blueprint provides its own initialization that you can start with if you don't already have a flake.nix file using Blueprint. The command to type is:
+
+```
+nix flake init -t github:numtide/blueprint
+```
+
+This results in the following flake:
+
+```nix
+{
+  description = "Simple flake with a devshell";
+
+  # Add all your dependencies here
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs?ref=nixos-unstable";
+    blueprint.url = "github:numtide/blueprint";
+    blueprint.inputs.nixpkgs.follows = "nixpkgs";
+  };
+
+  # Load the blueprint
+  outputs = inputs: inputs.blueprint { inherit inputs; };
+}
+```
+
+Now add System Manager to its inputs section:
+
+```
+    system-manager = {
+        url = "github:numtide/system-manager";
+        inputs.nixpkgs.follows = "nixpkgs";
+    };
+```
+
+Next, create a folder called hosts, and under that a folder called default:
+
+```
+mkdir hosts
+cd hosts
+mkdir default
+cd default
+```
+
+Inside `default` is where you'll put your configuration file.
+
+**This configuration file must be named **system-configuration.nix**.
+
+For example, here's a configuration file that installs `bat`:
+
+```nix
+{ lib, pkgs, ... }:
+{
+  config = {
+    nixpkgs.hostPlatform = "x86_64-linux";
+    environment = {
+      # Packages that should be installed on a system
+      systemPackages = [
+        pkgs.bat
+      ];
+    };
+  };
+}
+```
+
+!!! Note
+   Notice that we need to include nixpkgs.hostPlatform in this file, as there's no place to include it in the parent `flake.nix` file.
+
+Now return to the folder two levels up (the one containing flake.nix) and you can run System Manager:
+
+```
+sudo env PATH="$PATH" nix run 'github:numtide/system-manager' -- switch --flake .
+```
+
+!!! Remember
+    As mentioned elsewhere, if this is the first time running System Manager on this computer, you'll need to log out and log back in to pick up the new path.
+
+Then you should find `bat` on your path:
+
+```
+$ which bat
+/run/system-manager/sw/bin//bat
+```
+
+The default folder is called default; you can also refer to folders by name as mentioned earlier.
+
+If, for example, under the `hosts` folder you have a folder called `tree`, and inside `tree` create a file called `system-configuration.nix` with the following contents:
+
+```nix
+{ lib, pkgs, ... }:
+{
+  config = {
+    nixpkgs.hostPlatform = "x86_64-linux";
+    environment = {
+      # Packages that should be installed on a system
+      systemPackages = [
+        pkgs.tree
+      ];
+    };
+  };
+}
+```
+
+Then you can choose to install tree by specifying the tree folder like so:
+
+```
+sudo env PATH="$PATH" nix run 'github:numtide/system-manager' -- switch --flake '.#tree'
+```
+
+## Using multiple configuration files with Blueprint
+
+If you want to load multiple configuration files at once, you can create a special system-configuration.nix file that loads multiple files from a `modules` folder (or any name you choose). To accomplish this, create a folder under hosts; for example, you might name it cli-tools. Starting in the folder with flake.nix:
+
+```
+cd hosts
+mkdir cli-tools
+cd cli-tools
+mkdir modules
+```
+
+Then inside the `cli-tools` folder, create a `system-configuration.nix` file with the following:
+
+```
+{ config, lib, pkgs, ... }:
+{
+  # Import all your modular configs - they auto-merge! ✨
+  imports = [
+    ./modules/tldr.nix
+    ./modules/cowsay.nix
+  ];
+
+  # Base configuration that applies to everything
+  config = {
+    nixpkgs.hostPlatform = "x86_64-linux";
+  };
+}
+```
+
+(Notice this time we can put the nixpkgs.hostPlatform in a single place. As such we won't need it in the configuration files.)
+
+Now move into the `modules` folder:
+
+```
+cd modules
+```
+
+And create two files here:
+
+tldr.nix:
+
+```nix
+{ lib, pkgs, ... }:
+{
+  config = {
+    environment = {
+      # Packages that should be installed on a system
+      systemPackages = [
+        pkgs.tldr
+      ];
+    };
+  };
+}
+```
+
+cowsay.nix:
+```nix
+{ lib, pkgs, ... }:
+{
+  config = {
+    environment = {
+      # Packages that should be installed on a system
+      systemPackages = [
+        pkgs.cowsay
+      ];
+    };
+  };
+}
+```
+
+Now you can return to the top level where you flake.nix file is and run these two configuration files:
+
+```
+sudo env PATH="$PATH" nix run 'github:numtide/system-manager' -- switch --flake '.#cli-tools'
+```
+
+This means if you want to include various recipes, you can easily do so.
+
+
 # Managing a Remote System with System Manager
 
 [Coming soon]
-
-# Integrating Sudo with the --sudo and --sudo-ask-password flags
-
-Normally, to make changes at the system level, System Manager requires sudo access, which requires running System Manager itself with elevated privileges (such as typing sudo at the start of the command). This can get messy, however, because by default sudo doesn't have access to a typical full path, which includes the nix command itself.
-
-So as an alternative, we've added the --sudo and --sudo-ask-password flags to allow System Manager itself to step up with elevated privileges, simplifying the command.
-
-[More coming soon after I've had a chance to test the feature]
 
 # Command-line Options
 
 ## init
 
+This subcommand creates two initial files for use with system manager, a fully-functional flake.nix, and a system.nix file that contains skeleton code.
+
+### Command line options
+
+**path:** The path where to create the files. If the path doesn't exist, it will be created.
+
+### Example
+
+```
+nix run 'github:numtide/system-manager' -- init --path='/home/ubuntu/system-manager'
+```
+
+!!! Note
+    Presently, System Manager requires Flakes to be active. If you choose to not include the experimental features line in /etc/nix/nix.conf (and instead use the experimental features command line option), then init will only create a system.nix file, rather than both a flake.nix file and system.nix file. 
+
 ## switch
 
+The `switch` subcommand builds and activates your configuration immediately, making it both the current running configuration and the default for future boots. Use it whenever you want to apply your changes.
 
+**Note: Rollbacks are not yet implemented.**
+
+The following two parameters are currently both required:
+
+**--flake**: Specifies a flake to use for configuration.
+
+**--sudo**: Specifies that System Manager can use sudo.
 
 ## register
 
+[I'm basing the following strictly on the comments in main.rs. Let me know if it needs further work, and I'm open to suggestions to how to improve it. --jeffrey]
+
+The `register` subcommand builds and registers a System Manager configuration, but does not activate it. Compare this to `switch`, which does everything register does, but then activates it.
+
 ## build
+
+[I'm basing the following strictly on the comments in main.rs. Let me know if it needs further work, and I'm open to suggestions to how to improve it. --jeffrey]
+
+The `build` subcommand builds everything needed for a switch, but does not register it.
 
 ## deactivate
 
-## pre-popular
+[I'm basing the following strictly on the comments in main.rs. Let me know if it needs further work, and I'm open to suggestions to how to improve it. --jeffrey]
+
+The `deactivate` deactivates System Manager.
+
+## pre-populate
+
+[I'm basing the following strictly on the comments in main.rs. Let me know if it needs further work, and I'm open to suggestions to how to improve it. --jeffrey]
+
+The `prepopulate` command puts all files defined by the given generation in place, but does not start the services. This is useful in scripts.
 
 ## sudo
 
-## ask-sudo-password
-
-[What about the result/bin folder? I see activate  deactivate  preActivationAssertions  prepopulate  register-profile]
+The sudo command grants sudo access to System Manager, while running under the current user. All created files with be owned by the current user.
 
 # Full Examples
 
@@ -1056,13 +1506,38 @@ console.log(`? Server running on http://localhost:${server.port}`);
 
 [Coming soon; this is particular important, as the previous example only does HTTP, not HTTPS]
 
+# Optional: Installing Locally
+
+[Question: Does running locally also require experimental features turned on? I'll investigate.]
+
+Nix allows you to run code that's stored remotely in a repo, such as in GitHub. As such, you don't have to install System Manager locally to use it. However, if you want to install locally, you can do so with the following `nix profile` command.
+
+```
+nix profile add 'github:numtide/system-manager'
+```
+
+When you install System Manager, you might get some warnings about trusted user; this simply means you're not in the trusted user list of nix. But System Manager will still install and work fine.
+
+Then you can find System Manager:
+
+```
+$ which system-manager
+/home/ubuntu/.nix-profile/bin/system-manager
+```
+
+[Might be nice to list some ideas about When would you install locally... I'm not sure, can anyone help?]
+
+!!! Note
+    Throughout this Guide, we do not use the local installation of System Manager; instead, we run it directly from our GitHub repository.
+
+!!! Tip
+    System Manager is still in an early state and undergoing active development. Installing locally will not immediately pick up new changes. If you decide to install locally, you'll want to periodically check our GitHub repo for changes, and re-install it if necessary by using `nix profile upgrade`.
+
+
 # More stuff, possibly:
 
 Inspecting /var/lib/system-manager/state/system-manager-state.json
 
-Adding in Blueprint
-
-Security issues -- sudo, trusted users, etc.
-
 Troubleshooting Guide
 
+Recipes (individual software packages, etc.)

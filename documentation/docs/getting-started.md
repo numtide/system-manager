@@ -10,12 +10,15 @@ In order to run System Manager, you need to have:
 
 * Nix installed for all users
 
-* At least 16GB of disk space. (This is important in case you're running small systems, for example, in the cloud.)
+* At least 12GB of disk space. (This is important in case you're running small systems, for example, in the cloud.)
 
 * Flakes turned on. (System Manager can work without Flakes, but for this Getting Started guide, we're using Flakes.)
 
 !!! Important
     System Manager does not work with the single-user installation option for Nix.
+
+!!! Important
+    At this time, System Manager requires flakes to be enabled.
 
 ## How can I tell whether Nix is installed for the whole system or just me?
 
@@ -40,7 +43,23 @@ Then it's installed just for you. Alternatively, if it's installed for everybody
 
 # Initializing Your System
 
-To get started with System Manager, you can run our init subcommand, which will create an initial set of files in the `~/.config/system-manager` folder. In a shell prompt, enter the following:
+To get started with System Manager, you can run our init subcommand, which will create an initial set of files in the `~/.config/system-manager` folder. 
+
+For this first step to work, you **must** enable experimental features in the nix.conf file. (Simply adding the flags to the nix command isn't enough in this step. Afterwards you can remove the setting from your nix.conf file.)
+
+In the shell prompt, use your favorite editor with sudo to open the following file:
+
+```
+vi /etc/nix/nix.conf
+```
+
+Add the following line if it isn't already present:
+
+```
+experimental-features = nix-command flakes
+```
+
+Save the file and exit. Next, enter the following:
 
 ```
 nix run 'github:numtide/system-manager' -- init
@@ -215,7 +234,7 @@ Next, we'll run System Manager.
 
 
 ```
-sudo env PATH="$PATH" nix --extra-experimental-features 'nix-command flakes' run 'github:numtide/system-manager' -- switch --flake .
+sudo env PATH="$PATH" nix run 'github:numtide/system-manager' -- switch --flake .
 ```
 
 After a short moment, the `tldr` app should be installed on your system.
