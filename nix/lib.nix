@@ -84,6 +84,9 @@ let
 
         inherit (config.nixpkgs) pkgs;
 
+        # Build system-manager package for use in toplevel
+        system-manager = pkgs.callPackage ../package.nix { };
+
         returnIfNoAssertions =
           drv:
           let
@@ -117,9 +120,17 @@ let
           let
             scripts = lib.mapAttrsToList (_: script: linkFarmBinEntryFromDrv script) config.build.scripts;
 
+            # Include the engine binary directly in the profile's bin directory.
+            # The system-manager CLI wrapper invokes this engine with optional sudo.
+            engineEntry = {
+              name = "bin/system-manager-engine";
+              path = "${system-manager}/bin/system-manager-engine";
+            };
+
             entries = [
               (linkFarmEntryFromDrv servicesPath)
               (linkFarmEntryFromDrv etcPath)
+              engineEntry
             ]
             ++ scripts;
 

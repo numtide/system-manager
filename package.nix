@@ -12,17 +12,16 @@
   makeBinaryWrapper,
 }:
 let
-  cargoManifest = (lib.importTOML ./Cargo.toml).package;
+  cargoManifest = lib.importTOML ./Cargo.toml;
   system-manager-unwrapped = rustPlatform.buildRustPackage {
     pname = "system-manager";
-    version = cargoManifest.version;
+    version = cargoManifest.workspace.package.version;
     src = lib.fileset.toSource {
       root = ./.;
       fileset = lib.fileset.unions [
         ./Cargo.toml
         ./Cargo.lock
-        ./src
-        ./test/rust
+        ./crates
         ./templates
       ];
     };
@@ -59,8 +58,15 @@ runCommand "system-manager"
     unwrapped = system-manager-unwrapped;
   }
   ''
+    # Wrap the CLI binary with nix in PATH
     makeWrapper \
       $unwrapped/bin/system-manager \
       $out/bin/system-manager \
+      --prefix PATH : ${lib.makeBinPath [ nix ]}
+
+    # Wrap the engine binary with nix in PATH (needed for register command)
+    makeWrapper \
+      ${system-manager-unwrapped}/bin/system-manager-engine \
+      $out/bin/system-manager-engine \
       --prefix PATH : ${lib.makeBinPath [ nix ]}
   ''
