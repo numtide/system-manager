@@ -293,6 +293,27 @@ Now let's remove `cowsay` from the list of installed software. To do so, simply 
 
 Notice this file now looks exactly as it did before adding in cowsay, meaning System Manager the system will now look like it did before adding in `cowsay`. Re-run System Manager and you'll see that `cowsay` is no longer installed.
 
+## Understanding the config attribute set
+
+In the above example, we added attributes to the systemPackages set, which is a part of the environment attribute set, which in turn is part of the config attribute set.
+
+When System Manager runs, with the help of the Nix language, you can have multiple config attribute sets, and System Manager combines them into a single attribute set. This allows you to have different setups in separate files, and simply combine them side by side, only having to add on to this line:
+
+```nix
+        modules = [
+            ./system.nix
+            ./apps.nix
+        ];
+```
+
+However, you need to be careful. Suppose you have a different set of software you want to install, and you create a flake in another area in the filesystem with that software. It might not work the way you intend.
+
+With that second flake, System Manager will gather up any apps you have in the systemPackages attribute, and compare that to what it has already installed earlier. If the packages installed earlier aren't included, it will remove those packages. (That includes the apps you installed with the "other" flake.)
+
+In other words, you cannot have two separate flakes, one for one set of software, the other for a different set of software, and bounce between those flakes. System Manager will treat the second as requesting to uninstall what it installed earlier.
+
+To make the above work, your best bet is to create a single flake and add in individual files that contain the apps you want to install, and always run from that same location.
+
 # Concepts for people new to Nix
 
 [Not sure we want this here, or at all, but it's a start. I think this will help people who are new to Nix. If we don't want it, I'll move it to my own personal website.]
