@@ -69,12 +69,10 @@ nix run 'github:numtide/system-manager' -- init
 
 Then answer yes to the four questions.
 
-[TODO: I'll explore the four questions further and write a short paragraph about them]
-
 After running the command you will have the following files in your `~/.config/system-manager` folder:
 
-* flake.nix -- A flake entrypoint that loads the system.nix file
-* system.nix -- The declarative file that describes what your system should look like.
+* `flake.nix` -- A flake entrypoint that loads the system.nix file
+* `system.nix` -- The declarative file that describes what your system should look like.
 
 !!! Tip
     Because this is your first time running System Manager, Nix will download and build several files, which might take some time. This only happens once, and in the future, System Manager will run very quickly.
@@ -373,7 +371,3 @@ This creates the exact same object. Nix allows you to string together members wi
 !!! Note
     In the examples throughout this and other guides here, we use a mixture of the above syntax.
 
-
-## Thoughts on learning the Nix language
-
-[coming soon]

@@ -185,8 +185,8 @@ The sudo subcommand grants sudo access to System Manager, while running under th
 
 Before you begin with System Manager, you'll need to decide on your folder structure.
 
-!!! Tip
-    If you prefer, you can host all your System Manager configuration files on a remote Git repo (such as GitHub), and then you don't need to worry about where on your computer to store the files.
+!!! Note
+    If you prefer, you can host all your System Manager configuration files on a remote Git repo (such as GitHub), and then you don't need to worry about where on your computer to store the files. For more info, see [Working with Remote Flakes](#working-with-remote-flakes).
 
 Technically, you are free to set up your folders and files however you like; System Manager does not enforce any rules, thus allowing you full flexibility. Below are simply some options that we recommend.
 
@@ -384,12 +384,9 @@ We describe this technique in [Building System Manager .nix Files](#building-sys
 
 System Manager can optionally manage your `/etc/nix/nix.conf` file for you.
 
-If you have an existing `/etc/nix/nix.conf` file, it will be overwritten and your changes will be lost. Further, from that point on System Manager will manage the file for you, and you should not make changes to it.
+If you have an existing `/etc/nix/nix.conf` file, you'll need to delete it if you want System Manager to manage the file; then run System Manager again. From that point on System Manager will manage the file for you, and you should not make changes to it.
 
 Instead, you'll put the changes in one of your .nix files you'll be building to configure System Manager.
-
-For example:
-
 
 # Recommended Workflow for Starting Out
 
@@ -452,9 +449,9 @@ System Manager is now managing your system for you, including the /etc/nix/nix.c
 sudo env PATH="$PATH" nix run 'github:numtide/system-manager' -- switch --flake .
 ```
 
-Next, if you want to make sure experimental features are always on, you can add it to your flake as such:
+Next, if you want to make sure experimental features are always on, you can add it to your flake.
 
-[coming soon]
+[TODO: Another example here]
 
 # Using System Manager in a non-Interactive Setting
 
@@ -511,8 +508,6 @@ If you like, you can add these settings into your flake file, such as in the fol
     };
 }
 ```
-
-[TODO - move this to a different section]
 
 Remember, however, the flake shows what the system looks like *after* System Manager runs. That means these changes won't affect the first run of System Manager, which in this case is likely through a script. As such, the first time you run System Manager, you'll still need the `--accept-flake-config` flag. Then on subsequent runs you don't need the `--accept-flake-config flag`.
 
@@ -654,15 +649,14 @@ This is a typical flake with an `inputs` and an `outputs` section. The inputs lo
 
 Each module, in turn, must specify a config object, containing configuration settings. These can be in separate files, and Nix will merge them into a single config object that gets passed into `makeSystemConfig`.
 
-Your config objects can have:
+Your `config` attribute set can have:
 
-* nixpkgs.hostPlatform: This specifies the platform such as nixpkgs.hostPlatform = "x86_64-linux";
-* services
-* environment, consisting of
+* `nixpkgs.hostPlatform`: This specifies the platform such as nixpkgs.hostPlatform = "x86_64-linux";
+* `environment`, consisting of
   * systemPackages
   * etc
-* systemd.services
-* systemd.tmpfiles
+* `systemd.services`
+* `systemd.tmpfiles`
 
 For example, you could then replace the 
 
@@ -793,8 +787,8 @@ Type=oneshot
 WantedBy=system-manager.target
 ```
 
-> [!Tip]
-> Compare the lines in the `say-hello.service` file with the `say_hello.nix` file to see where each comes from.
+!!! Tip
+    Compare the lines in the `say-hello.service` file with the `say_hello.nix` file to see where each comes from.
 
 You can verify that it ran by running journalctl:
 
@@ -810,8 +804,8 @@ Nov 18 12:12:51 my-ubuntu say-hello-start[3488278]: Hello, world!
 Nov 18 12:12:51 my-ubuntu systemd[1]: Finished say-hello.service - say-hello.
 ```
 
-> [!Note]
-> If you remove the `./apps.nix` line from the `flake.nix`, System Manager will see that the configuration changed and that the apps listed in it are no longer in the configuration. As such, it will uninstall them. This is normal and expected behavior.
+!!! Note
+    If you remove the `./apps.nix` line from the `flake.nix`, System Manager will see that the configuration changed and that the apps listed in it are no longer in the configuration. As such, it will uninstall them. This is normal and expected behavior.
 
 
 ## Specifying the wantedBy Setting
