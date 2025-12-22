@@ -235,14 +235,7 @@ To install Nix, you can either use your distro's package manager, or use one of 
 > [!Tip]
 > Some Nix users have had difficulty installing Nix on Windows Subsystem for Linux (WSL) using the official installer. If you're using WSL, we recommend using Determinate Nix installer.
 
-## Example: Configuring System Services
-
-
-## Example: Creating files in the /etc folder
-
-
-
-### Supported Systems
+## Supported Systems
 
 System Manager is currently only supported on NixOS and Ubuntu. However, it can be used on other distributions by enabling the following:
 
