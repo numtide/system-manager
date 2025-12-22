@@ -26,8 +26,8 @@
         );
       nix-vm-test-lib =
         let
-          rev = "e34870b8dd2c2d203c05b4f931b8c33eaaf43b81";
-          sha256 = "sha256:1qp1fq96kv9i1nj20m25057pfcs1b1c9bj4502xy7gnw8caqr30d";
+          rev = "e5f2eb4827f6c0d2305706d53d3a77e2da878556";
+          sha256 = "sha256:0ndpkwprdgkx4p8ryqwrnrl484l4f95mn6sskgxsandwc0a331f4";
         in
         "${
           builtins.fetchTarball {
