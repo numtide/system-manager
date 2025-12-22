@@ -1,5 +1,7 @@
 # Reference Guide
 
+[PLEASE NOTE AS YOU EDIT THIS: I KNOW I MISSED BACKTICKS IN A LOT OF PLACES. I'LL GO THROUGH IT CAREFULLY AND ADD THEM ALL IN, SO DON'T WORRY ABOUT ADDING COMMENTS ABOUT THEM.]
+
 To get the most out of System Manager, we're offering this guide to help you make the best decisions based on your particular situation.
 
 # Table of Contents
@@ -179,7 +181,6 @@ The `prepopulate` subcommand puts all files defined by the given generation in p
 ### sudo
 
 The sudo subcommand grants sudo access to System Manager, while running under the current user. All created files with be owned by the current user.
-
 
 # Setting up a folder and file structure
 
