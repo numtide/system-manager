@@ -139,12 +139,12 @@ This example demonstrates how to install and configure nginx as a systemd servic
 ### Usage
 
 ```bash
-# Create the group and user
+# Create the group and user. Note that user management is coming soon to System Manager, after which these lines won't be necessary.
 sudo groupadd nginx
 sudo useradd -r -s /usr/sbin/nologin -g nginx nginx
 
 # Activate the configuration; make sure you're in the directory with the flake.nix file
-sudo nix run 'github:numtide/system-manager' -- switch --flake .
+nix run 'github:numtide/system-manager' -- switch --flake . --sudo
 
 # Check nginx status
 sudo systemctl status nginx
@@ -272,7 +272,7 @@ This example shows how to install Docker and configure it as a systemd service.
 
 ```bash
 # Activate the configuration
-sudo nix run 'github:numtide/system-manager' -- switch --flake /path/to/this/example
+nix run 'github:numtide/system-manager' -- switch --flake /path/to/this/example --sudo
 
 # Check Docker service status
 sudo systemctl status docker
@@ -435,7 +435,7 @@ This example demonstrates installing software packages like emacs and other deve
 
 ```bash
 # Activate the configuration
-sudo nix run 'github:numtide/system-manager' -- switch --flake /path/to/this/example
+nix run 'github:numtide/system-manager' -- switch --flake /path/to/this/example --sudo
 
 # Verify packages are available
 which emacs
@@ -536,7 +536,7 @@ emacs --version
 # Should show emacs version
 
 # Now switch to the minimal configuration
-sudo nix run 'github:numtide/system-manager' -- switch --flake /path/to/flake-minimal.nix
+nix run 'github:numtide/system-manager' -- switch --flake /path/to/flake-minimal.nix --sudo
 
 # Try to run emacs again
 which emacs
@@ -580,7 +580,7 @@ echo ""
 
 # Step 1: Apply full configuration
 echo "Step 1: Installing full software suite..."
-sudo nix run 'github:numtide/system-manager' -- switch --flake /path/to/full/config
+nix run 'github:numtide/system-manager' -- switch --flake /path/to/full/config --sudo
 echo ""
 
 # Step 2: Verify emacs is available
@@ -596,7 +596,7 @@ echo ""
 
 # Step 4: Apply minimal configuration
 echo "Step 3: Switching to minimal configuration (removing emacs)..."
-sudo nix run 'github:numtide/system-manager' -- switch --flake /path/to/minimal/config
+nix run 'github:numtide/system-manager' -- switch --flake /path/to/minimal/config --sudo
 echo ""
 
 # Step 5: Try to find emacs
@@ -826,7 +826,7 @@ This example demonstrates how to create and manage users using the userborn feat
 
 ```bash
 # Activate the configuration with user management
-sudo nix run 'github:numtide/system-manager' -- switch --flake /path/to/this/example
+nix run 'github:numtide/system-manager' -- switch --flake /path/to/this/example --sudo
 
 # Verify users were created
 id alice
@@ -922,7 +922,7 @@ users.users = {
 Then re-activate:
 
 ```bash
-sudo nix run 'github:numtide/system-manager' -- switch --flake /path/to/this/example
+nix run 'github:numtide/system-manager' -- switch --flake /path/to/this/example --sudo
 
 # The user will be removed from /etc/passwd and /etc/shadow
 # Note: Home directory may remain and need manual cleanup
@@ -948,7 +948,7 @@ echo ""
 
 # Apply the configuration
 echo "Step 1: Creating users..."
-sudo nix run 'github:numtide/system-manager' -- switch --flake /path/to/user/example
+nix run 'github:numtide/system-manager' -- switch --flake /path/to/user/example --sudo
 echo ""
 
 # Test user creation
@@ -1012,146 +1012,7 @@ echo "=== Test Complete ==="
 
 ---
 
-## General Tips and Best Practices
 
-### 1. Always Test in a VM First
-
-Before applying changes to your production system, test in a safe environment:
-
-```bash
-# Build the configuration first to check for errors
-nix build .#systemConfigs.default
-
-# For actual VM testing, use a tool like NixOS's VM builder
-# or test in a container/virtualized environment
-```
-
-### 2. Use Flake Inputs Follows
-
-This ensures consistent nixpkgs versions:
-
-```nix
-inputs = {
-  nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-  system-manager = {
-    url = "github:numtide/system-manager";
-    inputs.nixpkgs.follows = "nixpkgs";  # Use the same nixpkgs
-  };
-};
-```
-
-### 3. Modular Configuration
-
-Split your configuration into multiple files:
-
-```
-.
-├── flake.nix
-└── modules
-    ├── default.nix
-    ├── services.nix
-    ├── packages.nix
-    └── users.nix
-```
-
-### 4. Check Logs
-
-Always check systemd logs after activation:
-
-```bash
-sudo journalctl -u system-manager.target
-sudo journalctl -xe
-```
-
-### 5. Garbage Collection
-
-Regularly clean up old generations:
-
-```bash
-# Remove old system-manager profiles
-sudo nix-env --profile /nix/var/nix/profiles/system-manager-profiles --delete-generations old
-
-# Run garbage collection
-sudo nix-collect-garbage -d
-```
-
-### 6. Rollback
-
-If something goes wrong, you can rollback:
-
-```bash
-# List generations
-sudo nix-env --profile /nix/var/nix/profiles/system-manager-profiles --list-generations
-
-# Rollback to previous generation
-sudo nix-env --profile /nix/var/nix/profiles/system-manager-profiles --rollback
-
-# Activate the previous generation
-sudo nix run 'github:numtide/system-manager' -- activate
-```
-
----
-
-## Troubleshooting
-
-### Service Won't Start
-
-```bash
-# Check service status
-sudo systemctl status <service-name>
-
-# View detailed logs
-sudo journalctl -u <service-name> -n 50
-
-# Check if service file exists
-ls -la /etc/systemd/system/<service-name>.service
-```
-
-### Package Not Found in PATH
-
-```bash
-# Check if package is in the profile
-ls -la /nix/var/nix/profiles/system-manager-profiles/*/bin/
-
-# Verify the package is in your config
-cat /etc/installed-packages.txt
-
-# Check PATH
-echo $PATH
-```
-
-### Permission Denied
-
-Ensure you're running system-manager with sudo:
-
-```bash
-sudo nix run 'github:numtide/system-manager' -- switch --flake .
-```
-
-### Configuration Won't Build
-
-```bash
-# Check for syntax errors
-nix flake check
-
-# Build without activation
-nix build .#systemConfigs.default
-
-# View build logs
-nix log /nix/store/<hash>
-```
-
----
-
-## Additional Resources
-
-- [System Manager GitHub Repository](https://github.com/numtide/system-manager)
-- [System Manager Documentation](https://github.com/numtide/system-manager/tree/main/manual)
-- [NixOS Module Options](https://search.nixos.org/options)
-- [Nix Package Search](https://search.nixos.org/packages)
-- [PR #266: User Management with Userborn](https://github.com/numtide/system-manager/pull/266)
-
----
 
 ## Contributing
 

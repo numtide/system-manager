@@ -1,45 +1,12 @@
 # Getting Started
 
-If you’ve heard of NixOS, you’ve probably heard that it lets you define your entire system in configuration files and then reproduce that system anywhere with a single command. System Manager brings that same declarative model to any Linux distribution, with no reinstalling, no switching operating systems, and no special prerequisites beyond having Nix installed.
+If you've heard of NixOS, you've probably heard that it lets you define your entire system in configuration files and then reproduce that system anywhere with a single command. System Manager brings that same declarative model to any Linux distribution*, with no reinstalling, no switching operating systems, and no special prerequisites beyond having Nix installed.
 
-Instead of manually installing packages, editing /etc files, or configuring system services by hand, you describe the desired state of your machine in a small set of Nix files. System Manager reads that configuration, applies it safely, and keeps previous versions so you can roll back at any time. This guide introduces those ideas step by step, helping you gain the benefits of Nix-style reproducibility and consistency on the Linux system you already have.
+*Presently System Manager is only tested on Ubuntu, and is limited to only Linux distributions based on systemd.
 
-# System Prerequisites
+# Installation
 
-In order to run System Manager, you need to have:
-
-* Nix installed for all users
-
-* At least 12GB of disk space. (This is important in case you're running small systems, for example, in the cloud.)
-
-* Flakes turned on. (System Manager can work without Flakes, but for this Getting Started guide, we're using Flakes.)
-
-!!! Important
-    System Manager does not work with the single-user installation option for Nix.
-
-!!! Important
-    At this time, System Manager requires flakes to be enabled.
-
-## How can I tell whether Nix is installed for the whole system or just me?
-
-Simply type
-
-```
-which nix
-```
-
-
-If you see it's installed off of your home directory, e.g.:
-
-```
-/home/username/.nix-profile/bin/nix
-```
-
-Then it's installed just for you. Alternatively, if it's installed for everybody, it will be installed like so:
-
-```
-/nix/var/nix/profiles/default/bin/nix
-```
+See [Install.md](install.md) for information on installing System Manager.
 
 # Initializing Your System
 
@@ -67,7 +34,16 @@ nix run 'github:numtide/system-manager' -- init
 
 (Remember, the double dash -- signifies that any options following it are passed to the following command, in this case System Manager, rather than to the main command, `nix`).
 
-Then answer yes to the four questions.
+You might see the following for questions; you can simply answer yes to them:
+
+* Do you want to allow configuration setting 'extra-substituters' to be set to 'https://cache.numtide.com' (y/N)?
+
+* Do you want to permanently mark this value as trusted (y/N)?
+
+* Do you want to allow configuration setting 'extra-trusted-public-keys' to be set to 'niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=' (y/N)?
+
+* Do you want to permanently mark this value as trusted (y/N)?
+
 
 After running the command you will have the following files in your `~/.config/system-manager` folder:
 
@@ -211,19 +187,14 @@ First, in the ~/.config/system-manager folder, create a file apps.nix and place 
 
 This configuration states that the system being configured should have the `tldr` app present, and if isn't, System Manager will install it. (Notice how we phrased that! We didn't just say this file installs the app. With .nix files, it's important to get into the mindset that they state what the system should look like.)
 
-Now add the file to the modules list in flake.nix by replacing this line:
+Now add the file to the modules list in flake.nix by replacing this modules line:
 
-```nix
-        modules = [ ./system.nix ];
-```
-
-with
-
-```nix
-        modules = [
-            ./system.nix
-            ./apps.nix
-        ];
+```diff
+-         modules = [ ./system.nix ];
++         modules = [
++             ./system.nix
++             ./apps.nix
++         ];
 ```
 
 Note: By default, system.nix includes starter code and some commented out examples, and nothing else. So you can leave it in the list; in its original state, it doesn't do anything.
@@ -232,7 +203,7 @@ Next, we'll run System Manager.
 
 
 ```
-sudo env PATH="$PATH" nix run 'github:numtide/system-manager' -- switch --flake .
+nix run 'github:numtide/system-manager' -- switch --flake . --sudo
 ```
 
 After a short moment, the `tldr` app should be installed on your system.
@@ -314,19 +285,17 @@ To make the above work, your best bet is to create a single flake and add in ind
 
 # Concepts for people new to Nix
 
-[Not sure we want this here, or at all, but it's a start. I think this will help people who are new to Nix. If we don't want it, I'll move it to my own personal website.]
-
 ## Understanding Imperative State vs Declarative State
 
-Imperative state means you change the system by hand, step by step. You run commands like apt install, edit files under /etc with a text editor, toggle systemd services, and make changes as you think of them. You’re telling the computer how to do something:
+Imperative state means you change the system by hand, step by step. You run commands like apt install, edit files under /etc with a text editor, toggle systemd services, and make changes as you think of them. You're telling the computer how to do something:
 
 > "Install this package, then edit this file, then restart this service."
 
-Each action mutates the system in place, and over time the machine can drift into a state that’s hard to reproduce.
+Each action mutates the system in place, and over time the machine can drift into a state that's hard to reproduce.
 
 (To "mutate" something simply means to change it in place. When a system mutates, its files, settings, or state are altered directly, step by step, rather than being reconstructed from a clean, known description.)
 
-Declarative state, on the other hand, means you don’t tell the system how to do the steps — you tell it what you want the final system to look like, and the tool (System Manager, NixOS, Home Manager, etc.) figures out the steps automatically.
+Declarative state, on the other hand, means you don't tell the system how to do the steps — you tell it what you want the final system to look like, and the tool (System Manager, NixOS, Home Manager, etc.) figures out the steps automatically.
 
 > "This machine should have these packages, these /etc files, and these services enabled."
 When you activate that configuration, the tool builds the desired end state and applies it in a predictable, repeatable way.

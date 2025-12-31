@@ -58,63 +58,7 @@ To get the most out of System Manager, we're offering this guide to help you mak
 
 - FAQ (Maybe put in its own document)
 
-# System Requirements
-
-[TODO: I realized I wrote this section twice, here and in the getting-started guide. I'll combine them and provide the same in both, since some people might just read one doc or the other.]
-
-In order to use System Manager, you need:
-
-* **A Linux machine.** We've tested System Manager with Ubuntu both as standalone and under Windows Subsystem for Linux (WSL).
-* **At least 12GB Disk Space.** However, we recommend at least 16GB, as you will be very tight for space with under 16GB. (This is primarily due to Nix; if you're using System Manager to configure, for example, small servers on the Cloud, 8GB simply won't be enough.)
-* **Nix installed system-wide.** (System Manager doesn't work with a per-user installation of Nix)
-* **Flakes** enabled
-
-!!! Important
-    System Manager does not work with the single-user installation option for Nix.
-
-!!! Important
-    At this time, System Manager requires flakes to be enabled.
-
-# Installation
-
-Because Nix can load code (called "flakes") remotely, you don't need to download System Manager. Simply running it the first time will automatically install it in what's called the Nix Store, which is a special directory on your system (typically /nix/store) where Nix keeps all packages and their dependencies in isolation.
-
-
-## Regarding Experimental Features
-
-System Manager requires flakes to run. You can enable flakes using one of two methods:
-
-* By adding the following line to /etc/nix.conf
-
-```
-experimental-features = nix-command flakes
-```
-
-* Or by adding the --extra-experimental-features option to the `nix` command line like so:
-
-```
---extra-experimental-features 'nix-command flakes'
-```
-
-Note, however, that if you use the `init` subcommand to initialize an environment, and you do *not* have experimental features enabled in your `nix.conf` file, you will only get a default `system.nix` file, and not an associated `flake.nix` file.
-
-!!! Recommendation
-    If you need to run the init subcommand, but prefer to pass the `--extra-experimental-features` option to the command line, we recommend at least temporarily adding the aforementioned line to the `nix.conf` file.
-
-!!! Important
-    This is optional, but ultimately System Manager prefers to manage the nix.conf file for you, after which you can declare experimental features inside the flake.nix file as shown later in [Letting System Manager manage /etc/nix/nix.conf](#letting-system-manager-manage-etcnixnixconf).
-
-
-## Running under sudo
-
-System Manager needs `sudo` access to run. As such, we've provided a command-line option, --sudo, that allows you to grant sudo rights to System Manager.
-
-**System Manager is still in early development, and for now the --sudo commmand line option is required.**
-
-!!! Note
-    Adding yourself to Nix's trusted-users configuration won't help here. Trusted users have elevated privileges within the Nix daemon, but System Manager requires root filesystem permissions to modify /etc, manage services, and install system packages. You'll still need to use sudo.
-
-## Command Line Usage
+# Command Line Usage
 
 The basic command looks like this:
 
@@ -441,13 +385,13 @@ sudo rm /etc/nix/nix.conf
 [Need updated --sudo command]
 ```
 cd ~/.config/system-manager
-sudo env PATH="$PATH" nix run 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes' -- switch --flake .
+nix run 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes' -- switch --flake . --sudo
 ```
 
 System Manager is now managing your system for you, including the /etc/nix/nix.conf file. And experimental features are required and turned on through the flake.nix file, meaning you do not need to include the --extra-experimental-features flag when you run System Manager:
 
 ```
-sudo env PATH="$PATH" nix run 'github:numtide/system-manager' -- switch --flake .
+nix run 'github:numtide/system-manager' -- switch --flake . --sudo
 ```
 
 Next, if you want to make sure experimental features are always on, you can add it to your flake.
@@ -766,7 +710,7 @@ wantedBy = [ "system-manager.target" ];
 Activate it using the same nix command as earlier:
 
 ```
-sudo env PATH="$PATH" nix run 'github:numtide/system-manager' -- switch --flake .
+nix run 'github:numtide/system-manager' -- switch --flake . --sudo
 ```
 
 This will create a system service called `say-hello` (the name comes from the line `config.systemd.services.say-hello`) in a unit file at `/etc/systemd/system/say-hello.service` with the following inside it:
@@ -1181,7 +1125,7 @@ And make sure you've pushed it up to the repo. (If you don't do this step, nix w
 [todo: Let's create a repo under numtide for this instead of using mine --jeffrey]
 
 ```b
-sudo env PATH="$PATH" nix run 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes' -- switch --flake git+https://github.com/frecklefacelabs/system-manager-test#default
+nix run 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes' -- switch --flake git+https://github.com/frecklefacelabs/system-manager-test#default --sudo
 ```
 
 ### When should you update your flake.nix file?
@@ -1292,7 +1236,7 @@ For example, here's a configuration file that installs `bat`:
 Now return to the folder two levels up (the one containing flake.nix) and you can run System Manager:
 
 ```
-sudo env PATH="$PATH" nix run 'github:numtide/system-manager' -- switch --flake .
+nix run 'github:numtide/system-manager' -- switch --flake . --sudo
 ```
 
 !!! Remember
@@ -1327,7 +1271,7 @@ If, for example, under the `hosts` folder you have a folder called `tree`, and i
 Then you can choose to install tree by specifying the tree folder like so:
 
 ```
-sudo env PATH="$PATH" nix run 'github:numtide/system-manager' -- switch --flake '.#tree'
+nix run 'github:numtide/system-manager' -- switch --flake '.#tree' --sudo
 ```
 
 ## Using multiple configuration files with Blueprint
@@ -1403,7 +1347,7 @@ cowsay.nix:
 Now you can return to the top level where you flake.nix file is and run these two configuration files:
 
 ```
-sudo env PATH="$PATH" nix run 'github:numtide/system-manager' -- switch --flake '.#cli-tools'
+nix run 'github:numtide/system-manager' -- switch --flake '.#cli-tools' --sudo
 ```
 
 This means if you want to include various recipes, you can easily do so.
@@ -1415,7 +1359,7 @@ This means if you want to include various recipes, you can easily do so.
 
 Here's a .nix file that installs PostgreSQL.
 
-Note: System Manager is still in its early state, and doesn't yet have user management. As such, before you run this, you'll need to manually create the postgres user. Additionally, go ahead and create two directories and grant the postgres user access to them:
+Note: System Manager is still in its early state, and doesn't yet have user management, which is a planned feature that will be here soon. As such, for now, before you run this, you'll need to manually create the postgres user. Additionally, go ahead and create two directories and grant the postgres user access to them:
 
 ```bash
 # Create postgres user and group
@@ -1513,6 +1457,9 @@ Here, then, is the .nix file.
 ## Full Example: Installing Nginx
 
 Here's a .nix file that installs and configures nginx as a system service. Note that this version only supports HTTP and not HTTPS; later we provide an example that includes HTTPS.
+
+!!! Tip
+    This is simply an example to help you learn how to use System Manager. The usual way to install nginx under Nix is to use the [nginx package](https://search.nixos.org/packages?channel=25.11&show=nginx&query=nginx).
 
 ```nix
 { lib, pkgs, ... }:
@@ -1822,7 +1769,7 @@ Next, log out and log back in so that nix is available in the system path.
 And then you can run System Manager and deploy the app with one command:
 
 ```
-sudo env PATH="$PATH" nix run 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes' -- switch --flake github:frecklefacelabs/system-manager-custom-app-deploy/v1.0.0#default
+nix run 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes' -- switch --flake github:frecklefacelabs/system-manager-custom-app-deploy/v1.0.0#default --sudo
 ```
 
 (Remember, the first time System Manager runs, it takes up to five minutes or so to compile everything.)
