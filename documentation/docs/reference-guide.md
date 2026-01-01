@@ -80,8 +80,16 @@ This subcommand creates two initial files for use with system manager, a fully-f
 #### Example
 
 ```
+nix run 'github:numtide/system-manager' -- init
+```
+
+This will create the initial files in `~/.config/system-manager`.
+
+```
 nix run 'github:numtide/system-manager' -- init --path='/home/ubuntu/system-manager'
 ```
+
+This will create the initial files in `/home/ubuntu/system-manager`.
 
 !!! Note
     Presently, System Manager requires Flakes to be active. If you choose to not include the experimental features line in /etc/nix/nix.conf (and instead use the experimental features command line option), then init will only create a system.nix file, rather than both a flake.nix file and system.nix file. 

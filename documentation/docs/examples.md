@@ -6,161 +6,112 @@ This document provides practical examples of using system-manager to manage syst
 
 ## Table of Contents
 
-1. [Example 1: Installing Nginx as a systemd Unit](#example-1-installing-nginx-as-a-systemd-unit)
+1. [Example 1: Installing a Timer](#example-1-installing-a-timer)
 2. [Example 2: Installing Docker](#example-2-installing-docker)
 3. [Example 3: Software Package Management (Emacs and Others)](#example-3-software-package-management-emacs-and-others)
 4. [Example 4: User Management with Userborn (PR #266)](#example-4-user-management-with-userborn-pr-266)
 
 ---
 
-## Example 1: Installing Nginx as a systemd Unit
+## Example 1: Installing a Timer
 
-This example demonstrates how to install and configure nginx as a systemd service using system-manager.
+This example demonstrates how to install a timer that runs every one minute. First, here's a flake.nix file:
 
 ### flake.nix
 
 ```nix
 {
-  description = "System Manager - Nginx Example";
+  description = "Standalone System Manager configuration";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # Specify the source of System Manager and Nixpkgs.
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     system-manager = {
       url = "github:numtide/system-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
-  outputs = { self, nixpkgs, system-manager }: {
-    systemConfigs.default = system-manager.lib.makeSystemConfig {
-      modules = [
-        {
-          nixpkgs.hostPlatform = "x86_64-linux";
+  outputs =
+    {
+      self,
+      nixpkgs,
+      system-manager,
+      ...
+    }:
+    let
+      system = "x86_64-linux";
+    in
+    {
+      systemConfigs.default = system-manager.lib.makeSystemConfig {
+        # Specify your system configuration modules here, for example,
+        # the path to your system.nix.
+        modules = [ ./system.nix ];
 
-          # Install nginx package
-          environment.systemPackages = with nixpkgs.legacyPackages.x86_64-linux; [
-            nginx
-          ];
+        # Optionally specify extraSpecialArgs and overlays
+      };
+    };
+}
+```
 
-          # Create nginx configuration
-          environment.etc."nginx/nginx.conf".text = ''
-            user nginx nginx;
-            worker_processes auto;
-            error_log /var/log/nginx/error.log;
-            pid /run/nginx.pid;
+And then here's a system.nix file referenced from within `flake.nix`:
 
-            events {
-              worker_connections 1024;
-            }
+```nix
+{
+  description = "Standalone System Manager configuration";
 
-            http {
-              include       /etc/nginx/mime.types;
-              default_type  application/octet-stream;
-
-              log_format main '$remote_addr - $remote_user [$time_local] "$request" '
-                              '$status $body_bytes_sent "$http_referer" '
-                              '"$http_user_agent" "$http_x_forwarded_for"';
-
-              access_log /var/log/nginx/access.log main;
-
-              sendfile on;
-              tcp_nopush on;
-              keepalive_timeout 65;
-
-              # Default server
-              server {
-                listen 80 default_server;
-                listen [::]:80 default_server;
-                server_name _;
-                root /var/www/html;
-
-                location / {
-                  index index.html index.htm;
-                }
-
-                error_page 404 /404.html;
-                location = /404.html {
-                }
-
-                error_page 500 502 503 504 /50x.html;
-                location = /50x.html {
-                }
-              }
-            }
-          '';
-
-          # Create a simple index page
-          environment.etc."nginx/html/index.html".text = ''
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <title>Welcome to nginx via System Manager!</title>
-            </head>
-            <body>
-              <h1>Success!</h1>
-              <p>Nginx is running via system-manager.</p>
-            </body>
-            </html>
-          '';
-
-          # Create systemd service for nginx
-          systemd.services.nginx = {
-            enable = true;
-            description = "The nginx HTTP and reverse proxy server";
-            after = [ "network.target" ];
-            wantedBy = [ "system-manager.target" ];
-
-            serviceConfig = {
-              Type = "forking";
-              PIDFile = "/run/nginx.pid";
-              ExecStartPre = "${nixpkgs.legacyPackages.x86_64-linux.nginx}/bin/nginx -t";
-              ExecStart = "${nixpkgs.legacyPackages.x86_64-linux.nginx}/bin/nginx";
-              ExecReload = "/bin/kill -s HUP $MAINPID";
-              ExecStop = "/bin/kill -s QUIT $MAINPID";
-              PrivateTmp = true;
-              Restart = "on-failure";
-              RestartSec = "10s";
-            };
-          };
-
-          # Create required directories
-          systemd.tmpfiles.rules = [
-            "d /var/log/nginx 0755 nginx nginx -"
-            "d /var/www/html 0755 nginx nginx -"
-            "L+ /var/www/html/index.html - - - - /etc/nginx/html/index.html"
-          ];
-        }
-      ];
+  inputs = {
+    # Specify the source of System Manager and Nixpkgs.
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    system-manager = {
+      url = "github:numtide/system-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
   };
+
+  outputs =
+    {
+      self,
+      nixpkgs,
+      system-manager,
+      ...
+    }:
+    let
+      system = "x86_64-linux";
+    in
+    {
+      systemConfigs.default = system-manager.lib.makeSystemConfig {
+        # Specify your system configuration modules here, for example,
+        # the path to your system.nix.
+        modules = [ ./system.nix ];
+
+        # Optionally specify extraSpecialArgs and overlays
+      };
+    };
 }
 ```
 
 ### Usage
 
 ```bash
-# Create the group and user. Note that user management is coming soon to System Manager, after which these lines won't be necessary.
-sudo groupadd nginx
-sudo useradd -r -s /usr/sbin/nologin -g nginx nginx
+# Activate the configuration
+nix run 'github:numtide/system-manager' -- switch --flake /path/to/this/example --sudo
+```
 
-# Activate the configuration; make sure you're in the directory with the flake.nix file
-nix run 'github:numtide/system-manager' -- switch --flake . --sudo
+Then restart the system; the timer will start automatically.
 
-# Check nginx status
-sudo systemctl status nginx
-
-# Test the web server
-curl http://localhost
-
-# View logs
-sudo journalctl -u nginx -f
+```bash
+# View the file created every one minute
+cat /tmp/simple-timer.log
 ```
 
 ### Notes
 
-- Ensure you have the `nginx` user and group created on your system before activating
-- You may need to adjust file paths based on your distribution
-- The nginx binary location is pinned from nixpkgs to ensure reproducibility
+- The timer will not start automatically until you reboot the system. If you wish to start it manually, you can do so by typing:
+
+```bash
+sudo systemctl start simple-timer.timer
+```
 
 ---
 
