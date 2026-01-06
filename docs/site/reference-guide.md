@@ -85,7 +85,7 @@ nix run 'github:numtide/system-manager' -- init --path='/home/ubuntu/system-mana
 This will create the initial files in `/home/ubuntu/system-manager`.
 
 !!! Note
-    Presently, System Manager requires flakes to be active. If you choose to not include the experimental features line in `/etc/nix/nix.conf` (and instead use the experimental features command line option), then `init` will only create a `system.nix` file, rather than both a `flake.nix` file and `system.nix` file. 
+    System Manager requires flakes to be enabled in `/etc/nix/nix.conf`. See [Enabling Flakes](install.md#enabling-flakes) for setup instructions. 
 
 ### switch
 

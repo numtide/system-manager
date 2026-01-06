@@ -35,9 +35,6 @@ After running the command you will have the following files in your `~/.config/s
 !!! Tip
     Because this is your first time running System Manager, Nix will download and build several files, which might take some time. This only happens once, and in the future, System Manager will run very quickly.
 
-!!! Note
-    If you activate flakes through the command-line, but not through your `/etc/nix/nix.conf` file, then System Manager won't create the initial `flake.nix` file for you. In that case, you can manually create it and paste in the code we provide below, or activate the experimental features (`nix-command` and `flakes`) in `/etc/nix/nix.conf`, and then re-run the System Manager `init` command.
-
 Here are the contents of the files that were created:
 
 ## flake.nix
