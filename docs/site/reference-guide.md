@@ -4,11 +4,7 @@ To get the most out of System Manager, we're offering this guide to help you mak
 
 # Table of Contents
 
-- [System Requirements](#system-requirements)
-- [Installation](#installation)
-  - [Regarding Experimental Features](#regarding-experimental-features)
-  - [Running under sudo](#running-under-sudo)
-  - [Command Line Usage](#command-line-usage)
+- [Command Line Usage](#command-line-usage)
 - [Command-line Options](#command-line-options)
   - [init](#init)
   - [switch](#switch)
@@ -53,8 +49,6 @@ To get the most out of System Manager, we're offering this guide to help you mak
   - [Full Example: Managing a System that runs Custom Software](#full-example-managing-a-system-that-runs-custom-software)
   - [Live example](#live-example)
 - [Optional: Installing System Manager Locally](#optional-installing-system-manager-locally)
-
-- FAQ (Maybe put in its own document)
 
 # Command Line Usage
 
@@ -1559,9 +1553,9 @@ http {
 
 ```
 
-## Full Exapmle: Installing Nginx with for HTTPS with a Secure Certificate
+## Full Example: Installing Nginx for HTTPS with a Secure Certificate
 
-Here's an example that installs nginx. This exapmle shows places where you would copy in your own secure certificate information.
+Here's an example that installs nginx. This example shows places where you would copy in your own secure certificate information.
 
 ```nix
 { lib, pkgs, ... }:

@@ -40,7 +40,7 @@ Note, however, that if you use the `init` subcommand to initialize an environmen
     If you need to run the init subcommand, but prefer to pass the `--extra-experimental-features` option to the command line, we recommend at least temporarily adding the aforementioned line to the `nix.conf` file.
 
 !!! Important
-    This is optional, but ultimately System Manager prefers to manage the nix.conf file for you, after which you can declare experimental features inside the flake.nix file as shown later in [Letting System Manager manage /etc/nix/nix.conf](#letting-system-manager-manage-etcnixnixconf).
+    This is optional, but ultimately System Manager prefers to manage the nix.conf file for you, after which you can declare experimental features inside the flake.nix file as shown later in [Letting System Manager manage /etc/nix/nix.conf](reference-guide.md#letting-system-manager-manage-etcnixnixconf).
 
 
 ## Running under sudo
