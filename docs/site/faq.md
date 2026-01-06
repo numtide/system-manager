@@ -28,7 +28,7 @@ inputs = {
 };
 ```
 
-By default, each flake input pins its own version of its dependencies, which means you could end up with multiple versions of nixpkgs. The `follows` directive tells Nix to use your nixpkgs instead of the one bundled with system-manager, ensuring consistent package versions across your entire configuration while reducing disk usage and evaluation time.
+By default, each flake input pins its own version of its dependencies, which means you could end up with multiple versions of nixpkgs. The `follows` directive tells Nix to use your nixpkgs instead of the one bundled with System Manager, ensuring consistent package versions across your entire configuration while reducing disk usage and evaluation time.
 
 ### 3. Modular Configuration
 
@@ -114,7 +114,7 @@ echo $PATH
 
 ### Permission Denied
 
-Ensure you're running system-manager with sudo:
+Ensure you're running System Manager with sudo:
 
 ```bash
 nix run 'github:numtide/system-manager' -- switch --flake . --sudo

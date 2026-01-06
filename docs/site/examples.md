@@ -1,6 +1,6 @@
 # System Manager Examples
 
-This document provides practical examples of using system-manager to manage system configurations on any Linux distribution. Each example demonstrates different capabilities and use cases.
+This document provides practical examples of using System Manager to manage system configurations on any Linux distribution. Each example demonstrates different capabilities and use cases.
 
 ## Table of Contents
 
@@ -498,7 +498,7 @@ cat /etc/installed-packages.txt
 
 ### What Actually Happens When You Remove a Package?
 
-When you remove a package from your system-manager configuration and re-run it:
+When you remove a package from your System Manager configuration and re-run it:
 
 1. **The package is removed from the system PATH**: The symbolic links in `/nix/var/nix/profiles/system-manager-profiles/*/bin/` will no longer point to the removed package
 
@@ -508,7 +508,7 @@ When you remove a package from your system-manager configuration and re-run it:
 
 4. **The package becomes eligible for garbage collection**: Once it's not referenced by any profile, running `nix-collect-garbage` will remove it
 
-5. **Configuration files are updated**: Any `/etc/` files managed by system-manager are updated to reflect the new state
+5. **Configuration files are updated**: Any `/etc/` files managed by System Manager are updated to reflect the new state
 
 ### Demonstration Script
 
@@ -586,7 +586,7 @@ echo "but the files remain for potential rollback until you garbage collect."
 
 ## Example 4: User Management with Userborn (PR #266)
 
-This example demonstrates how to create and manage users using the userborn feature from PR #266. This is currently a work-in-progress feature but shows the future direction of user management in system-manager.
+This example demonstrates how to create and manage users using the userborn feature from PR #266. This is currently a work-in-progress feature but shows the future direction of user management in System Manager.
 
 **Note**: This example is based on PR #266 which is still in draft status. The implementation may change before being merged.
 
@@ -820,7 +820,7 @@ sudo chmod 600 /run/secrets/alice-password
 
 ### User Modification Example
 
-To modify a user, simply update the configuration and re-run system-manager:
+To modify a user, simply update the configuration and re-run System Manager:
 
 ```nix
 # Add alice to more groups
@@ -958,4 +958,4 @@ echo "=== Test Complete ==="
 
 ## Contributing
 
-If you have additional examples or improvements to these examples, please contribute to the [system-manager repository](https://github.com/numtide/system-manager) or this documentation repository.
+If you have additional examples or improvements to these examples, please contribute to the [System Manager repository](https://github.com/numtide/system-manager) or this documentation repository.
