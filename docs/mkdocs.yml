@@ -124,7 +124,7 @@ nav:
     - Home: index.md
     - Introduction: introduction.md
     - Getting Started: getting-started.md
-    - System Requirements: install.md
+    - System Requirements: requirements.md
     - Reference Guide: reference-guide.md
     - Examples: examples.md
     - FAQ: faq.md

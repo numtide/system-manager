@@ -23,5 +23,5 @@ System Manager is ideal for:
 ## Next Steps
 
 - [Getting Started](getting-started.md) - Configure your first system
-- [System Requirements](install.md) - Check prerequisites
+- [System Requirements](requirements.md) - Check prerequisites
 - [Examples](examples.md) - See practical use cases

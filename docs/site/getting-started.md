@@ -4,29 +4,11 @@ If you've heard of NixOS, you've probably heard that it lets you define your ent
 
 *Presently System Manager is only tested on Ubuntu, and is limited to only Linux distributions based on systemd.
 
-# Installation
-
-See [Install.md](install.md) for information on installing System Manager.
-
 # Initializing Your System
 
-To get started with System Manager, you can run our init subcommand, which will create an initial set of files in the `~/.config/system-manager` folder. 
+Before proceeding, ensure you have met all [System Requirements](requirements.md), including enabling flakes.
 
-For this first step to work, you **must** enable experimental features in the nix.conf file. (Simply adding the flags to the nix command isn't enough in this step. Afterwards you can remove the setting from your nix.conf file.)
-
-In the shell prompt, use your favorite editor with sudo to open the following file:
-
-```
-vi /etc/nix/nix.conf
-```
-
-Add the following line if it isn't already present:
-
-```
-experimental-features = nix-command flakes
-```
-
-Save the file and exit. Next, enter the following:
+To get started with System Manager, run the init subcommand, which will create an initial set of files in the `~/.config/system-manager` folder:
 
 ```
 nix run 'github:numtide/system-manager' -- init
