@@ -6,7 +6,7 @@ If you've heard of NixOS, you've probably heard that it lets you define your ent
 
 # Initializing Your System
 
-Before proceeding, ensure you have met all [System Requirements](requirements.md), including enabling flakes.
+Before proceeding, ensure you have [installed Nix with flakes enabled](install.md).
 
 To get started with System Manager, run the init subcommand, which will create an initial set of files in the `~/.config/system-manager` folder:
 
