@@ -2,7 +2,7 @@
 
 **Declarative system configuration for non-NixOS Linux distributions.**
 
-System Manager brings the power of NixOS-style declarative configuration to other Linux distributions running systemd. Define your packages, services, and /etc files in Nix, and System Manager ensures your system matches that configuration.
+System Manager brings the power of NixOS-style declarative configuration to other Linux distributions running systemd. Define your packages, services, and `/etc` files in Nix, and System Manager ensures your system matches that configuration.
 
 ## Why System Manager?
 

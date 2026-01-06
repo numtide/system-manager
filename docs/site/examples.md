@@ -504,7 +504,7 @@ When you remove a package from your System Manager configuration and re-run it:
 
 2. **The Nix store paths remain**: The actual package files stay in `/nix/store/` until garbage collection
 
-3. **No files are deleted from /nix/store automatically**: System-manager doesn't immediately delete packages to allow rollbacks
+3. **No files are deleted from `/nix/store` automatically**: System Manager doesn't immediately delete packages to allow rollbacks
 
 4. **The package becomes eligible for garbage collection**: Once it's not referenced by any profile, running `nix-collect-garbage` will remove it
 
@@ -580,7 +580,7 @@ echo "but the files remain for potential rollback until you garbage collect."
 - **The software IS effectively uninstalled** from a user perspective
 - **Store files persist for rollback capability** until garbage collection
 - **You can always rollback** to previous configurations that had those packages
-- **Garbage collection is manual** - run `nix-collect-garbage` to reclaim disk space
+- **Garbage collection is manual**: Run `nix-collect-garbage` to reclaim disk space
 
 ---
 

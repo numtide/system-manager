@@ -28,7 +28,7 @@ inputs = {
 };
 ```
 
-By default, each flake input pins its own version of its dependencies, which means you could end up with multiple versions of nixpkgs. The `follows` directive tells Nix to use your nixpkgs instead of the one bundled with System Manager, ensuring consistent package versions across your entire configuration while reducing disk usage and evaluation time.
+By default, each flake input pins its own version of its dependencies, which means you could end up with multiple versions of `nixpkgs`. The `follows` directive tells Nix to use your `nixpkgs` instead of the one bundled with System Manager, ensuring consistent package versions across your entire configuration while reducing disk usage and evaluation time.
 
 ### 3. Modular Configuration
 
@@ -99,7 +99,7 @@ ls -la /etc/systemd/system/<service-name>.service
 
 ### Package Not Found in PATH
 
-If you just installed System Manager, and installed a package through it, try logging out and logging back in to pick up the path.
+If you just installed System Manager, and installed a package through it, try logging out and logging back in to pick up the `PATH`.
 
 ```bash
 # Check if package is in the profile
@@ -108,7 +108,7 @@ ls -la /nix/var/nix/profiles/system-manager-profiles/*/bin/
 # Verify the package is in your config
 cat /etc/installed-packages.txt
 
-# Check PATH
+# Check $PATH
 echo $PATH
 ```
 
