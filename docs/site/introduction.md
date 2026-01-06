@@ -24,4 +24,4 @@ System Manager is ideal for:
 
 - [Getting Started](getting-started.md) - Configure your first system
 - [Installation](install.md) - Install Nix and get started
-- [Examples](examples.md) - See practical use cases
+- [Examples](reference/examples/index.md) - See practical use cases
