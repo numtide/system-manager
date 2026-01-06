@@ -119,3 +119,11 @@ plugins:
           type: date
           fallback_to_build_date: true
     - tags
+
+nav:
+    - Home: index.md
+    - Getting Started: getting-started.md
+    - System Requirements: install.md
+    - Reference Guide: reference-guide.md
+    - Examples: examples.md
+    - FAQ: faq.md
