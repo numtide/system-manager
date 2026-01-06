@@ -1,21 +1,11 @@
-<div align="center">
-
-# System Manager
-
-<img src="system-manager.svg" height="150"/>
-
-**Manage system config using nix on any distro**
-
-*A <a href="https://numtide.com/">numtide</a> project.*
+# <img alt="System Manager" src="https://banner.numtide.com/banner/numtide/system-manager.svg">
 
 <p>
 <a href="https://github.com/numtide/system-manager/actions/workflows/update-flake-lock.yml"><img src="https://github.com/numtide/system-manager/actions/workflows/update-flake-lock.yml/badge.svg"/></a>
 <a href="https://app.element.io/#/room/#home:numtide.com"><img src="https://img.shields.io/badge/Support-%23numtide-blue"/></a>
 </p>
 
-</div>
-
-System manager is a tool to configure Linux machines. Unlike Chef, Puppet and Ansible, it only controls a small subset, and most of its changes are done in an immutable layer, thanks to the power of Nix.
+System Manager is a tool to configure Linux machines. Unlike Chef, Puppet and Ansible, it only controls a small subset, and most of its changes are done in an immutable layer, thanks to the power of Nix.
 
 Using NixOS-style declarative configurations, you describe what your system should look like, by specifying packages, services, and settings all in Nix, then apply it safely and atomically with a single command. Each change is reproducible, just like NixOS generations.
 
