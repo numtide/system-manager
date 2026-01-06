@@ -5,7 +5,71 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
+         <loc>https://system-manager.net/main/faq/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
          <loc>https://system-manager.net/main/getting-started/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://system-manager.net/main/install/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://system-manager.net/main/introduction/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://system-manager.net/main/reference/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://system-manager.net/main/reference/blueprint/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://system-manager.net/main/reference/cli/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://system-manager.net/main/reference/configuration/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://system-manager.net/main/reference/modules/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://system-manager.net/main/reference/remote-flakes/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://system-manager.net/main/reference/examples/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://system-manager.net/main/reference/examples/custom-app/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://system-manager.net/main/reference/examples/docker/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://system-manager.net/main/reference/examples/nginx-https/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://system-manager.net/main/reference/examples/nginx/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://system-manager.net/main/reference/examples/postgresql/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://system-manager.net/main/reference/examples/timer/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
 </urlset>
