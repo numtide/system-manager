@@ -1,7 +1,5 @@
 # Reference Guide
 
-[PLEASE NOTE AS YOU EDIT THIS: I KNOW I MISSED BACKTICKS IN A LOT OF PLACES. I'LL GO THROUGH IT CAREFULLY AND ADD THEM ALL IN, SO DON'T WORRY ABOUT ADDING COMMENTS ABOUT THEM.]
-
 To get the most out of System Manager, we're offering this guide to help you make the best decisions based on your particular situation.
 
 # Table of Contents
@@ -67,6 +65,7 @@ nix run 'github:numtide/system-manager' -- switch --flake . --sudo
 ```
 
 This is the most common scenario you'll use.
+
 ## Command-line Options
 
 ### init
@@ -79,13 +78,13 @@ This subcommand creates two initial files for use with system manager, a fully-f
 
 #### Example
 
-```
+```sh
 nix run 'github:numtide/system-manager' -- init
 ```
 
 This will create the initial files in `~/.config/system-manager`.
 
-```
+```sh
 nix run 'github:numtide/system-manager' -- init --path='/home/ubuntu/system-manager'
 ```
 
@@ -352,13 +351,13 @@ To do so requires a careful set of steps. Follow these steps precisely when star
 
 1. Temporarily run Run system manager init with experimental features enabled by including the following line in /etc/nix/nix.conf; this way `init` will generate a `flake.nix` file:
 
-```
+```ini
 experimental-features = nix-command flakes
 ```
 
 And then running System Manager with the init subcommand:
 
-```
+```sh
 nix run 'github:numtide/system-manager' -- init
 ```
 
@@ -366,8 +365,8 @@ nix run 'github:numtide/system-manager' -- init
 
 2. Under ~/.config/system-manager, edit the `flake.nix` file, replacing this line:
 
-```
- modules = [ ./system.nix ];
+```nix
+  modules = [ ./system.nix ];
 ```
 
 with this:
@@ -383,15 +382,14 @@ modules = [
 
 3. Delete the /etc/nix.conf file, optionally backing it up first:
 
-```
+```sh
 sudo cp /etc/nix/nix.conf /etc/nix/nix_old # optional
 sudo rm /etc/nix/nix.conf
 ```
 
 4. Run System Manager to initialize your system, with the experimental flags set this one time in the command-line:
 
-[Need updated --sudo command]
-```
+```sh
 cd ~/.config/system-manager
 nix run 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes' -- switch --flake . --sudo
 ```
@@ -404,7 +402,7 @@ nix run 'github:numtide/system-manager' -- switch --flake . --sudo
 
 Next, if you want to make sure experimental features are always on, you can add it to your flake.
 
-[TODO: Another example here]
+<!-- [TODO: Another example here] -->
 
 # Using System Manager in a non-Interactive Setting
 
@@ -422,7 +420,7 @@ The reason for these questions is Numtide has made pre-built binary versions of 
 
 But doing so can cause problems with a non-interactive script. To run System Manager in a script, you can simply add the --accept-flake-config option like so:
 
-```
+```sh
 nix run 'github:numtide/system-manager' --accept-flake-config --extra-experimental-features 'nix-command flakes' -- switch --flake . --sudo
 ```
 
@@ -475,7 +473,7 @@ If you already have your .nix files, you don't need to run the init subcommand. 
 As an example, here's a starting nix.flake file:
 
 **flake.nix**
-```
+```nix
 {
   description = "Standalone System Manager configuration";
 
@@ -528,19 +526,19 @@ Now here's the glow.nix file referenced above; it simply installs the `glow` com
 
 go ahead and delete /etc/nix/nix.conf:
 
-```
+```sh
 sudo rm /etc/nix/nix.conf
 ```
 
 And now run System Manager. Because you removed nix.conf, you'll need to turn on experimental features as a command-line option.
 
-```
+```sh
 nix run 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes' -- switch --flake . --sudo
 ```
 
 After System Manager runs, you'll have the changes in place (in this case the `glow` command added), and you'll be able to manage features, including experimental features, through your flake. And because you turned on the flakes experimental features, future runs of System Manager no longer need the flags. You can sipmly run:
 
-```
+```sh
 nix run 'github:numtide/system-manager' -- switch --flake . --sudo
 ```
 
@@ -613,7 +611,7 @@ Your `config` attribute set can have:
 
 For example, you could then replace the 
 
-```
+```nix
 modules = [ ./system.nix ];
 ```
 
@@ -709,7 +707,7 @@ Note:
 
 This line is required in the above example:
 
-```
+```nix
 wantedBy = [ "system-manager.target" ];
 ```
 
@@ -717,13 +715,13 @@ wantedBy = [ "system-manager.target" ];
 
 Activate it using the same nix command as earlier:
 
-```
+```sh
 nix run 'github:numtide/system-manager' -- switch --flake . --sudo
 ```
 
 This will create a system service called `say-hello` (the name comes from the line `config.systemd.services.say-hello`) in a unit file at `/etc/systemd/system/say-hello.service` with the following inside it:
 
-```
+```systemd
 [Unit]
 Description=say-hello
 
@@ -745,13 +743,13 @@ WantedBy=system-manager.target
 
 You can verify that it ran by running journalctl:
 
-```
+```sh
 journalctl -n 20
 ```
 
 and you can find the following output in it:
 
-```
+```log
 Nov 18 12:12:51 my-ubuntu systemd[1]: Starting say-hello.service - say-hello...
 Nov 18 12:12:51 my-ubuntu say-hello-start[3488278]: Hello, world!
 Nov 18 12:12:51 my-ubuntu systemd[1]: Finished say-hello.service - say-hello.
@@ -765,7 +763,7 @@ Nov 18 12:12:51 my-ubuntu systemd[1]: Finished say-hello.service - say-hello.
 
 The wantedBy attribute tells systemd when to automatically start a service. System Manager includes its own systemd target that you can use in the wantedBy setting to automatically start any services immediately after applying the changes, as well as after reboot. Here's an example wantedBy line in a .nix configuration file:
 
-```
+```nix
 wantedBy = [ "system-manager.target" ];
 ```
 
@@ -773,7 +771,7 @@ wantedBy = [ "system-manager.target" ];
 
 But you're not limited to just this target. For example, if you're creating a system service that runs on a schedule, you might use this:
 
-```
+```nix
 wantedBy = [ "timers.target" ]
 ```
 
@@ -844,7 +842,7 @@ Notice this flake references a file called apps.nix. In that file we'll add to t
 
 When you run System Manager, you should have the packages called `hello` and `bat` available.
 
-```
+```console
 $ which hello
 /run/system-manager/sw/bin//hello
 $ which bat
@@ -966,7 +964,7 @@ This creates a single file inside the folder `/etc/test/test2/` and the file is 
 
 After running the above with System Manager, you can verify the file exists:
 
-```
+```console
 $ cat /etc/test/test2/something.txt
 This is just a test!!
 ```
@@ -1044,7 +1042,7 @@ Common examples:
 
 To specify a user and group as owners for a file, you can either use the user ID and group ID, or the user name and group name. Here's an example that uses user ID and group ID (notice we set `uid` and `gid`):
 
-```
+```nix
 with_ownership = {
   text = ''
     This is just a test!
@@ -1057,7 +1055,7 @@ with_ownership = {
 
 And here's an example that uses named user and group (notice we set `user` and `group`):
 
-```
+```nix
 with_ownership2 = {
   text = ''
     This is just a test!
@@ -1124,7 +1122,7 @@ Instead, we recommend starting with a fresh machine. One option is to spin up an
 
 After starting with a fresh machine, install Nix, copy over your flake.nix and supporting files, and test it out. Once you're ready, make sure your flake.lock file is up to date. You can create or update the flake.nix file by typing:
 
-```
+```sh
 nix flake update
 ```
 
@@ -1132,7 +1130,7 @@ And make sure you've pushed it up to the repo. (If you don't do this step, nix w
 
 [todo: Let's create a repo under numtide for this instead of using mine --jeffrey]
 
-```b
+```sh
 nix run 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes' -- switch --flake git+https://github.com/frecklefacelabs/system-manager-test#default --sudo
 ```
 
@@ -1177,7 +1175,7 @@ In this section we should you how to use Blueprint with System Manager.
 
 Blueprint provides its own initialization that you can start with if you don't already have a flake.nix file using Blueprint. The command to type is:
 
-```
+```sh
 nix flake init -t github:numtide/blueprint
 ```
 
@@ -1201,7 +1199,7 @@ This results in the following flake:
 
 Now add System Manager to its inputs section:
 
-```
+```nix
     system-manager = {
         url = "github:numtide/system-manager";
         inputs.nixpkgs.follows = "nixpkgs";
@@ -1210,16 +1208,14 @@ Now add System Manager to its inputs section:
 
 Next, create a folder called hosts, and under that a folder called default:
 
-```
-mkdir hosts
-cd hosts
-mkdir default
-cd default
+```sh
+mkdir -p hosts/default
+cd hosts/default
 ```
 
 Inside `default` is where you'll put your configuration file.
 
-**This configuration file must be named `system-configuration.nix**`.
+**This configuration file must be named `system-configuration.nix**.
 
 For example, here's a configuration file that installs `bat`:
 
@@ -1243,7 +1239,7 @@ For example, here's a configuration file that installs `bat`:
 
 Now return to the folder two levels up (the one containing flake.nix) and you can run System Manager:
 
-```
+```sh
 nix run 'github:numtide/system-manager' -- switch --flake . --sudo
 ```
 
@@ -1252,7 +1248,7 @@ nix run 'github:numtide/system-manager' -- switch --flake . --sudo
 
 Then you should find `bat` on your path:
 
-```
+```console
 $ which bat
 /run/system-manager/sw/bin//bat
 ```
@@ -1278,7 +1274,7 @@ If, for example, under the `hosts` folder you have a folder called `tree`, and i
 
 Then you can choose to install tree by specifying the tree folder like so:
 
-```
+```sh
 nix run 'github:numtide/system-manager' -- switch --flake '.#tree' --sudo
 ```
 
@@ -1286,16 +1282,13 @@ nix run 'github:numtide/system-manager' -- switch --flake '.#tree' --sudo
 
 If you want to load multiple configuration files at once, you can create a special system-configuration.nix file that loads multiple files from a `modules` folder (or any name you choose). To accomplish this, create a folder under hosts; for example, you might name it cli-tools. Starting in the folder with flake.nix:
 
-```
-cd hosts
-mkdir cli-tools
-cd cli-tools
-mkdir modules
+```sh
+mkdir -p hosts/cli-tools/modules
 ```
 
 Then inside the `cli-tools` folder, create a `system-configuration.nix` file with the following:
 
-```
+```nix
 { config, lib, pkgs, ... }:
 {
   # Import all your modular configs - they auto-merge! ✨
@@ -1315,7 +1308,7 @@ Then inside the `cli-tools` folder, create a `system-configuration.nix` file wit
 
 Now move into the `modules` folder:
 
-```
+```sh
 cd modules
 ```
 
@@ -1354,7 +1347,7 @@ cowsay.nix:
 
 Now you can return to the top level where you flake.nix file is and run these two configuration files:
 
-```
+```sh
 nix run 'github:numtide/system-manager' -- switch --flake '.#cli-tools' --sudo
 ```
 
@@ -1369,7 +1362,7 @@ Here's a .nix file that installs PostgreSQL.
 
 Note: System Manager is still in its early state, and doesn't yet have user management, which is a planned feature that will be here soon. As such, for now, before you run this, you'll need to manually create the postgres user. Additionally, go ahead and create two directories and grant the postgres user access to them:
 
-```bash
+```sh
 # Create postgres user and group
 sudo groupadd -r postgres
 sudo useradd -r -g postgres -d /var/lib/postgresql -s /bin/bash postgres
@@ -1634,8 +1627,8 @@ MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC5gQjZxG7rYPub....
         };
         
         # Optional: Certificate chain/intermediate certificates
-	# For this demo we're using a self-signed cert; for a real
-	# one, uncomment below and add your 
+        # For this demo we're using a self-signed cert; for a real
+        # one, uncomment below and add your 
         "ssl/certs/chain.pem" = {
           user = "root";
           group = "root";
@@ -1768,7 +1761,7 @@ The configuration files install both nginx and the sample app.
 
 After you spin up an instance, install nix for all users:
 
-```
+```sh
 sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --daemon
 ```
 
@@ -1776,7 +1769,7 @@ Next, log out and log back in so that nix is available in the system path.
 
 And then you can run System Manager and deploy the app with one command:
 
-```
+```sh
 nix run 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes' -- switch --flake github:frecklefacelabs/system-manager-custom-app-deploy/v1.0.0#default --sudo
 ```
 
@@ -1790,12 +1783,12 @@ nix run 'github:numtide/system-manager' --extra-experimental-features 'nix-comma
 
 Then, the app should be installed, with nginx sitting in front of it, and you should be able to run:
 
-```
+```sh
 curl localhost
 ```
 And it will print out a friendly JSON message such as:
 
-```
+```json
 {"message":"Welcome to the Bun API!","status":"running","endpoints":["/","/health","/random","/cowsay"]}
 ```
 
@@ -1855,7 +1848,7 @@ First we have a flake much like the usual starting point:
 
 Next is the .nix configuration that installs and configures nginx. This is a simple ngnix configuration, as it simply routes incoming HTTP traffic directly to the app:
 
-```
+```nix
 # nginx.nix
 { config, lib, pkgs, ... }:
 {
@@ -1944,7 +1937,7 @@ in
 
 And finally, here's the `index.ts` file; it's just a simple REST app that also makes use of one third-party `npm` library.
 
-```
+```typescript
 import cowsay from "cowsay";
 
 const messages = [
@@ -2009,13 +2002,13 @@ console.log(`? Server running on http://localhost:${server.port}`);
 
 Nix allows you to run code that's stored remotely in a repo, such as in GitHub. As such, you don't have to install System Manager locally to use it. However, if you want to install locally, you can do so with the following `nix profile` command.
 
-```
+```sh
 nix profile add 'github:numtide/system-manager'
 ```
 
 Or, if you don't have the optional features set in `/opt/nix/nix.conf`, you can provide them through the command line:
 
-```
+```sh
 nix profile add 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes'
 ```
 
@@ -2026,14 +2019,14 @@ When you install System Manager, you might get some warnings about trusted user;
 
 Then you can find System Manager:
 
-```
+```console
 $ which system-manager
 /home/ubuntu/.nix-profile/bin/system-manager
 ```
 
 And you can run System Manager:
 
-```
+```sh
 system-manager switch --flake . --sudo
 ```
 
