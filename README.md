@@ -1,6 +1,6 @@
 <div align="center">
 
-# system-manager
+# System Manager
 
 <img src="system-manager.svg" height="150"/>
 

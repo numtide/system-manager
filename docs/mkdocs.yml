@@ -119,3 +119,25 @@ plugins:
           type: date
           fallback_to_build_date: true
     - tags
+
+nav:
+    - Home: index.md
+    - Introduction: introduction.md
+    - Getting Started: getting-started.md
+    - Installation: install.md
+    - Reference:
+        - Overview: reference/index.md
+        - CLI Commands: reference/cli.md
+        - Configuration: reference/configuration.md
+        - Modules: reference/modules.md
+        - Remote Flakes: reference/remote-flakes.md
+        - Blueprint: reference/blueprint.md
+        - Examples:
+            - Overview: reference/examples/index.md
+            - Timer: reference/examples/timer.md
+            - Docker: reference/examples/docker.md
+            - PostgreSQL: reference/examples/postgresql.md
+            - Nginx: reference/examples/nginx.md
+            - Nginx HTTPS: reference/examples/nginx-https.md
+            - Custom App: reference/examples/custom-app.md
+    - FAQ: faq.md
