@@ -59,3 +59,25 @@ In order to ensure System Manager retrieves the correct `.nix` files from your r
 
 !!! Tip
     Before you run this command, we recommend that you nevertheless create a folder to run it from, such as `~/.config/system-manager`.
+
+Once your configuration is pushed to a remote repository with a valid `flake.lock`, you can apply it directly:
+
+```sh
+nix run 'github:numtide/system-manager' -- switch --flake github:your-username/your-repo --sudo
+```
+
+You can also specify a branch or tag:
+
+```sh
+# Using a specific branch
+nix run 'github:numtide/system-manager' -- switch --flake github:your-username/your-repo/main --sudo
+
+# Using a tag
+nix run 'github:numtide/system-manager' -- switch --flake github:your-username/your-repo?ref=v1.0.0 --sudo
+```
+
+For private repositories, use the `git+ssh` protocol:
+
+```sh
+nix run 'github:numtide/system-manager' -- switch --flake git+ssh://git@github.com/your-username/your-repo --sudo
+```
