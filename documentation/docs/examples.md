@@ -1,7 +1,5 @@
 # System Manager Examples
 
-[Note: This is a WIP -- I will be updating these samples to be more consistent with the recent samples in the README.]
-
 This document provides practical examples of using system-manager to manage system configurations on any Linux distribution. Each example demonstrates different capabilities and use cases.
 
 ## Table of Contents
