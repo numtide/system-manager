@@ -13,6 +13,9 @@ In order to use System Manager, you need:
 !!! Important
     At this time, System Manager requires flakes to be enabled.
 
+!!! Warning
+    Rollback functionality is not yet fully implemented. While you can list and switch between generations manually, automatic rollback on failure is not available. Always test configuration changes in a VM or non-production environment first.
+
 # Installation
 
 Because Nix can load code (called "flakes") remotely, you don't need to download System Manager. Simply running it the first time will automatically install it in what's called the Nix Store, which is a special directory on your system (typically /nix/store) where Nix keeps all packages and their dependencies in isolation.
