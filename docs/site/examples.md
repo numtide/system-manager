@@ -55,37 +55,30 @@ This example demonstrates how to install a timer that runs every one minute. Fir
 And then here's a system.nix file referenced from within `flake.nix`:
 
 ```nix
+{ pkgs, ... }:
 {
-  description = "Standalone System Manager configuration";
+  nixpkgs.hostPlatform = "x86_64-linux";
 
-  inputs = {
-    # Specify the source of System Manager and Nixpkgs.
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    system-manager = {
-      url = "github:numtide/system-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
+  # Define the timer that fires every minute
+  systemd.timers.simple-timer = {
+    enable = true;
+    description = "Simple timer that runs every minute";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "minutely";
+      Persistent = true;
     };
   };
 
-  outputs =
-    {
-      self,
-      nixpkgs,
-      system-manager,
-      ...
-    }:
-    let
-      system = "x86_64-linux";
-    in
-    {
-      systemConfigs.default = system-manager.lib.makeSystemConfig {
-        # Specify your system configuration modules here, for example,
-        # the path to your system.nix.
-        modules = [ ./system.nix ];
-
-        # Optionally specify extraSpecialArgs and overlays
-      };
+  # Define the service that the timer triggers
+  systemd.services.simple-timer = {
+    enable = true;
+    description = "Simple timer service";
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.bash}/bin/bash -c 'echo \"Timer fired at $(date)\" >> /tmp/simple-timer.log'";
     };
+  };
 }
 ```
 
