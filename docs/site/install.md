@@ -65,15 +65,3 @@ nix run 'github:numtide/system-manager' -- init
 ```
 
 This will create initial configuration files in `~/.config/system-manager/`. See [Getting Started](getting-started.md) for a complete walkthrough.
-
-## Running under sudo
-
-System Manager needs `sudo` access to run. As such, we've provided a command-line option, `--sudo`, that allows you to grant sudo rights to System Manager.
-
-**System Manager is still in early development, and for now the `--sudo` command line option is required.**
-
-!!! Note
-    Adding yourself to Nix's trusted-users configuration won't help here. Trusted users have elevated privileges within the Nix daemon, but System Manager requires root filesystem permissions to modify `/etc`, manage services, and install system packages. You'll still need to use sudo.
-
-!!! Tip
-    System Manager can manage your `/etc/nix/nix.conf` file for you, allowing you to declare experimental features in your `flake.nix` instead. See [Letting System Manager manage `/etc/nix/nix.conf`](reference-guide.md#letting-system-manager-manage-etcnixnixconf) for details.

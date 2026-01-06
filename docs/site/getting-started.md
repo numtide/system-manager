@@ -181,10 +181,11 @@ Now add the file to the modules list in `flake.nix` by replacing this modules li
 
 Note: By default, `system.nix` includes starter code and some commented out examples, and nothing else. So you can leave it in the list; in its original state, it doesn't do anything.
 
-Next, we'll run System Manager.
+Next, we'll run System Manager to apply the configuration.
 
+System Manager needs root privileges to modify `/etc`, manage systemd services, and create system profiles. Use the `--sudo` flag to run these operations via sudo:
 
-```
+```sh
 nix run 'github:numtide/system-manager' -- switch --flake . --sudo
 ```
 
