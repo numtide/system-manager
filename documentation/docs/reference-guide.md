@@ -4,12 +4,8 @@ To get the most out of System Manager, we're offering this guide to help you mak
 
 # Table of Contents
 
-- [System Requirements](#system-requirements)
-- [Installation](#installation)
-  - [Regarding Experimental Features](#regarding-experimental-features)
-  - [Running under sudo](#running-under-sudo)
-  - [Command Line Usage](#command-line-usage)
-- [Command-line Options](#command-line-options)
+- [Command Line Usage](#command-line-usage)
+  - [Command-line Options](#command-line-options)
   - [init](#init)
   - [switch](#switch)
   - [register](#register)
@@ -21,7 +17,6 @@ To get the most out of System Manager, we're offering this guide to help you mak
   - [Deciding on a folder structure](#deciding-on-a-folder-structure)
   - [Choosing a location](#choosing-a-location)
   - [Choosing a file structure](#choosing-a-file-structure)
-  - [Dealing with conflicting .nix files](#dealing-with-conflicting-nix-files)
 - [Letting System Manager manage `/etc/nix/nix.conf`](#letting-system-manager-manage-etcnixnixconf)
 - [Recommended Workflow for Starting Out](#recommended-workflow-for-starting-out)
 - [Using System Manager in a non-Interactive Setting](#using-system-manager-in-a-non-interactive-setting)
@@ -54,7 +49,6 @@ To get the most out of System Manager, we're offering this guide to help you mak
   - [Live example](#live-example)
 - [Optional: Installing System Manager Locally](#optional-installing-system-manager-locally)
 
-- FAQ (Maybe put in its own document)
 
 # Command Line Usage
 
@@ -106,27 +100,19 @@ The following two parameters are currently both required:
 
 ### register
 
-[I'm basing the following strictly on the comments in main.rs. Let me know if it needs further work, and I'm open to suggestions to how to improve it. --jeffrey]
-
 The `register` subcommand builds and registers a System Manager configuration, but does not activate it. Compare this to `switch`, which does everything register does, but then activates it.
 
 ### build
-
-[I'm basing the following strictly on the comments in main.rs. Let me know if it needs further work, and I'm open to suggestions to how to improve it. --jeffrey]
 
 The `build` subcommand builds everything needed for a switch, but does not register it.
 
 ### deactivate
 
-[I'm basing the following strictly on the comments in main.rs. Let me know if it needs further work, and I'm open to suggestions to how to improve it. --jeffrey]
-
 The `deactivate` deactivates System Manager.
 
 ### pre-populate
 
-[I'm basing the following strictly on the comments in main.rs. Let me know if it needs further work, and I'm open to suggestions to how to improve it. --jeffrey]
-
-The `prepopulate` subcommand puts all files defined by the given generation in place, but does not start the services. This is useful in scripts.
+yThe `prepopulate` subcommand puts all files defined by the given generation in place, but does not start the services. This is useful in scripts.
 
 ### sudo
 
@@ -1127,8 +1113,6 @@ nix flake update
 ```
 
 And make sure you've pushed it up to the repo. (If you don't do this step, nix will try to build a flake.lock, but will be unable to write it to the same location as the other files, and will error out.)
-
-[todo: Let's create a repo under numtide for this instead of using mine --jeffrey]
 
 ```b
 nix run 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes' -- switch --flake git+https://github.com/frecklefacelabs/system-manager-test#default --sudo
