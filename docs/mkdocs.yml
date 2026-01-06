@@ -122,6 +122,7 @@ plugins:
 
 nav:
     - Home: index.md
+    - Introduction: introduction.md
     - Getting Started: getting-started.md
     - System Requirements: install.md
     - Reference Guide: reference-guide.md
