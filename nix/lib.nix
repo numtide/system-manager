@@ -69,7 +69,8 @@ let
           (lib.evalModules {
             specialArgs = {
               nixosModulesPath = "${nixos}/modules";
-            } // extraSpecialArgs;
+            }
+            // extraSpecialArgs;
             modules = [
               extraArgsModule
               ./modules
@@ -77,7 +78,8 @@ let
                 _file = "${self.printAttrPos (builtins.unsafeGetAttrPos "a" { a = null; })}: inline module";
                 build = { inherit toplevel; };
               }
-            ] ++ modules;
+            ]
+            ++ modules;
           }).config;
 
         inherit (config.nixpkgs) pkgs;
@@ -129,7 +131,8 @@ let
               (linkFarmEntryFromDrv servicesPath)
               (linkFarmEntryFromDrv etcPath)
               engineEntry
-            ] ++ scripts;
+            ]
+            ++ scripts;
 
             addPassthru =
               drv:

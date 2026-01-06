@@ -4,12 +4,11 @@
   ...
 }:
 {
-  imports =
-    [
-      ./nginx.nix
-      ./nix.nix
-    ]
-    ++
+  imports = [
+    ./nginx.nix
+    ./nix.nix
+  ]
+  ++
     # List of imported NixOS modules
     # TODO: how will we manage this in the long term?
     map (path: nixosModulesPath + path) [
