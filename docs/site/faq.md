@@ -138,7 +138,7 @@ nix log /nix/store/<hash>
 ## Additional Resources
 
 - [System Manager GitHub Repository](https://github.com/numtide/system-manager)
-- [System Manager Documentation](https://github.com/numtide/system-manager/tree/main/manual)
+- [System Manager Documentation](https://github.com/numtide/system-manager/tree/main/docs)
 - [NixOS Module Options](https://search.nixos.org/options)
 - [Nix Package Search](https://search.nixos.org/packages)
 - [PR #266: User Management with Userborn](https://github.com/numtide/system-manager/pull/266)

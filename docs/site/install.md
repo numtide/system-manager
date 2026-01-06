@@ -1,7 +1,5 @@
 # System Requirements
 
-[TODO: I realized I wrote this section twice, here and in the getting-started guide. I'll combine them and provide the same in both, since some people might just read one doc or the other.]
-
 In order to use System Manager, you need:
 
 * **A Linux machine.** We've tested System Manager with Ubuntu both as standalone and under Windows Subsystem for Linux (WSL).

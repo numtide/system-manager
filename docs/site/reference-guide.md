@@ -107,25 +107,17 @@ The following two parameters are currently both required:
 
 ### register
 
-[I'm basing the following strictly on the comments in main.rs. Let me know if it needs further work, and I'm open to suggestions to how to improve it. --jeffrey]
-
 The `register` subcommand builds and registers a System Manager configuration, but does not activate it. Compare this to `switch`, which does everything register does, but then activates it.
 
 ### build
-
-[I'm basing the following strictly on the comments in main.rs. Let me know if it needs further work, and I'm open to suggestions to how to improve it. --jeffrey]
 
 The `build` subcommand builds everything needed for a switch, but does not register it.
 
 ### deactivate
 
-[I'm basing the following strictly on the comments in main.rs. Let me know if it needs further work, and I'm open to suggestions to how to improve it. --jeffrey]
-
 The `deactivate` deactivates System Manager.
 
 ### pre-populate
-
-[I'm basing the following strictly on the comments in main.rs. Let me know if it needs further work, and I'm open to suggestions to how to improve it. --jeffrey]
 
 The `prepopulate` subcommand puts all files defined by the given generation in place, but does not start the services. This is useful in scripts.
 
@@ -401,8 +393,6 @@ nix run 'github:numtide/system-manager' -- switch --flake . --sudo
 ```
 
 Next, if you want to make sure experimental features are always on, you can add it to your flake.
-
-<!-- [TODO: Another example here] -->
 
 # Using System Manager in a non-Interactive Setting
 
