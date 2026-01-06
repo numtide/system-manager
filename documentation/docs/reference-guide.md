@@ -1,7 +1,5 @@
 # Reference Guide
 
-[PLEASE NOTE AS YOU EDIT THIS: I KNOW I MISSED BACKTICKS IN A LOT OF PLACES. I'LL GO THROUGH IT CAREFULLY AND ADD THEM ALL IN, SO DON'T WORRY ABOUT ADDING COMMENTS ABOUT THEM.]
-
 To get the most out of System Manager, we're offering this guide to help you make the best decisions based on your particular situation.
 
 # Table of Contents
@@ -2040,21 +2038,4 @@ system-manager switch --flake . --sudo
 
 !!! Tip
     System Manager is still in an early state and undergoing active development. Installing locally will not immediately pick up new changes. If you decide to install locally, you'll want to periodically check our GitHub repo for changes, and re-install it if necessary by using `nix profile upgrade`.
-
-
-# More stuff, possibly:
-
-Inspecting /var/lib/system-manager/state/system-manager-state.json
-
-Troubleshooting Guide
-
-Recipes (individual software packages, etc.)
-
-Package overlays
-
-Managing a Remote System with System Manager
-
-Working with Timers
-
-Managing Users
 
