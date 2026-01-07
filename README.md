@@ -5,13 +5,17 @@
 <a href="https://app.element.io/#/room/#home:numtide.com"><img src="https://img.shields.io/badge/Support-%23numtide-blue"/></a>
 </p>
 
-System Manager is a tool to configure Linux machines. Unlike Chef, Puppet and Ansible, it only controls a small subset, and most of its changes are done in an immutable layer, thanks to the power of Nix.
+System manager is a tool to configure Linux machines. Unlike Chef, Puppet and Ansible, it only controls a small subset, and most of its changes are done in an immutable layer, thanks to the power of Nix.
 
 Using NixOS-style declarative configurations, you describe what your system should look like, by specifying packages, services, and settings all in Nix, then apply it safely and atomically with a single command. Each change is reproducible, just like NixOS generations.
 
 You don't need to be an expert in Nix to use it, as its syntax is straightforward. But if you're familiar with Nix and Home Manager, think of System Manager as being similar, but for your entire machine. Whereas Home Manager manages user environments, System Manager manages the entire system, starting at root-level configurations, packages, and services, using the same reliable, Nix-based model.
 
 System Manager builds on the many modules that already exist in [NixOS].
+
+# Full Documentation
+
+You can find the [full documentation here](https://system-manager.net/main/).
 
 ## Quick Example to Get Started
 
@@ -30,7 +34,7 @@ nix run 'github:numtide/system-manager' --extra-experimental-features 'nix-comma
 ```
 
 > [!Tip]
-> If you still have problems running this step, check out our full Getting Started guide, which includes how to handle issues of running as root, and whether you've installed Nix to be used by a single user.
+> If you still have problems running this step, check out our full [Getting Started Guide](https://system-manager.net/main/getting-started/), which includes how to handle issues of running as root, and whether you've installed Nix to be used by a single user.
 
 > [!Note]
 > You can optionally run the above under `sudo`, which will place the files under `/root/.config/system-manager`. You might need to pass the path, depending on how you installed Nix:
@@ -49,7 +53,7 @@ cd ~/.config/system-manager
 
 (Or to the root equivalent.)
 
-Here is what flake.nix looks like:
+Here is what `flake.nix` looks like. (Note: If you enabled experimental features from the command line rather than through `/etc/nix/nix.conf`, this file might not exist; you can create it manually and copy the following into it.)
 
 ```nix
 {
@@ -114,18 +118,16 @@ Create a file in the same folder called `cli_tools.nix` and add the following in
 
 ```
 
-This specifies a configuration that includes `btop` and `bat` to be installed on the system. To do so, execute System Manager with the `--sudo` flag (assuming you have experimental features nix-command and flakes turned on):
+This specifies a configuration that includes `btop` and `bat` to be installed on the system. To do so, execute System Manager using the nix command (assuming you have experimental features nix-command and flakes turned on):
 
 ```
-nix run 'github:numtide/system-manager' -- switch --sudo --flake .
+nix run 'github:numtide/system-manager' -- switch --flake . --sudo
 ```
 
-The `--sudo` flag tells system-manager to use sudo for privileged operations (activating the configuration).
-
-Also, note that you might need to enable `nix-commands` and `flakes` if you don't already have them set:
+Also, note that you might need to enable `nix-commands` and `flakes` if you don't already have them set in `/etc/nix/nix.conf`:
 
 ```
-nix --extra-experimental-features 'nix-command flakes' run 'github:numtide/system-manager' -- switch --sudo --flake .
+nix --extra-experimental-features 'nix-command flakes' run 'github:numtide/system-manager' -- switch --flake . --sudo
 ```
 
 > [!Note]
@@ -210,228 +212,7 @@ It's possible that you had a `nix.conf` file in `/etc/nix` that had experimental
 
 Then re-run System Manager and your changes will take effect; now you should have the two experimental features set, `nix-command` and `flakes`.
 
-# Full Installation and setup
-
-## Install Nix
-
-System manager itself does not need to be installed; but, you do need to install Nix. (However, you can optionally install system-manager locally if you prefer.)
-
-To install Nix, you can either use your distro's package manager, or use one of the following available options to install Nix.
-
-- [Official Nix Installer][official-installer] - The canonical source for installing nix.
-- [Determinate Nix Installer][detsys-installer] - A wrapper around the official installer that has
-  SELinux support, and enables flake features by default.
-
-> [!Tip]
-> Some Nix users have had difficulty installing Nix on Windows Subsystem for Linux (WSL) using the official installer. If you're using WSL, we recommend using Determinate Nix installer.
-
-## Example: Configuring System Services
-
-The following example demonstrates how to specify a system service and activate it.
-
-Update your flake.nix file to include a new file in the modules list, which we'll call `say_hello.nix`:
-
-```nix
-{
-  description = "Standalone System Manager configuration";
-
-  inputs = {
-    # Specify the source of System Manager and Nixpkgs.
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    system-manager = {
-      url = "github:numtide/system-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-  };
-
-  outputs =
-    {
-      self,
-      nixpkgs,
-      system-manager,
-      ...
-    }:
-    {
-      systemConfigs.default = system-manager.lib.makeSystemConfig {
-        # Specify your system configuration modules here, for example,
-        # the path to your system.nix.
-	
-        modules = [
-            {
-                nix.settings.experimental-features = "nix-command flakes";
-            }
-            ./cli_tools.nix 
-            ./say_hello.nix
-        ];
-
-        # Optionally specify extraSpecialArgs and overlays
-      };
-    };
-}
-
-```
-
-Then create the file called `say_hello.nix` and add the following to it:
-
-```nix
-{ lib, pkgs, ... }:
-{
-  config = {
-    nixpkgs.hostPlatform = "x86_64-linux";
-    
-    systemd.services.say-hello = {
-      description = "say-hello";
-      enable = true;
-      wantedBy = [ "system-manager.target" ];
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-      };
-      script = ''
-        ${lib.getBin pkgs.hello}/bin/hello
-      '';
-    };
-  };
-}
-```
-
-Activate it using the same nix command as earlier:
-
-```
-nix run 'github:numtide/system-manager' -- switch --sudo --flake .
-```
-
-This will create a system service called `say-hello` (which comes from the line `config.systemd.services.say-hello`) in a unit file at `/etc/systemd/system/say-hello.service` with the following inside it:
-
-```
-[Unit]
-Description=say-hello
-
-[Service]
-Environment="PATH=/nix/store/xs8scz9w9jp4hpqycx3n3bah5y07ymgj-coreutils-9.8/bin:/nix/store/qqvfnxa9jg71wp4hfg1l63r4m78iwvl9-findutils-4.10.0/bin:/nix/store/22r4s6lqhl43jkazn51f3c18qwk894g4-gnugrep-3.12/bin:
-/nix/store/zppkx0lkizglyqa9h26wf495qkllrjgy-gnused-4.9/bin:/nix/store/g48529av5z0vcsyl4d2wbh9kl58c7p73-systemd-minimal-258/bin:/nix/store/xs8scz9w9jp4hpqycx3n3bah5y07ymgj-coreutils-9.8/sbin:/nix/store/qqvfn
-xa9jg71wp4hfg1l63r4m78iwvl9-findutils-4.10.0/sbin:/nix/store/22r4s6lqhl43jkazn51f3c18qwk894g4-gnugrep-3.12/sbin:/nix/store/zppkx0lkizglyqa9h26wf495qkllrjgy-gnused-4.9/sbin:/nix/store/g48529av5z0vcsyl4d2wbh9
-kl58c7p73-systemd-minimal-258/sbin"
-ExecStart=/nix/store/d8rjglbhinylg8v6s780byaa60k6jpz1-unit-script-say-hello-start/bin/say-hello-start 
-RemainAfterExit=true
-Type=oneshot
-
-[Install]
-WantedBy=system-manager.target
-```
-
-> [!Tip]
-> Compare the lines in the `say-hello.service` file with the `say_hello.nix` file to see where each comes from.
-
-You can verify that it ran by running journalctl:
-
-```
-journalctl -n 20
-```
-
-and you can find the following output in it:
-
-```
-Nov 18 12:12:51 my-ubuntu systemd[1]: Starting say-hello.service - say-hello...
-Nov 18 12:12:51 my-ubuntu say-hello-start[3488278]: Hello, world!
-Nov 18 12:12:51 my-ubuntu systemd[1]: Finished say-hello.service - say-hello.
-```
-
-> [!Note]
-> If you remove the `./cli_tools.nix` line from the `flake.nix`, System Manager will see that the configuration changed and that `btop` and `bat` are no longer in the configuration. As such, it will uninstall them. This is normal and expected behavior.
-
-## Example: Creating files in the /etc folder
-
-Oftentimes, when you're creating a system service, you need to create a configuration file in the `/etc` directory that accompanies the service. System manager allows you to do that as well.
-
-Add another line to your `flake.nix` file, this time for `./sample_etc.nix`:
-
-```nix
-{
-  description = "Standalone System Manager configuration";
-
-  inputs = {
-    # Specify the source of System Manager and Nixpkgs.
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    system-manager = {
-      url = "github:numtide/system-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-  };
-
-  outputs =
-    {
-      self,
-      nixpkgs,
-      system-manager,
-      ...
-    }:
-    {
-      systemConfigs.default = system-manager.lib.makeSystemConfig {
-        # Specify your system configuration modules here, for example,
-        # the path to your system.nix.
-	
-        modules = [
-            {
-                nix.settings.experimental-features = "nix-command flakes";
-            }
-            ./cli_tools.nix 
-            ./say_hello.nix
-            ./sample_etc.nix
-        ];
-
-        # Optionally specify extraSpecialArgs and overlays
-      };
-    };
-}
-```
-
-Then, create the `sample_etc.nix` file with the following into it:
-
-```nix
-{ lib, pkgs, ... }:
-{
-  config = {
-    nixpkgs.hostPlatform = "x86_64-linux";
-    
-    environment.etc = {
-      sample_configuration = {
-        text = ''
-          This is some sample configuration text
-        '';
-      };
-    };
-  };
-}
-```
-
-Run it as usual, and you should see the file now exists:
-
-```
-nix run 'github:numtide/system-manager' -- switch --sudo --flake .
-
-ls /etc -ltr
-```
-
-which displays the following:
-
-```
-lrwxrwxrwx  1 root  root  45 Nov 13 15:19 sample_configuration -> ./.system-manager-static/sample_configuration
-```
-
-And you can view the file:
-
-```
-cat /etc/sample_configuration
-```
-
-which prints out:
-
-```
-This is some sample configuration text
-```
-
-### Supported Systems
+## Supported Systems
 
 System Manager is currently only supported on NixOS and Ubuntu. However, it can be used on other distributions by enabling the following:
 
@@ -450,8 +231,7 @@ System Manager is currently only supported on NixOS and Ubuntu. However, it can 
 
 Looking for help or customization?
 
-Get in touch with Numtide to get a quote. We make it easy for companies to
-work with Open Source projects: <https://numtide.com/contact>
+Get in touch with Numtide to get a quote. We make it easy for companies to work with Open Source projects: <https://numtide.com/contact>
 
 [detsys-installer]: https://github.com/DeterminateSystems/nix-installer
 [nixos]: https://nixos.org
