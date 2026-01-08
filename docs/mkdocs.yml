@@ -1,3 +1,5 @@
+INHERIT: !ENV MKDOCS_NUMTIDE_THEME
+
 # Project info
 site_name: System Manager
 site_url: https://system-manager.net
@@ -24,12 +26,7 @@ docs_dir: site
 site_dir: out
 
 theme:
-    name: material
     custom_dir: theme
-
-    # logo: assets/images/logo.png
-    # favicon: assets/images/logo.png
-
     features:
         - content.code.annotate
         - content.code.copy
