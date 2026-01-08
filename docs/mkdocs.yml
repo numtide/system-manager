@@ -69,6 +69,8 @@ theme:
               name: Switch to system preference
 
 extra:
+    analytics:
+        domain: system-manager.net
     version:
         provider: mike
     social:
@@ -109,6 +111,7 @@ markdown_extensions:
           permalink: true
 
 plugins:
+    - material-plausible
     - mike
     - search
     - git-revision-date-localized:
