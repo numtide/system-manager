@@ -10,8 +10,8 @@
 
     environment = {
       # Packages that should be installed on a system
-      systemPackages = [
-        # pkgs.hello
+      systemPackages = with pkgs; [
+        # hello
       ];
 
       # Add directories and files to `/etc` and set their permissions
