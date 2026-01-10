@@ -106,6 +106,8 @@ markdown_extensions:
           linenums: true
           anchor_linenums: true
     - pymdownx.inlinehilite
+    - pymdownx.snippets:
+          base_path: .
     - pymdownx.keys
     - toc:
           permalink: true
@@ -119,6 +121,9 @@ plugins:
           type: date
           fallback_to_build_date: true
     - tags
+
+hooks:
+    - hooks.py
 
 nav:
     - Home: index.md
@@ -136,6 +141,7 @@ nav:
         - Overview: reference/index.md
         - CLI Commands: reference/cli.md
         - Module Options: reference/modules.md
+        - All Options: reference/all-options.md
         - Configuration Patterns: reference/configuration.md
         - Supported Platforms: reference/supported-platforms.md
     - Explanation:
