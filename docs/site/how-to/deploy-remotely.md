@@ -10,7 +10,8 @@ System Manager can deploy configurations to remote machines via SSH. This guide 
 
 Before you can deploy to a remote system, the remote machine's Nix daemon needs to trust incoming store paths from your local machine. Without this, the remote will reject the files you're trying to copy because they lack a signature from a trusted cache.
 
-Edit `/etc/nix/nix.conf` on the remote system and ensure these lines are present:
+Edit `/etc/nix/nix.conf` on the remote system and ensure these lines are present; you'll need to add the appropriate usernames, such as "ubuntu" if you're using an Amazon EC2 Ubuntu server:
+
 ```
 trusted-users = root ubuntu
 build-users-group = nixbld
