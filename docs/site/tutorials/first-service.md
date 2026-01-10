@@ -91,6 +91,6 @@ cat /etc/systemd/system/say-hello.service
 
 ## Next Steps
 
-- Learn about [service configuration options](../reference/modules.md#managing-system-services) in the reference
+- Learn about [service configuration options](../reference/modules.md#systemdservices) in the reference
 - See the [timer example](../examples/timer.md) for scheduled services
 - Explore the [nginx example](../examples/nginx.md) for a real-world service

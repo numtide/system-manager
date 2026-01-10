@@ -199,7 +199,7 @@ This is because Nix has the ability to merge together objects in separate files 
       ];
 ```
 
-We describe this technique in [Building System Manager `.nix` Files](modules.md#building-system-manager-nix-files).
+We describe this technique in the [Multi-file Configuration](../tutorials/multi-file-config.md) tutorial.
 
 # Letting System Manager manage `/etc/nix/nix.conf`
 
