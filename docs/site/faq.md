@@ -133,6 +133,18 @@ nix build .#systemConfigs.default
 nix log /nix/store/<hash>
 ```
 
+### SELinux Issues
+
+System Manager currently does not fully support SELinux. If you're on a system with SELinux enabled (like Fedora or RHEL), you may encounter permission issues.
+
+**Temporary workaround**: Set SELinux to permissive mode:
+
+```bash
+sudo setenforce 0
+```
+
+For a permanent solution, see [GitHub issue #115](https://github.com/numtide/system-manager/issues/115) for ongoing work on SELinux support.
+
 ---
 
 ## Additional Resources

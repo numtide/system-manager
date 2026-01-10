@@ -122,22 +122,33 @@ plugins:
 
 nav:
     - Home: index.md
-    - Introduction: introduction.md
-    - Getting Started: getting-started.md
-    - Installation: install.md
+    - Tutorials:
+        - Getting Started: tutorials/getting-started.md
+        - Your First Service: tutorials/first-service.md
+        - Multi-file Configuration: tutorials/multi-file-config.md
+    - How-to Guides:
+        - Installation: how-to/install.md
+        - Deploy Remotely: how-to/deploy-remotely.md
+        - Use Remote Flakes: how-to/use-remote-flakes.md
+        - Use Blueprint: how-to/use-blueprint.md
+        - Rollback Changes: how-to/rollback.md
     - Reference:
         - Overview: reference/index.md
         - CLI Commands: reference/cli.md
-        - Configuration: reference/configuration.md
-        - Modules: reference/modules.md
-        - Remote Flakes: reference/remote-flakes.md
-        - Blueprint: reference/blueprint.md
-        - Examples:
-            - Overview: reference/examples/index.md
-            - Timer: reference/examples/timer.md
-            - Docker: reference/examples/docker.md
-            - PostgreSQL: reference/examples/postgresql.md
-            - Nginx: reference/examples/nginx.md
-            - Nginx HTTPS: reference/examples/nginx-https.md
-            - Custom App: reference/examples/custom-app.md
+        - Module Options: reference/modules.md
+        - Configuration Patterns: reference/configuration.md
+        - Supported Platforms: reference/supported-platforms.md
+    - Explanation:
+        - What is System Manager?: explanation/introduction.md
+        - Declarative Configuration: explanation/declarative-config.md
+        - How It Works: explanation/how-it-works.md
+        - NixOS Comparison: explanation/nixos-comparison.md
+    - Examples:
+        - Overview: examples/index.md
+        - Timer: examples/timer.md
+        - Docker: examples/docker.md
+        - PostgreSQL: examples/postgresql.md
+        - Nginx: examples/nginx.md
+        - Nginx HTTPS: examples/nginx-https.md
+        - Custom App: examples/custom-app.md
     - FAQ: faq.md

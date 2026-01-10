@@ -1,34 +1,27 @@
 # Reference
 
-This reference documentation provides detailed information about System Manager's features and configuration options.
+Technical reference documentation for System Manager. For step-by-step guides, see [Tutorials](../tutorials/getting-started.md). For task-oriented instructions, see [How-to Guides](../how-to/install.md).
 
 ## Sections
 
 ### [CLI Commands](cli.md)
 
-Command-line usage and all available subcommands: `init`, `switch`, `register`, `build`, `deactivate`, `pre-populate`, and `sudo`. Also covers optional local installation.
+Complete reference for all command-line options and subcommands: `init`, `switch`, `register`, `build`, `deactivate`, `pre-populate`, `activate`, and `sudo` integration.
 
-### [Configuration](configuration.md)
+### [Module Options](modules.md)
 
-How to organize your System Manager project: folder structure, file organization, workflows for getting started, managing `/etc/nix/nix.conf`, and running in non-interactive settings.
+Reference for all configuration options available in `.nix` modules:
 
-### [Modules](modules.md)
+- `environment.systemPackages` - System packages
+- `environment.etc` - Files in `/etc`
+- `systemd.services` - Systemd service definitions
+- `systemd.tmpfiles` - Temporary files and directories
+- `nix.settings` - Nix configuration options
 
-Writing `.nix` configuration modules: the `flake.nix` structure, managing systemd services, installing packages, creating `/etc` files, and configuring tmpfiles.
+### [Configuration Patterns](configuration.md)
 
-### [Remote Flakes](remote-flakes.md)
+Project organization patterns, folder structures, and workflows for managing System Manager configurations.
 
-Hosting your configuration in a Git repository: understanding `flake.lock`, setting up remote hosting, and running System Manager from GitHub.
+### [Supported Platforms](supported-platforms.md)
 
-### [Blueprint](blueprint.md)
-
-Using the Blueprint library with System Manager for a standardized project structure.
-
-### [Examples](examples/index.md)
-
-Complete, working examples:
-
-- [PostgreSQL](examples/postgresql.md) - Database server setup
-- [Nginx](examples/nginx.md) - HTTP web server
-- [Nginx HTTPS](examples/nginx-https.md) - HTTPS with SSL certificates
-- [Custom App](examples/custom-app.md) - Deploying a Bun/TypeScript application
+Platform compatibility matrix, system requirements, and distribution-specific notes.

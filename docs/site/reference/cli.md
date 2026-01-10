@@ -33,7 +33,7 @@ nix run 'github:numtide/system-manager' -- init --path='/home/ubuntu/system-mana
 This will create the initial files in `/home/ubuntu/system-manager`.
 
 !!! Note
-    System Manager requires flakes to be enabled in `/etc/nix/nix.conf`. See [Enabling Flakes](../install.md#enabling-flakes) for setup instructions.
+    System Manager requires flakes to be enabled in `/etc/nix/nix.conf`. See [Enabling Flakes](../how-to/install.md#enabling-flakes) for setup instructions.
 
 ### switch
 
@@ -66,39 +66,3 @@ The `pre-populate` subcommand puts all files defined by the given generation in 
 ### sudo
 
 The `sudo` subcommand grants sudo access to System Manager, while running under the current user. All created files will be owned by the current user.
-
-# Optional: Installing System Manager Locally
-
-Nix allows you to run code that's stored remotely in a repo, such as in GitHub. As such, you don't have to install System Manager locally to use it. However, if you want to install locally, you can do so with the following `nix profile` command.
-
-```sh
-nix profile add 'github:numtide/system-manager'
-```
-
-Or, if you don't have the optional features set in `/etc/nix/nix.conf`, you can provide them through the command line:
-
-```sh
-nix profile add 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes'
-```
-
-!!! Tip
-    After System Manager is installed locally, you no longer need to worry about whether you have experimental features installed. You will simply pass the `--flake` option to System Manager.
-
-When you install System Manager, you might get some warnings about trusted user; this simply means you're not in the trusted user list of Nix. But System Manager will still install and work fine.
-
-Then you can find System Manager:
-
-```console
-$ which system-manager
-/home/ubuntu/.nix-profile/bin/system-manager
-```
-
-And you can run System Manager:
-
-```sh
-system-manager switch --flake . --sudo
-```
-
-
-!!! Tip
-    System Manager is still in an early state and undergoing active development. Installing locally will not immediately pick up new changes. If you decide to install locally, you'll want to periodically check our GitHub repo for changes, and upgrade it if necessary by using `nix profile upgrade`.

@@ -7,7 +7,7 @@ This guide covers how to organize your System Manager project and recommended wo
 Before you begin with System Manager, you'll need to decide on your folder structure.
 
 !!! Note
-    If you prefer, you can host all your System Manager configuration files on a remote Git repo (such as GitHub), and then you don't need to worry about where on your computer to store the files. For more info, see [Working with Remote Flakes](remote-flakes.md).
+    If you prefer, you can host all your System Manager configuration files on a remote Git repo (such as GitHub), and then you don't need to worry about where on your computer to store the files. For more info, see [Working with Remote Flakes](../how-to/use-remote-flakes.md).
 
 Technically, you are free to set up your folders and files however you like; System Manager does not enforce any rules, thus allowing you full flexibility. Below are simply some options that we recommend.
 
