@@ -46,6 +46,9 @@
         }
       );
 
+      # Documentation outputs
+      docs = eachSystem ({ pkgs, ... }: import ./docs/options.nix { inherit pkgs; });
+
       overlays = {
         default = final: _prev: {
           system-manager = final.callPackage ./package.nix { };

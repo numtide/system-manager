@@ -34,7 +34,7 @@ nix run 'github:numtide/system-manager' --extra-experimental-features 'nix-comma
 ```
 
 > [!Tip]
-> If you still have problems running this step, check out our full [Getting Started Guide](https://system-manager.net/main/getting-started/), which includes how to handle issues of running as root, and whether you've installed Nix to be used by a single user.
+> If you still have problems running this step, check out our full [Getting Started Guide](https://system-manager.net/main/tutorials/getting-started/), which includes how to handle issues of running as root, and whether you've installed Nix to be used by a single user.
 
 > [!Note]
 > You can optionally run the above under `sudo`, which will place the files under `/root/.config/system-manager`. You might need to pass the path, depending on how you installed Nix:

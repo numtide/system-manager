@@ -22,6 +22,12 @@ System Manager is ideal for:
 
 ## Next Steps
 
-- [Getting Started](getting-started.md) - Configure your first system
-- [Installation](install.md) - Install Nix and get started
-- [Examples](reference/examples/index.md) - See practical use cases
+- [Getting Started](../tutorials/getting-started.md) - Configure your first system
+- [Installation](../how-to/install.md) - Install Nix and get started
+- [Examples](../examples/index.md) - See practical use cases
+
+## Learn More
+
+- [Declarative Configuration](declarative-config.md) - Understanding the declarative paradigm
+- [How System Manager Works](how-it-works.md) - Architecture and internals
+- [Comparison with NixOS](nixos-comparison.md) - When to use which
