@@ -79,13 +79,6 @@ pub fn activate(
     )
     .map_err(|e| ActivationError::with_partial_result(services.clone(), e))?;
 
-    // We added all new services and removed old ones, so let's reload the units
-    // to tell systemd about them.
-    log::info!("Reloading the systemd daemon...");
-    service_manager
-        .daemon_reload()
-        .map_err(|e| ActivationError::with_partial_result(services.clone(), e))?;
-
     wait_for_jobs(
         &service_manager,
         &job_monitor,
@@ -307,4 +300,22 @@ impl From<JobId> for String {
     fn from(value: JobId) -> Self {
         value.id
     }
+}
+
+pub fn restart_sysinit_reactivation_target() -> anyhow::Result<()> {
+    let service_manager = systemd::ServiceManager::new_session()?;
+    let job_monitor = service_manager.monitor_jobs_init()?;
+    let timeout = Some(Duration::from_secs(30));
+
+    log::info!("Reloading the systemd daemon...");
+    service_manager.daemon_reload()?;
+
+    let jobs = for_each_unit(
+        |unit| service_manager.restart_unit(unit),
+        ["sysinit-reactivation.target"],
+        "restarting",
+    );
+
+    wait_for_jobs(&service_manager, &job_monitor, jobs, &timeout)?;
+    Ok(())
 }

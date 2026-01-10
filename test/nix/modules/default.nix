@@ -3,6 +3,7 @@
   system-manager,
   system,
   nix-vm-test,
+  userborn,
 }:
 
 let
@@ -101,6 +102,9 @@ let
             nixpkgs.hostPlatform = system;
 
             services.nginx.enable = false;
+            services.userborn.enable = true;
+            services.userborn.package = userborn;
+            systemd.services.userborn.environment.USERBORN_STATEFUL = "1";
 
             environment = {
               etc = {
@@ -143,6 +147,19 @@ let
                 ];
                 trusted-users = [ "zimbatm" ];
               };
+            };
+
+            system.activationScripts = {
+              "system-manager" = {
+                text = ''
+                  touch /tmp/file-created-by-system-activation-script
+                '';
+              };
+            };
+
+            users.users.zimbatm = {
+              isNormalUser = true;
+              extraGroups = [ "wheel" ];
             };
           };
         }
@@ -190,7 +207,12 @@ forEachUbuntuImage "example" {
       assert uid == "5", f"uid was {uid}, expected 5"
       assert gid == "6", f"gid was {gid}, expected 6"
 
+      vm.succeed("useradd luj")
+      vm.succeed("echo \"luj:test\" | chpasswd")
+
       print(vm.succeed("cat /etc/passwd"))
+      passwd_out = vm.succeed("passwd -S luj | awk '{print $2}'")
+      assert "P" in passwd_out
 
       user = vm.succeed("stat -c %U /etc/with_ownership2").strip()
       group = vm.succeed("stat -c %G /etc/with_ownership2").strip()
@@ -232,6 +254,15 @@ forEachUbuntuImage "example" {
       vm.fail("test -f /etc/a/nested/example/foo3")
       vm.fail("test -f /etc/baz/bar/foo2")
       vm.succeed("test -f /etc/foo_new")
+      vm.succeed("test -f /tmp/file-created-by-system-activation-script")
+
+      vm.succeed("id -u zimbatm")
+
+      print(vm.succeed("cat /etc/passwd"))
+      passwd_out = vm.succeed("passwd -S luj | awk '{print $2}'")
+      assert "P" in passwd_out
+
+
 
       nix_trusted_users = vm.succeed("${hostPkgs.nix}/bin/nix config show trusted-users").strip()
       assert "zimbatm" in nix_trusted_users, f"Expected 'zimbatm' to be in trusted-users, got {nix_trusted_users}"
