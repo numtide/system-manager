@@ -29,7 +29,7 @@
         hostPlatform = lib.mkOption {
           type = with types; either str attrs;
           example = "x86_64-linux";
-          default = throw "the option nixpkgs.hostPlatform needs to be set.";
+          description = "The platform for which to build the system configuration.";
         };
 
         overlays = lib.mkOption {
@@ -48,6 +48,7 @@
           description = ''The pkgs module argument.'';
           default = pkgs;
           readOnly = true;
+          internal = true;
         };
       };
 
