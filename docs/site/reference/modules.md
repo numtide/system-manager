@@ -131,6 +131,15 @@ Target path relative to `/etc`.
 
 File mode. Use `"symlink"` to create a symlink to the Nix store, or an octal mode (e.g., `"0644"`) to copy the file with that mode.
 
+Octal modes consist of three digits representing owner, group, and others. Each digit is the sum of: 4 (read), 2 (write), 1 (execute).
+
+| Mode | Meaning |
+|------|---------|
+| `"0644"` | Owner read/write, everyone else read-only |
+| `"0755"` | Owner full access, everyone else read/execute |
+| `"0600"` | Owner read/write, no access for others |
+| `"0400"` | Owner read-only, no access for others |
+
 ### environment.etc.{name}.uid
 
 **Type:** `integer`
@@ -162,6 +171,9 @@ User name for file ownership. Takes precedence over `uid`. Only applies when `mo
 **Default:** `"+<gid>"`
 
 Group name for file ownership. Takes precedence over `gid`. Only applies when `mode` is not `"symlink"`.
+
+!!! tip "Choosing between numeric IDs and names"
+    Use `uid`/`gid` when you need consistent ownership across systems where user/group names might differ. Use `user`/`group` for readability when the names are guaranteed to exist.
 
 ---
 
