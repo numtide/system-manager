@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://system-manager.net/main/reference/cli/">
+        <link rel="canonical" href="https://system-manager.net/main/examples/nginx/">
       
       
-        <link rel="prev" href="../">
+        <link rel="prev" href="../postgresql/">
       
       
-        <link rel="next" href="../modules/">
+        <link rel="next" href="../nginx-https/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>CLI Commands - System Manager</title>
+        <title>Nginx - System Manager</title>
       
     
     
@@ -133,7 +133,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#cli-commands" class="md-skip">
+        <a href="#nginx" class="md-skip">
           Skip to content
         </a>
       
@@ -170,7 +170,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              CLI Commands
+              Nginx
             
           </span>
         </div>
@@ -359,13 +359,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../reference/" class="md-tabs__link">
           
   
   
@@ -405,11 +403,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../examples/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
           
   
   
@@ -879,8 +879,6 @@
       
   
   
-    
-  
   
   
     
@@ -904,23 +902,20 @@
     
     
       
-        
-        
-      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../reference/" class="md-nav__link ">
               
   
   
@@ -938,13 +933,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="">
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -961,37 +956,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    CLI Commands
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../reference/cli/" class="md-nav__link">
         
   
   
@@ -1007,148 +975,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#command-line-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Command-line Options
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Command-line Options">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#init" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        init
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="init">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#command-line-options_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Command line options
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#example" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#switch" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        switch
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#register" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        register
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#build" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        build
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#deactivate" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        deactivate
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#pre-populate" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        pre-populate
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sudo" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        sudo
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1161,7 +987,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../modules/" class="md-nav__link">
+      <a href="../../reference/modules/" class="md-nav__link">
         
   
   
@@ -1189,7 +1015,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../all-options/" class="md-nav__link">
+      <a href="../../reference/all-options/" class="md-nav__link">
         
   
   
@@ -1217,7 +1043,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../configuration/" class="md-nav__link">
+      <a href="../../reference/configuration/" class="md-nav__link">
         
   
   
@@ -1245,7 +1071,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../supported-platforms/" class="md-nav__link">
+      <a href="../../reference/supported-platforms/" class="md-nav__link">
         
   
   
@@ -1458,6 +1284,8 @@
       
   
   
+    
+  
   
   
     
@@ -1483,20 +1311,23 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../examples/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -1514,13 +1345,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1540,7 +1371,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/timer/" class="md-nav__link">
+      <a href="../timer/" class="md-nav__link">
         
   
   
@@ -1568,7 +1399,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/docker/" class="md-nav__link">
+      <a href="../docker/" class="md-nav__link">
         
   
   
@@ -1596,7 +1427,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/postgresql/" class="md-nav__link">
+      <a href="../postgresql/" class="md-nav__link">
         
   
   
@@ -1621,10 +1452,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../examples/nginx/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Nginx
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1640,6 +1498,48 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-this-configuration-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What this configuration does
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1652,7 +1552,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/nginx-https/" class="md-nav__link">
+      <a href="../nginx-https/" class="md-nav__link">
         
   
   
@@ -1680,7 +1580,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/custom-app/" class="md-nav__link">
+      <a href="../custom-app/" class="md-nav__link">
         
   
   
@@ -1762,124 +1662,24 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#command-line-options" class="md-nav__link">
+  <a href="#configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Command-line Options
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Command-line Options">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#init" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        init
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="init">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#command-line-options_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Command line options
+        Configuration
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#example" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#what-this-configuration-does" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Example
+        What this configuration does
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#switch" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        switch
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#register" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        register
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#build" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        build
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#deactivate" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        deactivate
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#pre-populate" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        pre-populate
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sudo" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        sudo
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1929,7 +1729,7 @@
         <a href="../" class="md-path__link">
           
   <span class="md-ellipsis">
-    Reference
+    Examples
   </span>
 
         </a>
@@ -1951,43 +1751,234 @@
   
 
 
-<h1 id="cli-commands">CLI Commands<a class="headerlink" href="#cli-commands" title="Permanent link">&para;</a></h1>
-<p>The basic command looks like this:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a>nix<span class="w"> </span>run<span class="w"> </span><span class="s1">&#39;github:numtide/system-manager&#39;</span><span class="w"> </span>--<span class="w"> </span>switch<span class="w"> </span>--flake<span class="w"> </span>.<span class="w"> </span>--sudo
-</code></pre></div></td></tr></table></div>
-<p>This is the most common scenario you'll use.</p>
-<h2 id="command-line-options">Command-line Options<a class="headerlink" href="#command-line-options" title="Permanent link">&para;</a></h2>
-<h3 id="init">init<a class="headerlink" href="#init" title="Permanent link">&para;</a></h3>
-<p>This subcommand creates two initial files for use with System Manager, a fully-functional <code>flake.nix</code>, and a <code>system.nix</code> file that contains skeleton code.</p>
-<h4 id="command-line-options_1">Command line options<a class="headerlink" href="#command-line-options_1" title="Permanent link">&para;</a></h4>
-<p><strong>path:</strong> The path where to create the files. If the path doesn't exist, it will be created.</p>
-<h4 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h4>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a>nix<span class="w"> </span>run<span class="w"> </span><span class="s1">&#39;github:numtide/system-manager&#39;</span><span class="w"> </span>--<span class="w"> </span>init
-</code></pre></div></td></tr></table></div>
-<p>This will create the initial files in <code>~/.config/system-manager</code>.</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1"></a>nix<span class="w"> </span>run<span class="w"> </span><span class="s1">&#39;github:numtide/system-manager&#39;</span><span class="w"> </span>--<span class="w"> </span>init<span class="w"> </span>--path<span class="o">=</span><span class="s1">&#39;/home/ubuntu/system-manager&#39;</span>
-</code></pre></div></td></tr></table></div>
-<p>This will create the initial files in <code>/home/ubuntu/system-manager</code>.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>System Manager requires flakes to be enabled in <code>/etc/nix/nix.conf</code>. See <a href="../../how-to/install/#enabling-flakes">Enabling Flakes</a> for setup instructions.</p>
+<h1 id="nginx">Nginx<a class="headerlink" href="#nginx" title="Permanent link">&para;</a></h1>
+<p>This example shows how to install and configure Nginx as a web server with HTTP support.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>This is simply an example to help you learn how to use System Manager. The usual way to install nginx under Nix is to use the <a href="https://search.nixos.org/packages?channel=25.11&amp;show=nginx&amp;query=nginx">nginx package</a>.</p>
 </div>
-<h3 id="switch">switch<a class="headerlink" href="#switch" title="Permanent link">&para;</a></h3>
-<p>The <code>switch</code> subcommand builds and activates your configuration immediately, making it both the current running configuration and the default for future boots. Use it whenever you want to apply your changes.</p>
-<p><strong>Note: Rollbacks are not yet implemented.</strong></p>
-<p>The following two parameters are currently both required:</p>
-<p><strong>--flake</strong>: Specifies a flake to use for configuration.</p>
-<p><strong>--sudo</strong>: Specifies that System Manager can use sudo.</p>
-<h3 id="register">register<a class="headerlink" href="#register" title="Permanent link">&para;</a></h3>
-<p>The <code>register</code> subcommand builds and registers a System Manager configuration, but does not activate it. Compare this to <code>switch</code>, which does everything register does, but then activates it.</p>
-<h3 id="build">build<a class="headerlink" href="#build" title="Permanent link">&para;</a></h3>
-<p>The <code>build</code> subcommand builds everything needed for a switch, but does not register it.</p>
-<h3 id="deactivate">deactivate<a class="headerlink" href="#deactivate" title="Permanent link">&para;</a></h3>
-<p>The <code>deactivate</code> deactivates System Manager.</p>
-<h3 id="pre-populate">pre-populate<a class="headerlink" href="#pre-populate" title="Permanent link">&para;</a></h3>
-<p>The <code>pre-populate</code> subcommand puts all files defined by the given generation in place, but does not start the services. This is useful in scripts.</p>
-<h3 id="sudo">sudo<a class="headerlink" href="#sudo" title="Permanent link">&para;</a></h3>
-<p>The <code>sudo</code> subcommand grants sudo access to System Manager, while running under the current user. All created files will be owned by the current user.</p>
+<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
+<p>Here's a <code>.nix</code> file that installs and configures nginx as a system service. Note that this version only supports HTTP and not HTTPS; see <a href="../nginx-https/">Nginx HTTPS</a> for an example that includes HTTPS.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">  1</a></span>
+<span class="normal"><a href="#__codelineno-0-2">  2</a></span>
+<span class="normal"><a href="#__codelineno-0-3">  3</a></span>
+<span class="normal"><a href="#__codelineno-0-4">  4</a></span>
+<span class="normal"><a href="#__codelineno-0-5">  5</a></span>
+<span class="normal"><a href="#__codelineno-0-6">  6</a></span>
+<span class="normal"><a href="#__codelineno-0-7">  7</a></span>
+<span class="normal"><a href="#__codelineno-0-8">  8</a></span>
+<span class="normal"><a href="#__codelineno-0-9">  9</a></span>
+<span class="normal"><a href="#__codelineno-0-10"> 10</a></span>
+<span class="normal"><a href="#__codelineno-0-11"> 11</a></span>
+<span class="normal"><a href="#__codelineno-0-12"> 12</a></span>
+<span class="normal"><a href="#__codelineno-0-13"> 13</a></span>
+<span class="normal"><a href="#__codelineno-0-14"> 14</a></span>
+<span class="normal"><a href="#__codelineno-0-15"> 15</a></span>
+<span class="normal"><a href="#__codelineno-0-16"> 16</a></span>
+<span class="normal"><a href="#__codelineno-0-17"> 17</a></span>
+<span class="normal"><a href="#__codelineno-0-18"> 18</a></span>
+<span class="normal"><a href="#__codelineno-0-19"> 19</a></span>
+<span class="normal"><a href="#__codelineno-0-20"> 20</a></span>
+<span class="normal"><a href="#__codelineno-0-21"> 21</a></span>
+<span class="normal"><a href="#__codelineno-0-22"> 22</a></span>
+<span class="normal"><a href="#__codelineno-0-23"> 23</a></span>
+<span class="normal"><a href="#__codelineno-0-24"> 24</a></span>
+<span class="normal"><a href="#__codelineno-0-25"> 25</a></span>
+<span class="normal"><a href="#__codelineno-0-26"> 26</a></span>
+<span class="normal"><a href="#__codelineno-0-27"> 27</a></span>
+<span class="normal"><a href="#__codelineno-0-28"> 28</a></span>
+<span class="normal"><a href="#__codelineno-0-29"> 29</a></span>
+<span class="normal"><a href="#__codelineno-0-30"> 30</a></span>
+<span class="normal"><a href="#__codelineno-0-31"> 31</a></span>
+<span class="normal"><a href="#__codelineno-0-32"> 32</a></span>
+<span class="normal"><a href="#__codelineno-0-33"> 33</a></span>
+<span class="normal"><a href="#__codelineno-0-34"> 34</a></span>
+<span class="normal"><a href="#__codelineno-0-35"> 35</a></span>
+<span class="normal"><a href="#__codelineno-0-36"> 36</a></span>
+<span class="normal"><a href="#__codelineno-0-37"> 37</a></span>
+<span class="normal"><a href="#__codelineno-0-38"> 38</a></span>
+<span class="normal"><a href="#__codelineno-0-39"> 39</a></span>
+<span class="normal"><a href="#__codelineno-0-40"> 40</a></span>
+<span class="normal"><a href="#__codelineno-0-41"> 41</a></span>
+<span class="normal"><a href="#__codelineno-0-42"> 42</a></span>
+<span class="normal"><a href="#__codelineno-0-43"> 43</a></span>
+<span class="normal"><a href="#__codelineno-0-44"> 44</a></span>
+<span class="normal"><a href="#__codelineno-0-45"> 45</a></span>
+<span class="normal"><a href="#__codelineno-0-46"> 46</a></span>
+<span class="normal"><a href="#__codelineno-0-47"> 47</a></span>
+<span class="normal"><a href="#__codelineno-0-48"> 48</a></span>
+<span class="normal"><a href="#__codelineno-0-49"> 49</a></span>
+<span class="normal"><a href="#__codelineno-0-50"> 50</a></span>
+<span class="normal"><a href="#__codelineno-0-51"> 51</a></span>
+<span class="normal"><a href="#__codelineno-0-52"> 52</a></span>
+<span class="normal"><a href="#__codelineno-0-53"> 53</a></span>
+<span class="normal"><a href="#__codelineno-0-54"> 54</a></span>
+<span class="normal"><a href="#__codelineno-0-55"> 55</a></span>
+<span class="normal"><a href="#__codelineno-0-56"> 56</a></span>
+<span class="normal"><a href="#__codelineno-0-57"> 57</a></span>
+<span class="normal"><a href="#__codelineno-0-58"> 58</a></span>
+<span class="normal"><a href="#__codelineno-0-59"> 59</a></span>
+<span class="normal"><a href="#__codelineno-0-60"> 60</a></span>
+<span class="normal"><a href="#__codelineno-0-61"> 61</a></span>
+<span class="normal"><a href="#__codelineno-0-62"> 62</a></span>
+<span class="normal"><a href="#__codelineno-0-63"> 63</a></span>
+<span class="normal"><a href="#__codelineno-0-64"> 64</a></span>
+<span class="normal"><a href="#__codelineno-0-65"> 65</a></span>
+<span class="normal"><a href="#__codelineno-0-66"> 66</a></span>
+<span class="normal"><a href="#__codelineno-0-67"> 67</a></span>
+<span class="normal"><a href="#__codelineno-0-68"> 68</a></span>
+<span class="normal"><a href="#__codelineno-0-69"> 69</a></span>
+<span class="normal"><a href="#__codelineno-0-70"> 70</a></span>
+<span class="normal"><a href="#__codelineno-0-71"> 71</a></span>
+<span class="normal"><a href="#__codelineno-0-72"> 72</a></span>
+<span class="normal"><a href="#__codelineno-0-73"> 73</a></span>
+<span class="normal"><a href="#__codelineno-0-74"> 74</a></span>
+<span class="normal"><a href="#__codelineno-0-75"> 75</a></span>
+<span class="normal"><a href="#__codelineno-0-76"> 76</a></span>
+<span class="normal"><a href="#__codelineno-0-77"> 77</a></span>
+<span class="normal"><a href="#__codelineno-0-78"> 78</a></span>
+<span class="normal"><a href="#__codelineno-0-79"> 79</a></span>
+<span class="normal"><a href="#__codelineno-0-80"> 80</a></span>
+<span class="normal"><a href="#__codelineno-0-81"> 81</a></span>
+<span class="normal"><a href="#__codelineno-0-82"> 82</a></span>
+<span class="normal"><a href="#__codelineno-0-83"> 83</a></span>
+<span class="normal"><a href="#__codelineno-0-84"> 84</a></span>
+<span class="normal"><a href="#__codelineno-0-85"> 85</a></span>
+<span class="normal"><a href="#__codelineno-0-86"> 86</a></span>
+<span class="normal"><a href="#__codelineno-0-87"> 87</a></span>
+<span class="normal"><a href="#__codelineno-0-88"> 88</a></span>
+<span class="normal"><a href="#__codelineno-0-89"> 89</a></span>
+<span class="normal"><a href="#__codelineno-0-90"> 90</a></span>
+<span class="normal"><a href="#__codelineno-0-91"> 91</a></span>
+<span class="normal"><a href="#__codelineno-0-92"> 92</a></span>
+<span class="normal"><a href="#__codelineno-0-93"> 93</a></span>
+<span class="normal"><a href="#__codelineno-0-94"> 94</a></span>
+<span class="normal"><a href="#__codelineno-0-95"> 95</a></span>
+<span class="normal"><a href="#__codelineno-0-96"> 96</a></span>
+<span class="normal"><a href="#__codelineno-0-97"> 97</a></span>
+<span class="normal"><a href="#__codelineno-0-98"> 98</a></span>
+<span class="normal"><a href="#__codelineno-0-99"> 99</a></span>
+<span class="normal"><a href="#__codelineno-0-100">100</a></span>
+<span class="normal"><a href="#__codelineno-0-101">101</a></span>
+<span class="normal"><a href="#__codelineno-0-102">102</a></span>
+<span class="normal"><a href="#__codelineno-0-103">103</a></span>
+<span class="normal"><a href="#__codelineno-0-104">104</a></span>
+<span class="normal"><a href="#__codelineno-0-105">105</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="p">{</span> lib<span class="p">,</span> pkgs<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2"></a><span class="p">{</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3"></a>  <span class="ss">config</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4"></a>    nixpkgs<span class="o">.</span><span class="ss">hostPlatform</span> <span class="o">=</span> <span class="s2">&quot;x86_64-linux&quot;</span><span class="p">;</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5"></a>
+<a id="__codelineno-0-6" name="__codelineno-0-6"></a>    <span class="c1"># Enable and configure services</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7"></a>    <span class="ss">services</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8"></a>      nginx<span class="o">.</span><span class="ss">enable</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9"></a>    <span class="p">};</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10"></a>
+<a id="__codelineno-0-11" name="__codelineno-0-11"></a>    <span class="ss">environment</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12"></a>      <span class="c1"># Packages that should be installed on a system</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13"></a>      <span class="ss">systemPackages</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14"></a>        pkgs<span class="o">.</span>hello
+<a id="__codelineno-0-15" name="__codelineno-0-15"></a>        pkgs<span class="o">.</span>mariadb
+<a id="__codelineno-0-16" name="__codelineno-0-16"></a>        pkgs<span class="o">.</span>nginx
+<a id="__codelineno-0-17" name="__codelineno-0-17"></a>      <span class="p">];</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18"></a>
+<a id="__codelineno-0-19" name="__codelineno-0-19"></a>      <span class="c1"># Add directories and files to `/etc` and set their permissions</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20"></a>      <span class="ss">etc</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21"></a>        <span class="s2">&quot;nginx/nginx.conf&quot;</span><span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22"></a>
+<a id="__codelineno-0-23" name="__codelineno-0-23"></a>                <span class="ss">user</span> <span class="o">=</span> <span class="s2">&quot;root&quot;</span><span class="p">;</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24"></a>                <span class="ss">group</span> <span class="o">=</span> <span class="s2">&quot;root&quot;</span><span class="p">;</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25"></a>                <span class="ss">mode</span> <span class="o">=</span> <span class="s2">&quot;0644&quot;</span><span class="p">;</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26"></a>
+<a id="__codelineno-0-27" name="__codelineno-0-27"></a>                <span class="ss">text</span> <span class="o">=</span> <span class="s s-Multiline">&#39;&#39;</span>
+<a id="__codelineno-0-28" name="__codelineno-0-28"></a><span class="s s-Multiline"># The user/group is often set to &#39;nginx&#39; or &#39;www-data&#39;,</span>
+<a id="__codelineno-0-29" name="__codelineno-0-29"></a><span class="s s-Multiline"># but for a simple root-only demo, we&#39;ll keep the default.</span>
+<a id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="s s-Multiline"># user nginx;</span>
+<a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="s s-Multiline">worker_processes auto;</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32"></a>
+<a id="__codelineno-0-33" name="__codelineno-0-33"></a><span class="s s-Multiline"># NGINX looks for modules relative to the install prefix,</span>
+<a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="s s-Multiline"># but we explicitly point to the Nix store path to be safe.</span>
+<a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="s s-Multiline">error_log /var/log/nginx/error.log;</span>
+<a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="s s-Multiline">pid /run/nginx.pid;</span>
+<a id="__codelineno-0-37" name="__codelineno-0-37"></a>
+<a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="s s-Multiline">events {</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="s s-Multiline">    worker_connections 1024;</span>
+<a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="s s-Multiline">}</span>
+<a id="__codelineno-0-41" name="__codelineno-0-41"></a>
+<a id="__codelineno-0-42" name="__codelineno-0-42"></a><span class="s s-Multiline">http {</span>
+<a id="__codelineno-0-43" name="__codelineno-0-43"></a><span class="s s-Multiline">    include             </span><span class="si">${</span>pkgs<span class="o">.</span>nginx<span class="si">}</span><span class="s s-Multiline">/conf/mime.types;</span>
+<a id="__codelineno-0-44" name="__codelineno-0-44"></a><span class="s s-Multiline">    default_type        application/octet-stream;</span>
+<a id="__codelineno-0-45" name="__codelineno-0-45"></a>
+<a id="__codelineno-0-46" name="__codelineno-0-46"></a><span class="s s-Multiline">    sendfile            on;</span>
+<a id="__codelineno-0-47" name="__codelineno-0-47"></a><span class="s s-Multiline">    keepalive_timeout   65;</span>
+<a id="__codelineno-0-48" name="__codelineno-0-48"></a>
+<a id="__codelineno-0-49" name="__codelineno-0-49"></a><span class="s s-Multiline">    # Basic default server block</span>
+<a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="s s-Multiline">    server {</span>
+<a id="__codelineno-0-51" name="__codelineno-0-51"></a><span class="s s-Multiline">        listen 80;</span>
+<a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="s s-Multiline">        server_name localhost;</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53"></a>
+<a id="__codelineno-0-54" name="__codelineno-0-54"></a><span class="s s-Multiline">        # Point the root directory to a standard location or a Nix store path</span>
+<a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="s s-Multiline">        root </span><span class="si">${</span>pkgs<span class="o">.</span>nginx<span class="si">}</span><span class="s s-Multiline">/html;</span>
+<a id="__codelineno-0-56" name="__codelineno-0-56"></a>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="s s-Multiline">        location / {</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="s s-Multiline">            index index.html;</span>
+<a id="__codelineno-0-59" name="__codelineno-0-59"></a><span class="s s-Multiline">        }</span>
+<a id="__codelineno-0-60" name="__codelineno-0-60"></a>
+<a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="s s-Multiline">        # Example log files</span>
+<a id="__codelineno-0-62" name="__codelineno-0-62"></a><span class="s s-Multiline">        access_log /var/log/nginx/access.log;</span>
+<a id="__codelineno-0-63" name="__codelineno-0-63"></a><span class="s s-Multiline">        error_log /var/log/nginx/error.log;</span>
+<a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="s s-Multiline">    }</span>
+<a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="s s-Multiline">}</span>
+<a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="s s-Multiline">    &#39;&#39;</span><span class="p">;</span>
+<a id="__codelineno-0-67" name="__codelineno-0-67"></a>
+<a id="__codelineno-0-68" name="__codelineno-0-68"></a>
+<a id="__codelineno-0-69" name="__codelineno-0-69"></a>        <span class="p">};</span>
+<a id="__codelineno-0-70" name="__codelineno-0-70"></a>      <span class="p">};</span>
+<a id="__codelineno-0-71" name="__codelineno-0-71"></a>    <span class="p">};</span>
+<a id="__codelineno-0-72" name="__codelineno-0-72"></a>
+<a id="__codelineno-0-73" name="__codelineno-0-73"></a>    <span class="c1"># Enable and configure systemd services</span>
+<a id="__codelineno-0-74" name="__codelineno-0-74"></a>    systemd<span class="o">.</span><span class="ss">services</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-75" name="__codelineno-0-75"></a>        <span class="ss">nginx</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-76" name="__codelineno-0-76"></a>            <span class="ss">enable</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
+<a id="__codelineno-0-77" name="__codelineno-0-77"></a>            <span class="ss">description</span> <span class="o">=</span> <span class="s2">&quot;A high performance web server and reverse proxy server&quot;</span><span class="p">;</span>
+<a id="__codelineno-0-78" name="__codelineno-0-78"></a>            <span class="ss">wantedBy</span> <span class="o">=</span> <span class="p">[</span> <span class="s2">&quot;system-manager.target&quot;</span> <span class="p">];</span>
+<a id="__codelineno-0-79" name="__codelineno-0-79"></a>            <span class="ss">preStart</span> <span class="o">=</span> <span class="s s-Multiline">&#39;&#39;</span>
+<a id="__codelineno-0-80" name="__codelineno-0-80"></a><span class="s s-Multiline">                mkdir -p /var/log/nginx</span>
+<a id="__codelineno-0-81" name="__codelineno-0-81"></a><span class="s s-Multiline">                chown -R root:root /var/log/nginx # Ensure permissions are right for root user</span>
+<a id="__codelineno-0-82" name="__codelineno-0-82"></a><span class="s s-Multiline">            &#39;&#39;</span><span class="p">;</span>
+<a id="__codelineno-0-83" name="__codelineno-0-83"></a>            <span class="ss">serviceConfig</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-84" name="__codelineno-0-84"></a>                <span class="ss">Type</span> <span class="o">=</span> <span class="s2">&quot;forking&quot;</span><span class="p">;</span>
+<a id="__codelineno-0-85" name="__codelineno-0-85"></a>                <span class="ss">PIDFile</span> <span class="o">=</span> <span class="s2">&quot;/run/nginx.pid&quot;</span><span class="p">;</span>
+<a id="__codelineno-0-86" name="__codelineno-0-86"></a>
+<a id="__codelineno-0-87" name="__codelineno-0-87"></a>                <span class="c1"># The main binary execution command, pointing to the Nix store path</span>
+<a id="__codelineno-0-88" name="__codelineno-0-88"></a>                <span class="ss">ExecStart</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">${</span>pkgs<span class="o">.</span>nginx<span class="si">}</span><span class="s2">/bin/nginx -c /etc/nginx/nginx.conf&quot;</span><span class="p">;</span>
+<a id="__codelineno-0-89" name="__codelineno-0-89"></a>
+<a id="__codelineno-0-90" name="__codelineno-0-90"></a>                <span class="c1"># The command to stop the service gracefully</span>
+<a id="__codelineno-0-91" name="__codelineno-0-91"></a>                <span class="ss">ExecStop</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">${</span>pkgs<span class="o">.</span>nginx<span class="si">}</span><span class="s2">/bin/nginx -s stop&quot;</span><span class="p">;</span>
+<a id="__codelineno-0-92" name="__codelineno-0-92"></a>
+<a id="__codelineno-0-93" name="__codelineno-0-93"></a>                <span class="c1"># NGINX needs to run as root to bind to port 80/443</span>
+<a id="__codelineno-0-94" name="__codelineno-0-94"></a>                <span class="ss">User</span> <span class="o">=</span> <span class="s2">&quot;root&quot;</span><span class="p">;</span>
+<a id="__codelineno-0-95" name="__codelineno-0-95"></a>                <span class="ss">Group</span> <span class="o">=</span> <span class="s2">&quot;root&quot;</span><span class="p">;</span>
+<a id="__codelineno-0-96" name="__codelineno-0-96"></a>
+<a id="__codelineno-0-97" name="__codelineno-0-97"></a>                <span class="c1"># Restart policy for robustness</span>
+<a id="__codelineno-0-98" name="__codelineno-0-98"></a>                <span class="ss">Restart</span> <span class="o">=</span> <span class="s2">&quot;on-failure&quot;</span><span class="p">;</span>
+<a id="__codelineno-0-99" name="__codelineno-0-99"></a>            <span class="p">};</span>
+<a id="__codelineno-0-100" name="__codelineno-0-100"></a>        <span class="p">};</span>
+<a id="__codelineno-0-101" name="__codelineno-0-101"></a>    <span class="p">};</span>
+<a id="__codelineno-0-102" name="__codelineno-0-102"></a>
+<a id="__codelineno-0-103" name="__codelineno-0-103"></a>
+<a id="__codelineno-0-104" name="__codelineno-0-104"></a>  <span class="p">};</span>
+<a id="__codelineno-0-105" name="__codelineno-0-105"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<h2 id="what-this-configuration-does">What this configuration does<a class="headerlink" href="#what-this-configuration-does" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Installs Nginx</strong> as a system package</li>
+<li><strong>Creates <code>/etc/nginx/nginx.conf</code></strong> with a basic HTTP configuration</li>
+<li><strong>Creates a systemd service</strong> that:</li>
+<li>Creates the log directory on startup</li>
+<li>Runs Nginx with the custom configuration</li>
+<li>Restarts on failure</li>
+<li><strong>Serves the default Nginx welcome page</strong> on port 80</li>
+</ol>
 
 
 
@@ -2010,7 +2001,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="January 10, 2026 12:41:26 UTC">January 10, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="January 10, 2026 12:40:24 UTC">January 10, 2026</span>
   </span>
 
     
@@ -2051,7 +2042,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../" class="md-footer__link md-footer__link--prev" aria-label="Previous: Overview">
+          <a href="../postgresql/" class="md-footer__link md-footer__link--prev" aria-label="Previous: PostgreSQL">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -2061,20 +2052,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Overview
+                PostgreSQL
               </div>
             </div>
           </a>
         
         
           
-          <a href="../modules/" class="md-footer__link md-footer__link--next" aria-label="Next: Module Options">
+          <a href="../nginx-https/" class="md-footer__link md-footer__link--next" aria-label="Next: Nginx HTTPS">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Module Options
+                Nginx HTTPS
               </div>
             </div>
             <div class="md-footer__button md-icon">

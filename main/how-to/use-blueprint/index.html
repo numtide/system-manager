@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://system-manager.net/main/reference/cli/">
+        <link rel="canonical" href="https://system-manager.net/main/how-to/use-blueprint/">
       
       
-        <link rel="prev" href="../">
+        <link rel="prev" href="../use-remote-flakes/">
       
       
-        <link rel="next" href="../modules/">
+        <link rel="next" href="../rollback/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>CLI Commands - System Manager</title>
+        <title>Use Blueprint - System Manager</title>
       
     
     
@@ -133,7 +133,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#cli-commands" class="md-skip">
+        <a href="#blueprint" class="md-skip">
           Skip to content
         </a>
       
@@ -170,7 +170,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              CLI Commands
+              Use Blueprint
             
           </span>
         </div>
@@ -337,11 +337,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../how-to/install/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../install/" class="md-tabs__link">
           
   
   
@@ -359,13 +361,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../reference/" class="md-tabs__link">
           
   
   
@@ -668,8 +668,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -687,19 +689,22 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   
@@ -717,7 +722,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -735,7 +740,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../how-to/install/" class="md-nav__link">
+      <a href="../install/" class="md-nav__link">
         
   
   
@@ -763,7 +768,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../how-to/deploy-remotely/" class="md-nav__link">
+      <a href="../deploy-remotely/" class="md-nav__link">
         
   
   
@@ -791,7 +796,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../how-to/use-remote-flakes/" class="md-nav__link">
+      <a href="../use-remote-flakes/" class="md-nav__link">
         
   
   
@@ -816,10 +821,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../how-to/use-blueprint/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Use Blueprint
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -835,6 +867,37 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#using-multiple-configuration-files-with-blueprint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using multiple configuration files with Blueprint
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -847,7 +910,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../how-to/rollback/" class="md-nav__link">
+      <a href="../rollback/" class="md-nav__link">
         
   
   
@@ -879,8 +942,6 @@
       
   
   
-    
-  
   
   
     
@@ -904,23 +965,20 @@
     
     
       
-        
-        
-      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../reference/" class="md-nav__link ">
               
   
   
@@ -938,13 +996,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="">
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -961,37 +1019,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    CLI Commands
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../reference/cli/" class="md-nav__link">
         
   
   
@@ -1007,148 +1038,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#command-line-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Command-line Options
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Command-line Options">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#init" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        init
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="init">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#command-line-options_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Command line options
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#example" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#switch" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        switch
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#register" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        register
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#build" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        build
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#deactivate" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        deactivate
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#pre-populate" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        pre-populate
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sudo" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        sudo
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1161,7 +1050,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../modules/" class="md-nav__link">
+      <a href="../../reference/modules/" class="md-nav__link">
         
   
   
@@ -1189,7 +1078,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../all-options/" class="md-nav__link">
+      <a href="../../reference/all-options/" class="md-nav__link">
         
   
   
@@ -1217,7 +1106,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../configuration/" class="md-nav__link">
+      <a href="../../reference/configuration/" class="md-nav__link">
         
   
   
@@ -1245,7 +1134,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../supported-platforms/" class="md-nav__link">
+      <a href="../../reference/supported-platforms/" class="md-nav__link">
         
   
   
@@ -1762,124 +1651,13 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#command-line-options" class="md-nav__link">
+  <a href="#using-multiple-configuration-files-with-blueprint" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Command-line Options
+        Using multiple configuration files with Blueprint
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Command-line Options">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#init" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        init
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="init">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#command-line-options_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Command line options
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#example" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#switch" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        switch
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#register" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        register
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#build" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        build
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#deactivate" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        deactivate
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#pre-populate" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        pre-populate
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sudo" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        sudo
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1926,10 +1704,10 @@
     
     
       <li class="md-path__item">
-        <a href="../" class="md-path__link">
+        <a href="../install/" class="md-path__link">
           
   <span class="md-ellipsis">
-    Reference
+    How-to Guides
   </span>
 
         </a>
@@ -1951,43 +1729,217 @@
   
 
 
-<h1 id="cli-commands">CLI Commands<a class="headerlink" href="#cli-commands" title="Permanent link">&para;</a></h1>
-<p>The basic command looks like this:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a>nix<span class="w"> </span>run<span class="w"> </span><span class="s1">&#39;github:numtide/system-manager&#39;</span><span class="w"> </span>--<span class="w"> </span>switch<span class="w"> </span>--flake<span class="w"> </span>.<span class="w"> </span>--sudo
+<h1 id="blueprint">Blueprint<a class="headerlink" href="#blueprint" title="Permanent link">&para;</a></h1>
+<p>Blueprint is an opinionated library that maps a standard folder structure to flake outputs, allowing you to divide up your flake into individual files across these folders. This allows you to modularize and isolate these files so that they can be maintained individually and even shared across multiple projects.</p>
+<p>Blueprint has built-in support for System Manager, which means:</p>
+<ul>
+<li>You do not need to call <code>system-manager.lib.makeSystemConfig</code>; Blueprint calls this for you</li>
+<li>You must follow Blueprint's folder structure by placing your files under the <code>hosts</code> folder, and you must name your files <code>system-configuration.nix</code>.</li>
+<li>You can have multiple folders under the <code>hosts</code> folder (but one level deep), and you can access these using the standard nix specifier, e.g. <code>.#folder-name</code>.</li>
+</ul>
+<p>In this section we show you how to use Blueprint with System Manager.</p>
+<p>Blueprint provides its own initialization that you can start with if you don't already have a <code>flake.nix</code> file using Blueprint. The command to type is:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a>nix<span class="w"> </span>flake<span class="w"> </span>init<span class="w"> </span>-t<span class="w"> </span>github:numtide/blueprint
 </code></pre></div></td></tr></table></div>
-<p>This is the most common scenario you'll use.</p>
-<h2 id="command-line-options">Command-line Options<a class="headerlink" href="#command-line-options" title="Permanent link">&para;</a></h2>
-<h3 id="init">init<a class="headerlink" href="#init" title="Permanent link">&para;</a></h3>
-<p>This subcommand creates two initial files for use with System Manager, a fully-functional <code>flake.nix</code>, and a <code>system.nix</code> file that contains skeleton code.</p>
-<h4 id="command-line-options_1">Command line options<a class="headerlink" href="#command-line-options_1" title="Permanent link">&para;</a></h4>
-<p><strong>path:</strong> The path where to create the files. If the path doesn't exist, it will be created.</p>
-<h4 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h4>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a>nix<span class="w"> </span>run<span class="w"> </span><span class="s1">&#39;github:numtide/system-manager&#39;</span><span class="w"> </span>--<span class="w"> </span>init
+<p>This results in the following flake:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-1-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-1-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-1-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-1-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-1-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-1-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-1-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-1-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-1-10">10</a></span>
+<span class="normal"><a href="#__codelineno-1-11">11</a></span>
+<span class="normal"><a href="#__codelineno-1-12">12</a></span>
+<span class="normal"><a href="#__codelineno-1-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="p">{</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2"></a>  <span class="ss">description</span> <span class="o">=</span> <span class="s2">&quot;Simple flake with a devshell&quot;</span><span class="p">;</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4"></a>  <span class="c1"># Add all your dependencies here</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5"></a>  <span class="ss">inputs</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6"></a>    nixpkgs<span class="o">.</span><span class="ss">url</span> <span class="o">=</span> <span class="s2">&quot;github:NixOS/nixpkgs?ref=nixos-unstable&quot;</span><span class="p">;</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7"></a>    blueprint<span class="o">.</span><span class="ss">url</span> <span class="o">=</span> <span class="s2">&quot;github:numtide/blueprint&quot;</span><span class="p">;</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8"></a>    blueprint<span class="o">.</span>inputs<span class="o">.</span>nixpkgs<span class="o">.</span><span class="ss">follows</span> <span class="o">=</span> <span class="s2">&quot;nixpkgs&quot;</span><span class="p">;</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9"></a>  <span class="p">};</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10"></a>
+<a id="__codelineno-1-11" name="__codelineno-1-11"></a>  <span class="c1"># Load the blueprint</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12"></a>  <span class="ss">outputs</span> <span class="o">=</span> inputs<span class="p">:</span> inputs<span class="o">.</span>blueprint <span class="p">{</span> <span class="k">inherit</span> inputs<span class="p">;</span> <span class="p">};</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13"></a><span class="p">}</span>
 </code></pre></div></td></tr></table></div>
-<p>This will create the initial files in <code>~/.config/system-manager</code>.</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1"></a>nix<span class="w"> </span>run<span class="w"> </span><span class="s1">&#39;github:numtide/system-manager&#39;</span><span class="w"> </span>--<span class="w"> </span>init<span class="w"> </span>--path<span class="o">=</span><span class="s1">&#39;/home/ubuntu/system-manager&#39;</span>
+<p>Now add System Manager to its inputs section:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span>
+<span class="normal"><a href="#__codelineno-2-2">2</a></span>
+<span class="normal"><a href="#__codelineno-2-3">3</a></span>
+<span class="normal"><a href="#__codelineno-2-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1"></a>    <span class="ss">system-manager</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2"></a>        <span class="ss">url</span> <span class="o">=</span> <span class="s2">&quot;github:numtide/system-manager&quot;</span><span class="p">;</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3"></a>        inputs<span class="o">.</span>nixpkgs<span class="o">.</span><span class="ss">follows</span> <span class="o">=</span> <span class="s2">&quot;nixpkgs&quot;</span><span class="p">;</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4"></a>    <span class="p">};</span>
 </code></pre></div></td></tr></table></div>
-<p>This will create the initial files in <code>/home/ubuntu/system-manager</code>.</p>
+<p>Next, create a folder called <code>hosts</code>, and under that a folder called <code>default</code>:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span>
+<span class="normal"><a href="#__codelineno-3-2">2</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1"></a>mkdir<span class="w"> </span>-p<span class="w"> </span>hosts/default
+<a id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="nb">cd</span><span class="w"> </span>hosts/default
+</code></pre></div></td></tr></table></div>
+<p>Inside <code>default</code> is where you'll put your configuration file.</p>
+<p><strong>This configuration file must be named <code>system-configuration.nix</code>.</strong></p>
+<p>For example, here's a configuration file that installs <code>bat</code>:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-4-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-4-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-4-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-4-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-4-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-4-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-4-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-4-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-4-10">10</a></span>
+<span class="normal"><a href="#__codelineno-4-11">11</a></span>
+<span class="normal"><a href="#__codelineno-4-12">12</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="p">{</span> lib<span class="p">,</span> pkgs<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2"></a><span class="p">{</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3"></a>  <span class="ss">config</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4"></a>    nixpkgs<span class="o">.</span><span class="ss">hostPlatform</span> <span class="o">=</span> <span class="s2">&quot;x86_64-linux&quot;</span><span class="p">;</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5"></a>    <span class="ss">environment</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6"></a>      <span class="c1"># Packages that should be installed on a system</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7"></a>      <span class="ss">systemPackages</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8"></a>        pkgs<span class="o">.</span>bat
+<a id="__codelineno-4-9" name="__codelineno-4-9"></a>      <span class="p">];</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10"></a>    <span class="p">};</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11"></a>  <span class="p">};</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>System Manager requires flakes to be enabled in <code>/etc/nix/nix.conf</code>. See <a href="../../how-to/install/#enabling-flakes">Enabling Flakes</a> for setup instructions.</p>
 </div>
-<h3 id="switch">switch<a class="headerlink" href="#switch" title="Permanent link">&para;</a></h3>
-<p>The <code>switch</code> subcommand builds and activates your configuration immediately, making it both the current running configuration and the default for future boots. Use it whenever you want to apply your changes.</p>
-<p><strong>Note: Rollbacks are not yet implemented.</strong></p>
-<p>The following two parameters are currently both required:</p>
-<p><strong>--flake</strong>: Specifies a flake to use for configuration.</p>
-<p><strong>--sudo</strong>: Specifies that System Manager can use sudo.</p>
-<h3 id="register">register<a class="headerlink" href="#register" title="Permanent link">&para;</a></h3>
-<p>The <code>register</code> subcommand builds and registers a System Manager configuration, but does not activate it. Compare this to <code>switch</code>, which does everything register does, but then activates it.</p>
-<h3 id="build">build<a class="headerlink" href="#build" title="Permanent link">&para;</a></h3>
-<p>The <code>build</code> subcommand builds everything needed for a switch, but does not register it.</p>
-<h3 id="deactivate">deactivate<a class="headerlink" href="#deactivate" title="Permanent link">&para;</a></h3>
-<p>The <code>deactivate</code> deactivates System Manager.</p>
-<h3 id="pre-populate">pre-populate<a class="headerlink" href="#pre-populate" title="Permanent link">&para;</a></h3>
-<p>The <code>pre-populate</code> subcommand puts all files defined by the given generation in place, but does not start the services. This is useful in scripts.</p>
-<h3 id="sudo">sudo<a class="headerlink" href="#sudo" title="Permanent link">&para;</a></h3>
-<p>The <code>sudo</code> subcommand grants sudo access to System Manager, while running under the current user. All created files will be owned by the current user.</p>
+<p>Notice that we need to include <code>nixpkgs.hostPlatform</code> in this file, as there's no place to include it in the parent <code>flake.nix</code> file.</p>
+<p>Now return to the folder two levels up (the one containing <code>flake.nix</code>) and you can run System Manager:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1"></a>nix<span class="w"> </span>run<span class="w"> </span><span class="s1">&#39;github:numtide/system-manager&#39;</span><span class="w"> </span>--<span class="w"> </span>switch<span class="w"> </span>--flake<span class="w"> </span>.<span class="w"> </span>--sudo
+</code></pre></div></td></tr></table></div>
+<div class="admonition remember">
+<p class="admonition-title">Remember</p>
+<p>As mentioned elsewhere, if this is the first time running System Manager on this computer, you'll need to log out and log back in to pick up the new path.</p>
+</div>
+<p>Then you should find <code>bat</code> on your path:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1">1</a></span>
+<span class="normal"><a href="#__codelineno-6-2">2</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="gp">$ </span>which<span class="w"> </span>bat
+<a id="__codelineno-6-2" name="__codelineno-6-2"></a><span class="go">/run/system-manager/sw/bin//bat</span>
+</code></pre></div></td></tr></table></div>
+<p>The default folder is called <code>default</code>; you can also refer to folders by name as mentioned earlier.</p>
+<p>If, for example, under the <code>hosts</code> folder you have a folder called <code>tree</code>, and inside <code>tree</code> you create a file called <code>system-configuration.nix</code> with the following contents:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-7-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-7-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-7-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-7-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-7-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-7-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-7-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-7-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-7-10">10</a></span>
+<span class="normal"><a href="#__codelineno-7-11">11</a></span>
+<span class="normal"><a href="#__codelineno-7-12">12</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="p">{</span> lib<span class="p">,</span> pkgs<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2"></a><span class="p">{</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3"></a>  <span class="ss">config</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4"></a>    nixpkgs<span class="o">.</span><span class="ss">hostPlatform</span> <span class="o">=</span> <span class="s2">&quot;x86_64-linux&quot;</span><span class="p">;</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5"></a>    <span class="ss">environment</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6"></a>      <span class="c1"># Packages that should be installed on a system</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7"></a>      <span class="ss">systemPackages</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8"></a>        pkgs<span class="o">.</span>tree
+<a id="__codelineno-7-9" name="__codelineno-7-9"></a>      <span class="p">];</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10"></a>    <span class="p">};</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11"></a>  <span class="p">};</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>Then you can choose to install <code>tree</code> by specifying the <code>tree</code> folder like so:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1"></a>nix<span class="w"> </span>run<span class="w"> </span><span class="s1">&#39;github:numtide/system-manager&#39;</span><span class="w"> </span>--<span class="w"> </span>switch<span class="w"> </span>--flake<span class="w"> </span><span class="s1">&#39;.#tree&#39;</span><span class="w"> </span>--sudo
+</code></pre></div></td></tr></table></div>
+<h2 id="using-multiple-configuration-files-with-blueprint">Using multiple configuration files with Blueprint<a class="headerlink" href="#using-multiple-configuration-files-with-blueprint" title="Permanent link">&para;</a></h2>
+<p>If you want to load multiple configuration files at once, you can create a special <code>system-configuration.nix</code> file that loads multiple files from a <code>modules</code> folder (or any name you choose). To accomplish this, create a folder under <code>hosts</code>; for example, you might name it <code>cli-tools</code>. Starting in the folder with <code>flake.nix</code>:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1"></a>mkdir<span class="w"> </span>-p<span class="w"> </span>hosts/cli-tools/modules
+</code></pre></div></td></tr></table></div>
+<p>Then, inside the <code>cli-tools</code> folder, create a <code>system-configuration.nix</code> file with the following:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-10-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-10-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-10-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-10-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-10-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-10-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-10-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-10-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-10-10">10</a></span>
+<span class="normal"><a href="#__codelineno-10-11">11</a></span>
+<span class="normal"><a href="#__codelineno-10-12">12</a></span>
+<span class="normal"><a href="#__codelineno-10-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="p">{</span> config<span class="p">,</span> lib<span class="p">,</span> pkgs<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2"></a><span class="p">{</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3"></a>  <span class="c1"># Import all your modular configs - they auto-merge!</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4"></a>  <span class="ss">imports</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5"></a>    <span class="l">./modules/tldr.nix</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6"></a>    <span class="l">./modules/cowsay.nix</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7"></a>  <span class="p">];</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8"></a>
+<a id="__codelineno-10-9" name="__codelineno-10-9"></a>  <span class="c1"># Base configuration that applies to everything</span>
+<a id="__codelineno-10-10" name="__codelineno-10-10"></a>  <span class="ss">config</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-10-11" name="__codelineno-10-11"></a>    nixpkgs<span class="o">.</span><span class="ss">hostPlatform</span> <span class="o">=</span> <span class="s2">&quot;x86_64-linux&quot;</span><span class="p">;</span>
+<a id="__codelineno-10-12" name="__codelineno-10-12"></a>  <span class="p">};</span>
+<a id="__codelineno-10-13" name="__codelineno-10-13"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>(Notice this time we can put the <code>nixpkgs.hostPlatform</code> in a single place. As such we won't need it in the configuration files.)</p>
+<p>Now move into the <code>modules</code> folder:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-11-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="nb">cd</span><span class="w"> </span>modules
+</code></pre></div></td></tr></table></div>
+<p>And create two files here:</p>
+<p>tldr.nix:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-12-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-12-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-12-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-12-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-12-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-12-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-12-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-12-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-12-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-12-10">10</a></span>
+<span class="normal"><a href="#__codelineno-12-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="p">{</span> lib<span class="p">,</span> pkgs<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2"></a><span class="p">{</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3"></a>  <span class="ss">config</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4"></a>    <span class="ss">environment</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5"></a>      <span class="c1"># Packages that should be installed on a system</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6"></a>      <span class="ss">systemPackages</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7"></a>        pkgs<span class="o">.</span>tldr
+<a id="__codelineno-12-8" name="__codelineno-12-8"></a>      <span class="p">];</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9"></a>    <span class="p">};</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10"></a>  <span class="p">};</span>
+<a id="__codelineno-12-11" name="__codelineno-12-11"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>cowsay.nix:
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-13-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-13-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-13-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-13-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-13-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-13-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-13-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-13-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-13-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-13-10">10</a></span>
+<span class="normal"><a href="#__codelineno-13-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1"></a><span class="p">{</span> lib<span class="p">,</span> pkgs<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2"></a><span class="p">{</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3"></a>  <span class="ss">config</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4"></a>    <span class="ss">environment</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5"></a>      <span class="c1"># Packages that should be installed on a system</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6"></a>      <span class="ss">systemPackages</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7"></a>        pkgs<span class="o">.</span>cowsay
+<a id="__codelineno-13-8" name="__codelineno-13-8"></a>      <span class="p">];</span>
+<a id="__codelineno-13-9" name="__codelineno-13-9"></a>    <span class="p">};</span>
+<a id="__codelineno-13-10" name="__codelineno-13-10"></a>  <span class="p">};</span>
+<a id="__codelineno-13-11" name="__codelineno-13-11"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div></p>
+<p>Now you can return to the top level where your <code>flake.nix</code> file is and run these two configuration files:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-14-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1"></a>nix<span class="w"> </span>run<span class="w"> </span><span class="s1">&#39;github:numtide/system-manager&#39;</span><span class="w"> </span>--<span class="w"> </span>switch<span class="w"> </span>--flake<span class="w"> </span><span class="s1">&#39;.#cli-tools&#39;</span><span class="w"> </span>--sudo
+</code></pre></div></td></tr></table></div>
+<p>This means if you want to include various recipes, you can easily do so.</p>
 
 
 
@@ -2010,7 +1962,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="January 10, 2026 12:41:26 UTC">January 10, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="January 10, 2026 12:40:24 UTC">January 10, 2026</span>
   </span>
 
     
@@ -2051,7 +2003,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../" class="md-footer__link md-footer__link--prev" aria-label="Previous: Overview">
+          <a href="../use-remote-flakes/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Use Remote Flakes">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -2061,20 +2013,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Overview
+                Use Remote Flakes
               </div>
             </div>
           </a>
         
         
           
-          <a href="../modules/" class="md-footer__link md-footer__link--next" aria-label="Next: Module Options">
+          <a href="../rollback/" class="md-footer__link md-footer__link--next" aria-label="Next: Rollback Changes">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Module Options
+                Rollback Changes
               </div>
             </div>
             <div class="md-footer__button md-icon">
