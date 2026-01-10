@@ -29,7 +29,7 @@ pub const STANDALONE_FLAKE_TEMPLATE: &[u8; 739] =
 
 /// The bytes for the standalone module template is included in the binary to avoid unnecessary
 /// network calls when initializing a system-manager configuration from the command line.
-pub const SYSTEM_MODULE_TEMPLATE: &[u8; 1153] = include_bytes!("../../../templates/system.nix");
+pub const SYSTEM_MODULE_TEMPLATE: &[u8; 1159] = include_bytes!("../../../templates/system.nix");
 
 /// Name of the engine binary in the store path
 const ENGINE_BIN: &str = "system-manager-engine";
