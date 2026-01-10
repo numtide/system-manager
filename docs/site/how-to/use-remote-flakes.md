@@ -43,6 +43,9 @@ Generally, you only need to update your `flake.lock` file when you want newer ve
 * You've added new inputs to your flakes (in which case you'll be required to update `flake.lock`)
 * You're preparing a fresh install and decide this is a good time to upgrade everything
 
+!!! Note Important
+    System Manager is undergoing continual development and revisions. When you create a flake.lock file, it includes the specific commit (version) of System Manager's GitHub repository. You might run into some compatibility problems as we add new features. If you encounter problems, rebuild your flake.nix file (which you should do periodically anyway.)
+
 ### Can't System Manager build `flake.lock` for me?
 
 Yes, but only if the `flake.nix` file is local to your machine. The problem is System Manager will try to write a `flake.lock` file in the same location as the `flake.nix` file, which isn't possible (at this time) with a GitHub repo.
