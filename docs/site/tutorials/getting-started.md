@@ -1,8 +1,8 @@
 # Getting Started
 
-If you've heard of NixOS, you've probably heard that it lets you define your entire system in configuration files and then reproduce that system anywhere with a single command. System Manager brings that same declarative model to other Linux distribution*, with no reinstalling, no switching operating systems, and no special prerequisites beyond having Nix installed.
+If you've heard of NixOS, you've probably heard that it lets you define your entire system in configuration files and then reproduce that system anywhere with a single command. System Manager brings that same declarative model to other Linux distributions*, with no reinstalling, no switching operating systems, and no special prerequisites beyond having Nix installed.
 
-*Presently System Manager is only tested on Ubuntu, and is limited to only Linux distributions based on systemd.
+*Presently, System Manager is only tested on Ubuntu, and is limited to only Linux distributions based on systemd.
 
 # Initializing Your System
 
@@ -27,9 +27,9 @@ You might see the following for questions; you can simply answer yes to them:
 * Do you want to permanently mark this value as trusted (y/N)?
 
 
-After running the command you will have the following files in your `~/.config/system-manager` folder:
+After running the command, you will have the following files in your `~/.config/system-manager` folder:
 
-* `flake.nix` -- A flake entrypoint that loads the system.nix file
+* `flake.nix` -- A flake entrypoint that loads the `system.nix` file
 * `system.nix` -- The declarative file that describes what your system should look like.
 
 !!! Tip
@@ -138,16 +138,16 @@ Here are the contents of the files that were created:
 
 # Example: Installing/Uninstalling Apps
 
-First, let's build a configuration file that installs or uninstalls apps.
+First, let's create a configuration file that allows for the installation or uninstallation of apps.
 
 !!! Tip
-    The idea is that the configuration file describes what the system should look like. Keep that in mind, as opposed to thinking that the configuration file "installs software" or "uninstalls software."
+    The idea is that the configuration file describes what the system should look like. Keep that in mind, rather than thinking that the configuration file "installs software" or "uninstalls software."
 
-To get started, we'll create another `.nix` file that will install a single app. Then we'll run System Manager, and verify it's installed.
+To get started, we'll create another `.nix` file that will install a single app. Then we'll run System Manager and verify it's installed.
 
-Then to demonstrate what System Manager can do, we'll add another line to the configuration file with another app; run System Manager again, and again verify its installation.
+Then, to demonstrate what System Manager can do, we'll add another line to the configuration file with another app; run System Manager again, and verify its installation once more.
 
-Then after that we'll remove one of the apps from the configuration file, run System Manager, and verify that the app is no longer installed.
+Then, after that, we'll remove one of the apps from the configuration file, run System Manager, and verify that the app is no longer installed.
 
 This will fully demonstrate the declarative nature of these configuration files.
 
@@ -164,7 +164,7 @@ First, in the `~/.config/system-manager` folder, create a file `apps.nix` and pl
 }
 ```
 
-This configuration states that the system being configured should have the `tldr` app present, and if isn't, System Manager will install it. (Notice how we phrased that! We didn't just say this file installs the app. With `.nix` files, it's important to get into the mindset that they state what the system should look like.)
+This configuration states that the system being configured should have the `tldr` app present, and if it isn't, System Manager will install it. (Notice how we phrased that! We didn't just say this file installs the app. With `.nix` files, it's important to get into the mindset that they state what the system should look like.)
 
 Now add the file to the modules list in `flake.nix` by replacing this modules line:
 
@@ -176,11 +176,11 @@ Now add the file to the modules list in `flake.nix` by replacing this modules li
 +         ];
 ```
 
-Note: By default, `system.nix` includes starter code and some commented out examples, and nothing else. So you can leave it in the list; in its original state, it doesn't do anything.
+Note: By default, `system.nix` includes starter code and some commented-out examples, and nothing else. You can leave it in the list; in its original state, it does nothing.
 
 Next, we'll run System Manager to apply the configuration.
 
-System Manager needs root privileges to modify `/etc`, manage systemd services, and create system profiles. Use the `--sudo` flag to run these operations via sudo:
+The System Manager requires root privileges to modify `/etc`, manage systemd services, and create system profiles. Use the `--sudo` flag to run these operations via sudo:
 
 ```sh
 nix run 'github:numtide/system-manager' -- switch --flake . --sudo
@@ -191,7 +191,7 @@ After a short moment, the `tldr` app should be installed on your system.
 !!! Tip
     The first time you install software with System Manager, it adds a path to your `$PATH` variable by creating an entry in `/etc/profile.d/`. This won't take effect until you log out and back in; or you can source the file like so: `source /etc/profile.d/system-manager-path.sh` After that, you should find the `tldr` program: `which tldr` should yield `/run/system-manager/sw/bin//tldr`.
 
-Now to demonstrate the declarative feature of System Manager, let's add another app to the list. Here's a fun app called `cowsay`. Add a single line `cowsay` to the list passed into `systemPackages`:
+Now, to demonstrate the declarative feature of System Manager, let's add another app to the list. Here's a fun app called `cowsay`. Add a single line `cowsay` to the list passed into `systemPackages`:
 
 ```nix
 { pkgs, ... }:
@@ -223,7 +223,7 @@ Run System Manager again with the same command as above, and you should now have
 ~/.config/system-manager$
 ```
 
-Remember, this is a declarative approach; System Manager did not re-install `tldr`. It looked at the list (`tldr`, `cowsay`) and compared it to what is currently installed. It saw that `tldr` is already installed, so it skipped that one. It saw `cowsay` is *not* installed, so it installed it, so that the system matches the configuration file.
+Remember, this is a declarative approach; System Manager did not reinstall `tldr`. It looked at the list (`tldr`, `cowsay`) and compared it to what is currently installed. It saw that `tldr` is already installed, so it skipped that one. It saw `cowsay` is *not* installed, so it installed it, so that the system matches the configuration file.
 
 Now let's remove `cowsay` from the list of installed software. To do so, simply remove the line (or comment it out):
 
@@ -255,11 +255,11 @@ When System Manager runs, with the help of the Nix language, you can have multip
         ];
 ```
 
-However, you need to be careful. Suppose you have a different set of software you want to install, and you create a flake in another area in the filesystem with that software. It might not work the way you intend.
+However, you need to be careful. Suppose you have a different set of software you want to install, and you create a flake in another area in the filesystem with that software. It may not work the way you intend.
 
 With that second flake, System Manager will gather up any apps you have in the `systemPackages` attribute, and compare that to what it has already installed earlier. If the packages installed earlier aren't included, it will remove those packages. (That includes the apps you installed with the "other" flake.)
 
-In other words, you cannot have two separate flakes, one for one set of software, the other for a different set of software, and bounce between those flakes. System Manager will treat the second as requesting to uninstall what it installed earlier.
+In other words, you cannot have two separate flakes, one for one set of software, the other for a different set of software, and bounce between those flakes. System Manager will treat the second as requesting to uninstall what it had previously installed.
 
 To make the above work, your best bet is to create a single flake and add in individual files that contain the apps you want to install, and always run from that same location.
 
@@ -267,34 +267,34 @@ To make the above work, your best bet is to create a single flake and add in ind
 
 ## Understanding Imperative State vs Declarative State
 
-Imperative state means you change the system by hand, step by step. You run commands like `apt install`, edit files under `/etc` with a text editor, toggle systemd services, and make changes as you think of them. You're telling the computer how to do something:
+An imperative state means you change the system by hand, step by step. You run commands like `apt install`, edit files under `/etc` with a text editor, toggle systemd services, and make changes as you think of them. You're telling the computer how to do something:
 
 > "Install this package, then edit this file, then restart this service."
 
-Each action mutates the system in place, and over time the machine can drift into a state that's hard to reproduce.
+Each action mutates the system in place, and over time, the machine can drift into a state that's hard to reproduce.
 
 (To "mutate" something simply means to change it in place. When a system mutates, its files, settings, or state are altered directly, step by step, rather than being reconstructed from a clean, known description.)
 
 Declarative state, on the other hand, means you don't tell the system how to do the steps — you tell it what you want the final system to look like, and the tool (System Manager, NixOS, Home Manager, etc.) figures out the steps automatically.
 
 > "This machine should have these packages, these `/etc` files, and these services enabled."
-When you activate that configuration, the tool builds the desired end state and applies it in a predictable, repeatable way.
+When you activate that configuration, the tool builds the desired end state and applies it in a predictable and repeatable manner.
 
 Here's A simple analogy:
 
-Imperative is like writing a recipe with every individual action: "Chop onions. Heat pan. Add oil..."
+An imperative is like writing a recipe with every individual action: "Chop onions. Heat the pan. Add oil..."
 
 Declarative is like saying, "I want a finished lasagna," and the system knows how to assemble it reliably every time.
 
-Declarative state avoids drift, keeps everything versioned and reproducible, and makes rollback simple. Imperative state is flexible and quick, but much harder to track or repeat.
+A declarative state avoids drift, keeps everything versioned and reproducible, and makes rollbacks simple. An imperative state is flexible and quick, but much harder to track or repeat.
 
 > Traditional programming languages are typically imperative in nature. 
 
-If you're familiar with coding, a language like JavaScript is imperative in that you describe everything in a step by step fashion. A language like HTML is declarative in that you simply state what the web page should look like, without saying how to do it.
+If you're familiar with coding, a language like JavaScript is imperative in that you describe everything in a step-by-step fashion. A language like HTML is declarative, in that you simply state what the web page should look like, without specifying how to achieve it.
 
 ## A note about objects in your `.nix` files
 
-Nix gives you significant flexibility in creating your objects that you use inside a `.nix` file.
+Nix gives you significant flexibility in creating your own objects that you use inside a `*.nix` file.
 
 For example, you could have a `config` object that looks like this:
 
@@ -308,7 +308,7 @@ config = {
 
 This declares an object stored as `config` with a single member called `nixpkgs`; that `nixpkgs` member then has a single member called `hostPlatform`, holding the string literal `"x86_64-linux"`.
 
-But Nix allows great flexilibyt in how you declare such objects. Consider the following:
+But Nix allows great flexibility in how you declare such objects. Consider the following:
 
 ```nix
   config = {
@@ -318,5 +318,5 @@ But Nix allows great flexilibyt in how you declare such objects. Consider the fo
 This creates the exact same object. Nix allows you to string together members with a dot between them, and it will construct the inner object accordingly.
 
 !!! Note
-    In the examples throughout this and other guides here, we use a mixture of the above syntax.
+    In the examples throughout this and other guides, we use a combination of the above syntax.
 
