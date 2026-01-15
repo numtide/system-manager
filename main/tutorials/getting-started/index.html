@@ -1663,8 +1663,8 @@
 
 
 <h1 id="getting-started">Getting Started<a class="headerlink" href="#getting-started" title="Permanent link">&para;</a></h1>
-<p>If you've heard of NixOS, you've probably heard that it lets you define your entire system in configuration files and then reproduce that system anywhere with a single command. System Manager brings that same declarative model to other Linux distribution*, with no reinstalling, no switching operating systems, and no special prerequisites beyond having Nix installed.</p>
-<p>*Presently System Manager is only tested on Ubuntu, and is limited to only Linux distributions based on systemd.</p>
+<p>If you've heard of NixOS, you've probably heard that it lets you define your entire system in configuration files and then reproduce that system anywhere with a single command. System Manager brings that same declarative model to other Linux distributions*, with no reinstalling, no switching operating systems, and no special prerequisites beyond having Nix installed.</p>
+<p>*Presently, System Manager is only tested on Ubuntu, and is limited to only Linux distributions based on systemd.</p>
 <h1 id="initializing-your-system">Initializing Your System<a class="headerlink" href="#initializing-your-system" title="Permanent link">&para;</a></h1>
 <p>Before proceeding, ensure you have <a href="../../how-to/install/">installed Nix with flakes enabled</a>.</p>
 <p>To get started with System Manager, run the init subcommand, which will create an initial set of files in the <code>~/.config/system-manager</code> folder:</p>
@@ -1686,9 +1686,9 @@
 <p>Do you want to permanently mark this value as trusted (y/N)?</p>
 </li>
 </ul>
-<p>After running the command you will have the following files in your <code>~/.config/system-manager</code> folder:</p>
+<p>After running the command, you will have the following files in your <code>~/.config/system-manager</code> folder:</p>
 <ul>
-<li><code>flake.nix</code> -- A flake entrypoint that loads the system.nix file</li>
+<li><code>flake.nix</code> -- A flake entrypoint that loads the <code>system.nix</code> file</li>
 <li><code>system.nix</code> -- The declarative file that describes what your system should look like.</li>
 </ul>
 <div class="admonition tip">
@@ -1877,14 +1877,14 @@
 <a id="__codelineno-2-55" name="__codelineno-2-55"></a><span class="p">}</span>
 </code></pre></div></td></tr></table></div>
 <h1 id="example-installinguninstalling-apps">Example: Installing/Uninstalling Apps<a class="headerlink" href="#example-installinguninstalling-apps" title="Permanent link">&para;</a></h1>
-<p>First, let's build a configuration file that installs or uninstalls apps.</p>
+<p>First, let's create a configuration file that allows for the installation or uninstallation of apps.</p>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
-<p>The idea is that the configuration file describes what the system should look like. Keep that in mind, as opposed to thinking that the configuration file "installs software" or "uninstalls software."</p>
+<p>The idea is that the configuration file describes what the system should look like. Keep that in mind, rather than thinking that the configuration file "installs software" or "uninstalls software."</p>
 </div>
-<p>To get started, we'll create another <code>.nix</code> file that will install a single app. Then we'll run System Manager, and verify it's installed.</p>
-<p>Then to demonstrate what System Manager can do, we'll add another line to the configuration file with another app; run System Manager again, and again verify its installation.</p>
-<p>Then after that we'll remove one of the apps from the configuration file, run System Manager, and verify that the app is no longer installed.</p>
+<p>To get started, we'll create another <code>.nix</code> file that will install a single app. Then we'll run System Manager and verify it's installed.</p>
+<p>Then, to demonstrate what System Manager can do, we'll add another line to the configuration file with another app; run System Manager again, and verify its installation once more.</p>
+<p>Then, after that, we'll remove one of the apps from the configuration file, run System Manager, and verify that the app is no longer installed.</p>
 <p>This will fully demonstrate the declarative nature of these configuration files.</p>
 <p>First, in the <code>~/.config/system-manager</code> folder, create a file <code>apps.nix</code> and place the following in it:</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span>
@@ -1903,7 +1903,7 @@
 <a id="__codelineno-3-7" name="__codelineno-3-7"></a>  <span class="p">];</span>
 <a id="__codelineno-3-8" name="__codelineno-3-8"></a><span class="p">}</span>
 </code></pre></div></td></tr></table></div>
-<p>This configuration states that the system being configured should have the <code>tldr</code> app present, and if isn't, System Manager will install it. (Notice how we phrased that! We didn't just say this file installs the app. With <code>.nix</code> files, it's important to get into the mindset that they state what the system should look like.)</p>
+<p>This configuration states that the system being configured should have the <code>tldr</code> app present, and if it isn't, System Manager will install it. (Notice how we phrased that! We didn't just say this file installs the app. With <code>.nix</code> files, it's important to get into the mindset that they state what the system should look like.)</p>
 <p>Now add the file to the modules list in <code>flake.nix</code> by replacing this modules line:</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span>
 <span class="normal"><a href="#__codelineno-4-2">2</a></span>
@@ -1915,9 +1915,9 @@
 <a id="__codelineno-4-4" name="__codelineno-4-4"></a><span class="gi">+             ./apps.nix</span>
 <a id="__codelineno-4-5" name="__codelineno-4-5"></a><span class="gi">+         ];</span>
 </code></pre></div></td></tr></table></div>
-<p>Note: By default, <code>system.nix</code> includes starter code and some commented out examples, and nothing else. So you can leave it in the list; in its original state, it doesn't do anything.</p>
+<p>Note: By default, <code>system.nix</code> includes starter code and some commented-out examples, and nothing else. You can leave it in the list; in its original state, it does nothing.</p>
 <p>Next, we'll run System Manager to apply the configuration.</p>
-<p>System Manager needs root privileges to modify <code>/etc</code>, manage systemd services, and create system profiles. Use the <code>--sudo</code> flag to run these operations via sudo:</p>
+<p>The System Manager requires root privileges to modify <code>/etc</code>, manage systemd services, and create system profiles. Use the <code>--sudo</code> flag to run these operations via sudo:</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1"></a>nix<span class="w"> </span>run<span class="w"> </span><span class="s1">&#39;github:numtide/system-manager&#39;</span><span class="w"> </span>--<span class="w"> </span>switch<span class="w"> </span>--flake<span class="w"> </span>.<span class="w"> </span>--sudo
 </code></pre></div></td></tr></table></div>
 <p>After a short moment, the <code>tldr</code> app should be installed on your system.</p>
@@ -1925,7 +1925,7 @@
 <p class="admonition-title">Tip</p>
 <p>The first time you install software with System Manager, it adds a path to your <code>$PATH</code> variable by creating an entry in <code>/etc/profile.d/</code>. This won't take effect until you log out and back in; or you can source the file like so: <code>source /etc/profile.d/system-manager-path.sh</code> After that, you should find the <code>tldr</code> program: <code>which tldr</code> should yield <code>/run/system-manager/sw/bin//tldr</code>.</p>
 </div>
-<p>Now to demonstrate the declarative feature of System Manager, let's add another app to the list. Here's a fun app called <code>cowsay</code>. Add a single line <code>cowsay</code> to the list passed into <code>systemPackages</code>:</p>
+<p>Now, to demonstrate the declarative feature of System Manager, let's add another app to the list. Here's a fun app called <code>cowsay</code>. Add a single line <code>cowsay</code> to the list passed into <code>systemPackages</code>:</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1"> 1</a></span>
 <span class="normal"><a href="#__codelineno-6-2"> 2</a></span>
 <span class="normal"><a href="#__codelineno-6-3"> 3</a></span>
@@ -1969,7 +1969,7 @@
 <a id="__codelineno-7-9" name="__codelineno-7-9"></a><span class="w">                </span><span class="o">||</span><span class="w">     </span><span class="o">||</span>
 <a id="__codelineno-7-10" name="__codelineno-7-10"></a>~/.config/system-manager$
 </code></pre></div></td></tr></table></div>
-<p>Remember, this is a declarative approach; System Manager did not re-install <code>tldr</code>. It looked at the list (<code>tldr</code>, <code>cowsay</code>) and compared it to what is currently installed. It saw that <code>tldr</code> is already installed, so it skipped that one. It saw <code>cowsay</code> is <em>not</em> installed, so it installed it, so that the system matches the configuration file.</p>
+<p>Remember, this is a declarative approach; System Manager did not reinstall <code>tldr</code>. It looked at the list (<code>tldr</code>, <code>cowsay</code>) and compared it to what is currently installed. It saw that <code>tldr</code> is already installed, so it skipped that one. It saw <code>cowsay</code> is <em>not</em> installed, so it installed it, so that the system matches the configuration file.</p>
 <p>Now let's remove <code>cowsay</code> from the list of installed software. To do so, simply remove the line (or comment it out):</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1"> 1</a></span>
 <span class="normal"><a href="#__codelineno-8-2"> 2</a></span>
@@ -2003,33 +2003,33 @@
 <a id="__codelineno-9-3" name="__codelineno-9-3"></a>            <span class="l">./apps.nix</span>
 <a id="__codelineno-9-4" name="__codelineno-9-4"></a>        <span class="p">];</span>
 </code></pre></div></td></tr></table></div>
-<p>However, you need to be careful. Suppose you have a different set of software you want to install, and you create a flake in another area in the filesystem with that software. It might not work the way you intend.</p>
+<p>However, you need to be careful. Suppose you have a different set of software you want to install, and you create a flake in another area in the filesystem with that software. It may not work the way you intend.</p>
 <p>With that second flake, System Manager will gather up any apps you have in the <code>systemPackages</code> attribute, and compare that to what it has already installed earlier. If the packages installed earlier aren't included, it will remove those packages. (That includes the apps you installed with the "other" flake.)</p>
-<p>In other words, you cannot have two separate flakes, one for one set of software, the other for a different set of software, and bounce between those flakes. System Manager will treat the second as requesting to uninstall what it installed earlier.</p>
+<p>In other words, you cannot have two separate flakes, one for one set of software, the other for a different set of software, and bounce between those flakes. System Manager will treat the second as requesting to uninstall what it had previously installed.</p>
 <p>To make the above work, your best bet is to create a single flake and add in individual files that contain the apps you want to install, and always run from that same location.</p>
 <h1 id="concepts-for-people-new-to-nix">Concepts for people new to Nix<a class="headerlink" href="#concepts-for-people-new-to-nix" title="Permanent link">&para;</a></h1>
 <h2 id="understanding-imperative-state-vs-declarative-state">Understanding Imperative State vs Declarative State<a class="headerlink" href="#understanding-imperative-state-vs-declarative-state" title="Permanent link">&para;</a></h2>
-<p>Imperative state means you change the system by hand, step by step. You run commands like <code>apt install</code>, edit files under <code>/etc</code> with a text editor, toggle systemd services, and make changes as you think of them. You're telling the computer how to do something:</p>
+<p>An imperative state means you change the system by hand, step by step. You run commands like <code>apt install</code>, edit files under <code>/etc</code> with a text editor, toggle systemd services, and make changes as you think of them. You're telling the computer how to do something:</p>
 <blockquote>
 <p>"Install this package, then edit this file, then restart this service."</p>
 </blockquote>
-<p>Each action mutates the system in place, and over time the machine can drift into a state that's hard to reproduce.</p>
+<p>Each action mutates the system in place, and over time, the machine can drift into a state that's hard to reproduce.</p>
 <p>(To "mutate" something simply means to change it in place. When a system mutates, its files, settings, or state are altered directly, step by step, rather than being reconstructed from a clean, known description.)</p>
 <p>Declarative state, on the other hand, means you don't tell the system how to do the steps — you tell it what you want the final system to look like, and the tool (System Manager, NixOS, Home Manager, etc.) figures out the steps automatically.</p>
 <blockquote>
 <p>"This machine should have these packages, these <code>/etc</code> files, and these services enabled."
-When you activate that configuration, the tool builds the desired end state and applies it in a predictable, repeatable way.</p>
+When you activate that configuration, the tool builds the desired end state and applies it in a predictable and repeatable manner.</p>
 </blockquote>
 <p>Here's A simple analogy:</p>
-<p>Imperative is like writing a recipe with every individual action: "Chop onions. Heat pan. Add oil..."</p>
+<p>An imperative is like writing a recipe with every individual action: "Chop onions. Heat the pan. Add oil..."</p>
 <p>Declarative is like saying, "I want a finished lasagna," and the system knows how to assemble it reliably every time.</p>
-<p>Declarative state avoids drift, keeps everything versioned and reproducible, and makes rollback simple. Imperative state is flexible and quick, but much harder to track or repeat.</p>
+<p>A declarative state avoids drift, keeps everything versioned and reproducible, and makes rollbacks simple. An imperative state is flexible and quick, but much harder to track or repeat.</p>
 <blockquote>
 <p>Traditional programming languages are typically imperative in nature. </p>
 </blockquote>
-<p>If you're familiar with coding, a language like JavaScript is imperative in that you describe everything in a step by step fashion. A language like HTML is declarative in that you simply state what the web page should look like, without saying how to do it.</p>
+<p>If you're familiar with coding, a language like JavaScript is imperative in that you describe everything in a step-by-step fashion. A language like HTML is declarative, in that you simply state what the web page should look like, without specifying how to achieve it.</p>
 <h2 id="a-note-about-objects-in-your-nix-files">A note about objects in your <code>.nix</code> files<a class="headerlink" href="#a-note-about-objects-in-your-nix-files" title="Permanent link">&para;</a></h2>
-<p>Nix gives you significant flexibility in creating your objects that you use inside a <code>.nix</code> file.</p>
+<p>Nix gives you significant flexibility in creating your own objects that you use inside a <code>*.nix</code> file.</p>
 <p>For example, you could have a <code>config</code> object that looks like this:</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1">1</a></span>
 <span class="normal"><a href="#__codelineno-10-2">2</a></span>
@@ -2042,7 +2042,7 @@ When you activate that configuration, the tool builds the desired end state and 
 <a id="__codelineno-10-5" name="__codelineno-10-5"></a>}
 </code></pre></div></td></tr></table></div>
 <p>This declares an object stored as <code>config</code> with a single member called <code>nixpkgs</code>; that <code>nixpkgs</code> member then has a single member called <code>hostPlatform</code>, holding the string literal <code>"x86_64-linux"</code>.</p>
-<p>But Nix allows great flexilibyt in how you declare such objects. Consider the following:</p>
+<p>But Nix allows great flexibility in how you declare such objects. Consider the following:</p>
 <p><div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-11-1">1</a></span>
 <span class="normal"><a href="#__codelineno-11-2">2</a></span>
 <span class="normal"><a href="#__codelineno-11-3">3</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1"></a>  <span class="ss">config</span> <span class="o">=</span> <span class="p">{</span>
@@ -2052,7 +2052,7 @@ When you activate that configuration, the tool builds the desired end state and 
 This creates the exact same object. Nix allows you to string together members with a dot between them, and it will construct the inner object accordingly.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>In the examples throughout this and other guides here, we use a mixture of the above syntax.</p>
+<p>In the examples throughout this and other guides, we use a combination of the above syntax.</p>
 </div>
 
 
@@ -2076,7 +2076,7 @@ This creates the exact same object. Nix allows you to string together members wi
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="January 10, 2026 12:40:24 UTC">January 10, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="January 15, 2026 10:16:06 UTC">January 15, 2026</span>
   </span>
 
     
