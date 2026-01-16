@@ -180,7 +180,7 @@ Note: By default, `system.nix` includes starter code and some commented-out exam
 
 Next, we'll run System Manager to apply the configuration.
 
-The System Manager requires root privileges to modify `/etc`, manage systemd services, and create system profiles. Use the `--sudo` flag to run these operations via sudo:
+System Manager requires root privileges to modify `/etc`, manage systemd services, and create system profiles. Use the `--sudo` flag to run these operations via sudo:
 
 ```sh
 nix run 'github:numtide/system-manager' -- switch --flake . --sudo
@@ -267,26 +267,32 @@ To make the above work, your best bet is to create a single flake and add in ind
 
 ## Understanding Imperative State vs Declarative State
 
-An imperative state means you change the system by hand, step by step. You run commands like `apt install`, edit files under `/etc` with a text editor, toggle systemd services, and make changes as you think of them. You're telling the computer how to do something:
+**Imperative state** means you change the system by hand, step by step. You run commands like `apt install`, edit files under `/etc` with a text editor, toggle systemd services, and make changes as you think of them. You're telling the computer *how* to do something:
 
 > "Install this package, then edit this file, then restart this service."
 
 Each action mutates the system in place, and over time, the machine can drift into a state that's hard to reproduce.
 
-(To "mutate" something simply means to change it in place. When a system mutates, its files, settings, or state are altered directly, step by step, rather than being reconstructed from a clean, known description.)
+(To *mutate* something simply means to change it in place. When a system mutates, its files, settings, or state are altered directly, step by step, rather than being reconstructed from a clean, known description.)
 
-Declarative state, on the other hand, means you don't tell the system how to do the steps — you tell it what you want the final system to look like, and the tool (System Manager, NixOS, Home Manager, etc.) figures out the steps automatically.
+**Declarative state**, on the other hand, means you don't tell the system how to do the steps — you tell it what you want the final system to look like, and the tool (System Manager, NixOS, Home Manager, etc.) figures out the steps automatically.
 
 > "This machine should have these packages, these `/etc` files, and these services enabled."
 When you activate that configuration, the tool builds the desired end state and applies it in a predictable and repeatable manner.
 
 Here's A simple analogy:
 
-An imperative is like writing a recipe with every individual action: "Chop onions. Heat the pan. Add oil..."
+**Imperative** is like writing a recipe with every individual action:
 
-Declarative is like saying, "I want a finished lasagna," and the system knows how to assemble it reliably every time.
+> "Chop onions. Heat the pan. Add oil..."
 
-A declarative state avoids drift, keeps everything versioned and reproducible, and makes rollbacks simple. An imperative state is flexible and quick, but much harder to track or repeat.
+**Declarative** is like saying:
+
+> "I want a finished lasagna"
+
+and the system knows how to assemble it reliably every time.
+
+**Declarative** state avoids drift, keeps everything versioned and reproducible, and makes rollbacks simple. **Imperative state** is flexible and quick, but much harder to track or repeat.
 
 > Traditional programming languages are typically imperative in nature. 
 
