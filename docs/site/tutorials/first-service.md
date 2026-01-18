@@ -13,7 +13,7 @@ A simple "hello world" systemd service that runs when System Manager activates y
 
 ## Step 1: Create a Service Module
 
-In your `~/.config/system-manager` folder, create a file called `hello-service.nix`:
+Create a file called `hello-service.nix` in your `~/.config/system-manager/` folder:
 
 ```nix
 { lib, pkgs, ... }:
@@ -39,12 +39,12 @@ In your `~/.config/system-manager` folder, create a file called `hello-service.n
 
 Let's break down what each part does:
 
-- `systemd.services.say-hello` - Creates a service named "say-hello"
-- `enable = true` - Activates the service
-- `wantedBy = [ "system-manager.target" ]` - Starts the service when System Manager activates
-- `Type = "oneshot"` - Runs once and exits
-- `RemainAfterExit = true` - Keeps the service marked as "active" after the script finishes
-- `script` - The actual command to run
+- `systemd.services.say-hello`: Creates a service named "say-hello".
+- `enable = true`: Activates the service.
+- `wantedBy = [ "system-manager.target" ]`: Starts the service when System Manager activates.
+- `Type = "oneshot"`: Runs once and exits.
+- `RemainAfterExit = true`: Keeps the service marked as "active" after the script finishes.
+- `script`: The actual command to run.
 
 ## Step 2: Add the Module to Your Flake
 
@@ -67,7 +67,7 @@ nix run 'github:numtide/system-manager' -- switch --flake . --sudo
 
 ## Step 4: Verify It Worked
 
-Check the journal to see your service ran:
+Check the journal to see if your service ran:
 
 ```sh
 journalctl -n 20
@@ -91,6 +91,6 @@ cat /etc/systemd/system/say-hello.service
 
 ## Next Steps
 
-- Learn about [service configuration options](../reference/modules.md#systemdservices) in the reference
-- See the [timer example](../examples/timer.md) for scheduled services
-- Explore the [nginx example](../examples/nginx.md) for a real-world service
+- Learn about [service configuration options](../reference/modules.md#systemdservices) in the reference.
+- See the [timer example](../examples/timer.md) for scheduled services.
+- Explore the [nginx example](../examples/nginx.md) for a real-world service.
