@@ -9,7 +9,7 @@ This tutorial shows you how to organize your System Manager configuration across
 
 ## What You'll Learn
 
-- How to split configuration into separate modules
+- How to split the configuration into separate modules
 - How Nix merges configuration from multiple files
 - Best practices for organizing larger configurations
 
@@ -27,7 +27,7 @@ This works for simple setups, but as your configuration grows, you'll want to or
 
 ## Step 1: Create a Modules Directory
 
-Create a `modules` folder to hold your configuration files:
+Create a `modules/` folder in `~/.config/system-manager/` to hold your configuration files:
 
 ```sh
 mkdir -p ~/.config/system-manager/modules
@@ -35,7 +35,7 @@ mkdir -p ~/.config/system-manager/modules
 
 ## Step 2: Create Separate Module Files
 
-Let's create two separate modules - one for packages and one for services.
+Let's create two separate modules, one for packages and one for services.
 
 **modules/packages.nix**
 
@@ -112,11 +112,11 @@ When you have multiple modules, Nix automatically merges their `config` attribut
 
 This means you can have:
 
-- `modules/dev-tools.nix` with development packages
-- `modules/monitoring.nix` with monitoring tools
-- `modules/web-server.nix` with nginx configuration
+- `modules/dev-tools.nix` with development packages,
+- `modules/monitoring.nix` with monitoring tools, and
+- `modules/web-server.nix` with nginx configuration.
 
-And they'll all work together without conflicts.
+They will all work together without conflicts.
 
 ## Recommended Structure
 
@@ -128,7 +128,7 @@ For larger configurations:
   modules/
     default.nix       # Common settings
     packages.nix      # System packages
-    services/
+    services/         # All user-defined services, one per module file.
       nginx.nix
       postgres.nix
     etc-files.nix     # /etc file management
@@ -136,6 +136,6 @@ For larger configurations:
 
 ## Next Steps
 
-- Learn about [folder organization patterns](../how-to/install.md)
-- See [Working with Remote Flakes](../how-to/use-remote-flakes.md) to host your config on GitHub
-- Read about [configuration options](../reference/modules.md) in the reference
+- Learn about [folder organization patterns](../how-to/install.md).
+- See [Working with Remote Flakes](../how-to/use-remote-flakes.md) to host your config on GitHub.
+- Read about [configuration options](../reference/modules.md) in the reference.
