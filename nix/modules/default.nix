@@ -233,8 +233,6 @@
           ${system-manager}/bin/system-manager-engine deactivate "$@"
         '';
 
-        systemActivationScript = pkgs.writeShellScript "systemActivationScript" config.system.activationScripts.script;
-
         preActivationAssertionScript =
           let
             mkAssertion =
@@ -278,7 +276,6 @@
               exit 0
             fi
           '';
-
       };
 
       # TODO: handle globbing
