@@ -229,9 +229,22 @@
             "$@"
         '';
 
-        deactivationScript = pkgs.writeShellScript "deactivate" ''
-          ${system-manager}/bin/system-manager-engine deactivate "$@"
-        '';
+        deactivationScript =
+          let
+            # Lock any users that were managed by system-manager
+            minimalUserbornConfig = pkgs.writeText "userborn-deactivate.json" (
+              builtins.toJSON {
+                users = [ ];
+                groups = [ ];
+              }
+            );
+          in
+          pkgs.writeShellScript "deactivate" ''
+            echo "Locking previously managed user accounts..."
+            USERBORN_STATEFUL=1 ${lib.getExe config.services.userborn.package} ${minimalUserbornConfig} /etc || true
+
+            ${system-manager}/bin/system-manager-engine deactivate "$@"
+          '';
 
         preActivationAssertionScript =
           let
