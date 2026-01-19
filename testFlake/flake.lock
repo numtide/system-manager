@@ -3,11 +3,11 @@
     "flake-compat": {
       "flake": false,
       "locked": {
-        "lastModified": 1747046372,
-        "narHash": "sha256-CIVLLkVgvHYbgI2UpXvIIBJ12HWgX+fjA8Xf8PUmqCY=",
+        "lastModified": 1767039857,
+        "narHash": "sha256-vNpUSpF5Nuw8xvDLj2KCwwksIbjua2LZCqhV1LNRDns=",
         "owner": "edolstra",
         "repo": "flake-compat",
-        "rev": "9100a0f413b0c601e0533d1d94ffd501ce2e7885",
+        "rev": "5edf11c44bc78a0d334f6334cdaf7d60d732daab",
         "type": "github"
       },
       "original": {
@@ -19,16 +19,17 @@
     "flake-parts": {
       "inputs": {
         "nixpkgs-lib": [
+          "system-manager",
           "userborn",
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1756770412,
-        "narHash": "sha256-+uWLQZccFHwqpGqr2Yt5VsW/PbeJVTn9Dk6SHWhNRPw=",
+        "lastModified": 1768135262,
+        "narHash": "sha256-PVvu7OqHBGWN16zSi6tEmPwwHQ4rLPU9Plvs8/1TUBY=",
         "owner": "hercules-ci",
         "repo": "flake-parts",
-        "rev": "4524271976b625a4a605beefd893f270620fd751",
+        "rev": "80daad04eddbbf5a4d883996a73f3f542fa437ac",
         "type": "github"
       },
       "original": {
@@ -40,6 +41,7 @@
     "gitignore": {
       "inputs": {
         "nixpkgs": [
+          "system-manager",
           "userborn",
           "pre-commit-hooks-nix",
           "nixpkgs"
@@ -81,27 +83,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1769789167,
-        "narHash": "sha256-kKB3bqYJU5nzYeIROI82Ef9VtTbu4uA3YydSk/Bioa8=",
+        "lastModified": 1770115704,
+        "narHash": "sha256-KHFT9UWOF2yRPlAnSXQJh6uVcgNcWlFqqiAZ7OVlHNc=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "62c8382960464ceb98ea593cb8321a2cf8f9e3e5",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "nixos-unstable",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
-    "nixpkgs_2": {
-      "locked": {
-        "lastModified": 1757745802,
-        "narHash": "sha256-hLEO2TPj55KcUFUU1vgtHE9UEIOjRcH/4QbmfHNF820=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "c23193b943c6c689d70ee98ce3128239ed9e32d1",
+        "rev": "e6eae2ee2110f3d31110d5c222cd395303343b08",
         "type": "github"
       },
       "original": {
@@ -114,21 +100,23 @@
     "pre-commit-hooks-nix": {
       "inputs": {
         "flake-compat": [
+          "system-manager",
           "userborn",
           "flake-compat"
         ],
         "gitignore": "gitignore",
         "nixpkgs": [
+          "system-manager",
           "userborn",
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1757588530,
-        "narHash": "sha256-tJ7A8mID3ct69n9WCvZ3PzIIl3rXTdptn/lZmqSS95U=",
+        "lastModified": 1769069492,
+        "narHash": "sha256-Efs3VUPelRduf3PpfPP2ovEB4CXT7vHf8W+xc49RL/U=",
         "owner": "cachix",
         "repo": "pre-commit-hooks.nix",
-        "rev": "b084b2c2b6bc23e83bbfe583b03664eb0b18c411",
+        "rev": "a1ef738813b15cf8ec759bdff5761b027e3e1d23",
         "type": "github"
       },
       "original": {
@@ -144,13 +132,13 @@
           "system-manager",
           "nixpkgs"
         ],
-        "system-manager": "system-manager",
-        "userborn": "userborn"
+        "system-manager": "system-manager"
       }
     },
     "system-manager": {
       "inputs": {
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "userborn": "userborn"
       },
       "locked": {
         "path": "..",
@@ -181,21 +169,24 @@
       "inputs": {
         "flake-compat": "flake-compat",
         "flake-parts": "flake-parts",
-        "nixpkgs": "nixpkgs_2",
+        "nixpkgs": [
+          "system-manager",
+          "nixpkgs"
+        ],
         "pre-commit-hooks-nix": "pre-commit-hooks-nix",
         "systems": "systems"
       },
       "locked": {
-        "lastModified": 1762107051,
-        "narHash": "sha256-8bvUPwdiUnqgBnNAuPJlbNFGProAIzlDzjiaqQugPJY=",
-        "owner": "JulienMalka",
+        "lastModified": 1769903681,
+        "narHash": "sha256-mXXakR75Iz6AFf/TYgIHE8SxOri2HyReYUYTT3lCEPA=",
+        "owner": "nikstur",
         "repo": "userborn",
-        "rev": "6e8f0d00e683049ac727b626552d5eba7f3471ff",
+        "rev": "88666e2d8931c7252411498c5b82feb9a8a4d8d4",
         "type": "github"
       },
       "original": {
-        "owner": "JulienMalka",
-        "ref": "stateful-users",
+        "owner": "nikstur",
+        "ref": "0.5.0",
         "repo": "userborn",
         "type": "github"
       }

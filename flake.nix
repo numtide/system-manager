@@ -7,7 +7,10 @@
   };
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-  inputs.userborn.url = "github:nikstur/userborn";
+  inputs.userborn = {
+    url = "github:nikstur/userborn/0.5.0";
+    inputs.nixpkgs.follows = "nixpkgs";
+  };
 
   outputs =
     {
