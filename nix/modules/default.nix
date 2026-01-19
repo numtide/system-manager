@@ -39,13 +39,13 @@
 
         config = lib.mkOption {
           type = types.attrs;
-          description = ''Configuration used to instantiate nixpkgs.'';
+          description = "Configuration used to instantiate nixpkgs.";
           default = { };
         };
 
         pkgs = lib.mkOption {
           type = lib.types.pkgs;
-          description = ''The pkgs module argument.'';
+          description = "The pkgs module argument.";
           default = pkgs;
           readOnly = true;
           internal = true;
@@ -312,7 +312,7 @@
       services = lib.mapAttrs' (
         unitName: unit:
         lib.nameValuePair unitName {
-          storePath = ''${unit.unit}/${unitName}'';
+          storePath = "${unit.unit}/${unitName}";
         }
       ) (lib.filterAttrs (_: unit: unit.enable) config.systemd.units);
     };
