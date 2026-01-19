@@ -8,6 +8,7 @@
     ./nginx.nix
     ./nix.nix
     ./users-groups.nix
+    ../sops-nix.nix
   ]
   ++
     # List of imported NixOS modules
