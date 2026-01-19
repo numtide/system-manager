@@ -102,9 +102,5 @@
         mode = "0755";
       };
     };
-
-    system.activationScripts.test = ''
-      echo "This is a test activation script"
-    '';
   };
 }

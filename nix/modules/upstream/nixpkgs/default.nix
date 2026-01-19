@@ -7,7 +7,6 @@
   imports = [
     ./nginx.nix
     ./nix.nix
-    ./activation-script.nix
     ./users-groups.nix
   ]
   ++

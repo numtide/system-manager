@@ -149,14 +149,6 @@ let
               };
             };
 
-            system.activationScripts = {
-              "system-manager" = {
-                text = ''
-                  touch /tmp/file-created-by-system-activation-script
-                '';
-              };
-            };
-
             users.users.zimbatm = {
               isNormalUser = true;
               extraGroups = [ "wheel" ];
@@ -254,7 +246,6 @@ forEachUbuntuImage "example" {
       vm.fail("test -f /etc/a/nested/example/foo3")
       vm.fail("test -f /etc/baz/bar/foo2")
       vm.succeed("test -f /etc/foo_new")
-      vm.succeed("test -f /tmp/file-created-by-system-activation-script")
 
       vm.succeed("id -u zimbatm")
 
