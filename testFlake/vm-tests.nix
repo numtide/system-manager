@@ -267,6 +267,11 @@ forEachUbuntuImage "example" {
       nix_trusted_users = vm.succeed("${hostPkgs.nix}/bin/nix config show trusted-users").strip()
       assert "zimbatm" in nix_trusted_users, f"Expected 'zimbatm' to be in trusted-users, got {nix_trusted_users}"
 
+      # Verify zimbatm user exists with correct shell path
+      zimbatm_entry = vm.succeed("grep '^zimbatm:' /etc/passwd").strip()
+      assert "/run/system-manager/sw/bin/bash" in zimbatm_entry, f"Expected shell to be /run/system-manager/sw/bin/bash, got: {zimbatm_entry}"
+
+
       # Re-activate the same profile to verify idempotency and no ERROR in output
       ${system-manager.lib.activateProfileSnippet {
         node = "vm";

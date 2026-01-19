@@ -56,9 +56,24 @@ let
                   }
                   // systemArgs
                 );
-              utils = import "${nixos}/lib/utils.nix" {
-                inherit lib config pkgs;
-              };
+              utils =
+                let
+                  nixosUtils = import "${nixos}/lib/utils.nix" {
+                    inherit lib config pkgs;
+                  };
+                in
+                nixosUtils
+                // {
+                  # Override toShellPath to use system-manager's path instead of NixOS's
+                  toShellPath =
+                    shell:
+                    if lib.types.shellPackage.check shell then
+                      "/run/system-manager/sw${shell.shellPath}"
+                    else if lib.types.package.check shell then
+                      throw "${shell} is not a shell package"
+                    else
+                      shell;
+                };
               # Pass the wrapped system-manager binary down
               # TODO: Use nixpkgs version by default.
               system-manager = pkgs.callPackage ../package.nix { };
