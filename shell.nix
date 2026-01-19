@@ -35,7 +35,7 @@ pkgs.mkShellNoCC {
     # Formatting
     pre-commit
     treefmt
-    nixfmt-rfc-style
+    nixfmt
     rustfmt
     clippy
     mdbook
