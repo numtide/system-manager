@@ -71,6 +71,7 @@ impl std::fmt::Display for EtcFilesConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 struct CreatedEtcFile {
     path: PathBuf,
 }
