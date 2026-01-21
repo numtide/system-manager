@@ -45,6 +45,13 @@
         {
           default = pkgs.callPackage ./package.nix { };
         }
+        // nixpkgs.lib.optionalAttrs (system == "x86_64-linux" || system == "aarch64-linux") {
+          docker-test = import ./test/docker {
+            inherit (nixpkgs) lib;
+            inherit pkgs;
+            system-manager = self;
+          };
+        }
       );
 
       # Documentation outputs
