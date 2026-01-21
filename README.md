@@ -121,13 +121,13 @@ Create a file in the same folder called `cli_tools.nix` and add the following in
 This specifies a configuration that includes `btop` and `bat` to be installed on the system. To do so, execute System Manager using the nix command (assuming you have experimental features nix-command and flakes turned on):
 
 ```
-nix run 'github:numtide/system-manager' -- switch --flake . --sudo
+nix run 'github:numtide/system-manager' -- switch --sudo
 ```
 
 Also, note that you might need to enable `nix-commands` and `flakes` if you don't already have them set in `/etc/nix/nix.conf`:
 
 ```
-nix --extra-experimental-features 'nix-command flakes' run 'github:numtide/system-manager' -- switch --flake . --sudo
+nix --extra-experimental-features 'nix-command flakes' run 'github:numtide/system-manager' -- switch --sudo
 ```
 
 > [!Note]
