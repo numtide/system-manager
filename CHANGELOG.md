@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Support running system-manager from macOS to deploy configurations to Linux (#325)
+
+### Fixed
+
+- Remove eval warnings (#324)
+
+### Documentation
+
+- Reorganize documentation with tutorials, how-to guides, explanations, and reference pages
+- Add CONTRIBUTING.md with developer guidelines
+- Add supported platforms reference page
+- Add file permissions and ownership reference
+
+## [1.0.0] - 2026-01-06
+
+### Added
+
 - Init subcommand for initializing system-manager configurations (#210)
 - Automated NixOS module compatibility testing tools
 - Cachix substituter configured in nix config (#280)
@@ -86,4 +103,5 @@ Thanks to all the contributors who made this release possible:
 - Steve Dodd
 - Yvan Sraka
 
-[unreleased]: https://github.com/numtide/system-manager/compare/HEAD...HEAD
+[unreleased]: https://github.com/numtide/system-manager/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/numtide/system-manager/releases/tag/v1.0.0
