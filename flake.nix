@@ -38,7 +38,10 @@
         }/lib.nix";
     in
     {
-      lib = import ./nix/lib.nix { inherit nixpkgs; };
+      lib = (import ./nix/lib.nix { inherit nixpkgs; }) // {
+        # Container test library for external projects
+        containerTest = import ./lib/container-test-driver { inherit (nixpkgs) lib; };
+      };
 
       packages = eachSystem (
         { pkgs, system }:
@@ -82,16 +85,34 @@
             x86_64-linux =
               let
                 system = "x86_64-linux";
-              in
-              (import ./test/nix/modules {
-                inherit system;
-                inherit (nixpkgs) lib;
-                nix-vm-test = import nix-vm-test-lib {
-                  inherit nixpkgs;
+                vmTests = import ./test/nix/modules {
                   inherit system;
+                  inherit (nixpkgs) lib;
+                  nix-vm-test = import nix-vm-test-lib {
+                    inherit nixpkgs;
+                    inherit system;
+                  };
+                  system-manager = self;
                 };
-                system-manager = self;
-              });
+                containerTests = import ./test/nix/modules/container.nix {
+                  inherit system;
+                  inherit (nixpkgs) lib;
+                  hostPkgs = nixpkgs.legacyPackages.${system};
+                  system-manager = self;
+                };
+              in
+              vmTests // containerTests;
+            aarch64-linux =
+              let
+                system = "aarch64-linux";
+                containerTests = import ./test/nix/modules/container.nix {
+                  inherit system;
+                  inherit (nixpkgs) lib;
+                  hostPkgs = nixpkgs.legacyPackages.${system};
+                  system-manager = self;
+                };
+              in
+              containerTests;
           }
       );
 
