@@ -7,7 +7,7 @@
 }:
 
 let
-  containerTestLib = import ../../../lib/container-test-driver { inherit lib; };
+  containerTestLib = import ../lib/container-test-driver { inherit lib; };
 
   # Helper to create a container test for a system-manager configuration
   makeContainerTestFor =
@@ -48,7 +48,7 @@ in
 {
   container-example = makeContainerTestFor "example" {
     modules = [
-      ../../../examples/example.nix
+      ../examples/example.nix
     ];
     testScriptFunction =
       { toplevel, hostPkgs, ... }:

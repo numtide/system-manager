@@ -14,11 +14,14 @@ jobs:
         uses: "cachix/install-nix-action@master"
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
-      - name: "Update the lockfile"
+      - name: "Update the lockfiles"
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
+
           nix flake update --commit-lock-file
+          nix flake update --commit-lock-file --flake ./testFlake
+
           cargo update
           git add Cargo.lock
           # Commit exits with an error when there is nothing to do
@@ -27,6 +30,6 @@ jobs:
         uses: "peter-evans/create-pull-request@v8"
         with:
           branch: "auto_update_deps"
-          title: "Bump flake.lock and Cargo.lock"
+          title: "Bump flake.lock, testFlake/flake.lock, and Cargo.lock"
           body: |
             Automatically bumped the lock files.

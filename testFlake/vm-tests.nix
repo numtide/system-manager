@@ -158,7 +158,7 @@ in
 forEachUbuntuImage "example" {
   modules = [
     (testModule "old")
-    ../../../examples/example.nix
+    ../examples/example.nix
   ];
   extraPathsToRegister = [ newConfig ];
   testScriptFunction =
@@ -269,7 +269,7 @@ forEachUbuntuImage "example" {
   forEachUbuntuImage "prepopulate" {
     modules = [
       (testModule "old")
-      ../../../examples/example.nix
+      ../examples/example.nix
     ];
     extraPathsToRegister = [ newConfig ];
     testScriptFunction =
@@ -327,7 +327,7 @@ forEachUbuntuImage "example" {
   forEachUbuntuImage "system-path" {
     modules = [
       (testModule "old")
-      ../../../examples/example.nix
+      ../examples/example.nix
     ];
     extraPathsToRegister = [ newConfig ];
     testScriptFunction =
@@ -372,7 +372,7 @@ forEachUbuntuImage "example" {
   forEachUbuntuImage "sudo" {
     modules = [
       (testModule "old")
-      ../../../examples/example.nix
+      ../examples/example.nix
     ];
     extraPathsToRegister = [
       system-manager.packages.x86_64-linux.default
@@ -433,7 +433,7 @@ forEachUbuntuImage "example" {
   forEachUbuntuImage "target-host" {
     modules = [
       (testModule "old")
-      ../../../examples/example.nix
+      ../examples/example.nix
     ];
     extraPathsToRegister = [
       system-manager.packages.x86_64-linux.default
