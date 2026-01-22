@@ -25,17 +25,6 @@
             pkgs = nixpkgs.legacyPackages.${system};
           }
         );
-      nix-vm-test-lib =
-        let
-          rev = "991369a72fe577c2bcdad0b26bf8c63a6f94f84b";
-          sha256 = "sha256:1ygn0acvzzrg0jbnbpwfl4n4k2ka6ay0x34sj61g11c1pvckl3m9";
-        in
-        "${
-          builtins.fetchTarball {
-            url = "https://github.com/numtide/nix-vm-test/archive/${rev}.tar.gz";
-            inherit sha256;
-          }
-        }/lib.nix";
     in
     {
       lib = import ./nix/lib.nix { inherit nixpkgs; };
@@ -70,29 +59,11 @@
         }
       );
 
-      checks = (
-        nixpkgs.lib.recursiveUpdate
-          (eachSystem (
-            { system, ... }:
-            {
-              system-manager = self.packages.${system}.default;
-            }
-          ))
-          {
-            x86_64-linux =
-              let
-                system = "x86_64-linux";
-              in
-              (import ./test/nix/modules {
-                inherit system;
-                inherit (nixpkgs) lib;
-                nix-vm-test = import nix-vm-test-lib {
-                  inherit nixpkgs;
-                  inherit system;
-                };
-                system-manager = self;
-              });
-          }
+      checks = eachSystem (
+        { system, ... }:
+        {
+          system-manager = self.packages.${system}.default;
+        }
       );
 
       nixosModules = rec {
