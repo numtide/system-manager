@@ -7,6 +7,7 @@ import re
 import shlex
 import shutil
 import subprocess
+import sys
 import threading
 import time
 import types
@@ -25,25 +26,22 @@ from .logger import AbstractLogger, CompositeLogger, TerminalLogger
 
 
 @cache
-def init_test_environment() -> None:
-    """Set up the test environment (network bridge, /etc/passwd) once."""
-    subprocess.run(
-        ["ip", "link", "add", "br0", "type", "bridge"],
-        check=True,
-        text=True,
-    )
-    subprocess.run(["ip", "link", "set", "br0", "up"], check=True, text=True)
-    subprocess.run(
-        ["ip", "addr", "add", "192.168.1.254/24", "dev", "br0"],
-        check=True,
-        text=True,
-    )
+def init_test_environment(*, interactive: bool) -> None:
+    """Set up the test environment (/etc/passwd, /etc/group) once.
+
+    Args:
+        interactive: If True, skip passwd/group bind mounts. The host already has
+                     proper files and overwriting them would break user lookups.
+    """
+    # Skip passwd/group bind mounts in interactive mode
+    if interactive:
+        return
 
     # Set up minimal passwd file for unprivileged operations
     passwd_content = """root:x:0:0:Root:/root:/bin/sh
-nixbld:x:1000:100:Nix build user:/tmp:/bin/sh
-nobody:x:65534:65534:Nobody:/:/bin/sh
-"""
+    nixbld:x:1000:100:Nix build user:/tmp:/bin/sh
+    nobody:x:65534:65534:Nobody:/:/bin/sh
+    """
 
     with NamedTemporaryFile(mode="w", delete=False, prefix="test-passwd-") as f:
         f.write(passwd_content)
@@ -51,9 +49,9 @@ nobody:x:65534:65534:Nobody:/:/bin/sh
 
     # Set up minimal group file
     group_content = """root:x:0:
-nixbld:x:100:nixbld
-nogroup:x:65534:
-"""
+    nixbld:x:100:nixbld
+    nogroup:x:65534:
+    """
 
     with NamedTemporaryFile(mode="w", delete=False, prefix="test-group-") as f:
         f.write(group_content)
@@ -160,6 +158,7 @@ class Machine:
         logger: AbstractLogger,
         rootdir: Path,
         out_dir: str,
+        bridge_name: str,
         profile: Path | None = None,
         host_nix_store: Path | None = None,
         closure_info: Path | None = None,
@@ -170,6 +169,7 @@ class Machine:
         self.host_nix_store = host_nix_store
         self.closure_info = closure_info
         self.out_dir = out_dir
+        self.bridge_name = bridge_name
         self.process: subprocess.Popen | None = None
         self.rootdir: Path = rootdir
         self.logger = logger
@@ -199,7 +199,6 @@ class Machine:
 
     def start(self) -> None:
         prepare_machine_root(self.rootdir)
-        init_test_environment()
 
         cmd = [
             "systemd-nspawn",
@@ -213,7 +212,7 @@ class Machine:
             "--bind=/proc:/run/host/proc",
             "--bind=/sys:/run/host/sys",
             "--private-network",
-            "--network-bridge=br0",
+            f"--network-bridge={self.bridge_name}",
         ]
 
         if self.host_nix_store:
@@ -607,14 +606,23 @@ class UbuntuContainerInfo:
         return Path(f"/.containers/{self.name}")
 
 
-def setup_filesystems(container: UbuntuContainerInfo) -> None:
-    """Set up filesystems for the container."""
+def setup_filesystems(*, interactive: bool) -> None:
+    """Set up filesystems for the container.
+
+    This function handles both sandbox (Nix build) and interactive (outside sandbox) modes.
+    In sandbox mode, it mounts tmpfs and cgroup2. Outside the sandbox, these are skipped.
+
+    Args:
+        interactive: If True, skip sandbox-specific mounts. The host already has
+                     /run as tmpfs and cgroup2 mounted.
+    """
+    if interactive:
+        return
+
     Path("/run").mkdir(parents=True, exist_ok=True)
     subprocess.run(["mount", "-t", "tmpfs", "none", "/run"], check=True)
 
     subprocess.run(["mount", "-t", "cgroup2", "none", "/sys/fs/cgroup"], check=True)
-
-    container.root_dir.mkdir(parents=True, exist_ok=True)
 
     Path("/etc/os-release").touch()
     Path("/etc/machine-id").write_text("a5ea3f98dedc0278b6f3cc8c37eeaeac")
@@ -629,19 +637,27 @@ class Driver:
         logger: AbstractLogger,
         testscript: str,
         out_dir: str,
+        *,
+        interactive: bool = False,
     ) -> None:
         self.containers = containers
         self.testscript = testscript
         self.out_dir = out_dir
         self.logger = logger
+        self.interactive = interactive
+
+        # Set up host filesystems (tmpfs, cgroup2) - skipped in interactive mode
+        setup_filesystems(interactive=self.interactive)
+
+        # Create a unique bridge name (max 15 chars for Linux interface names)
+        self.bridge_name = f"ctd-{uuid.uuid4().hex[:8]}"
+        self._create_bridge()
 
         self.tempdir = TemporaryDirectory()
         tempdir_path = Path(self.tempdir.name)
 
         self.machines = []
         for container in containers:
-            setup_filesystems(container)
-
             # Copy rootfs to container working directory
             # Use --no-preserve=ownership so files become owned by root (current user)
             # instead of preserving Nix store ownership which maps incorrectly in container
@@ -667,12 +683,39 @@ class Driver:
                     profile=container.profile,
                     host_nix_store=container.host_nix_store,
                     closure_info=container.closure_info,
+                    bridge_name=self.bridge_name,
                 ),
             )
 
+    def _create_bridge(self) -> None:
+        """Create the network bridge for container networking."""
+        subprocess.run(
+            ["ip", "link", "add", self.bridge_name, "type", "bridge"],
+            check=True,
+            text=True,
+        )
+        subprocess.run(
+            ["ip", "link", "set", self.bridge_name, "up"],
+            check=True,
+            text=True,
+        )
+        subprocess.run(
+            ["ip", "addr", "add", "192.168.1.254/24", "dev", self.bridge_name],
+            check=True,
+            text=True,
+        )
+
+    def _destroy_bridge(self) -> None:
+        """Remove the network bridge."""
+        subprocess.run(
+            ["ip", "link", "delete", self.bridge_name],
+            check=False,  # Don't fail if bridge already gone
+            text=True,
+        )
+
     def start_all(self) -> None:
         """Start all containers and prepare them for testing."""
-        init_test_environment()
+        init_test_environment(interactive=self.interactive)
         overall_start = time.time()
 
         for machine in self.machines:
@@ -772,6 +815,7 @@ class Driver:
     ) -> None:
         for machine in self.machines:
             machine.release()
+        self._destroy_bridge()
 
 
 def writeable_dir(arg: str) -> Path:
@@ -829,6 +873,12 @@ def main() -> None:
         help="The directory to write output to",
         type=writeable_dir,
     )
+    arg_parser.add_argument(
+        "-i",
+        "--interactive",
+        action="store_true",
+        help="Start container and drop into interactive Python shell for debugging",
+    )
     args = arg_parser.parse_args()
 
     container = UbuntuContainerInfo(
@@ -839,11 +889,39 @@ def main() -> None:
         closure_info=args.closure_info,
     )
 
+    # Check if running as root (required for systemd-nspawn)
+    if os.geteuid() != 0:
+        print(f"{Fore.RED}Error: This command must be run as root.{Style.RESET_ALL}")
+        print("systemd-nspawn requires root privileges to create containers.")
+        sys.exit(1)
+
     logger = CompositeLogger([TerminalLogger()])
     with Driver(
         containers=[container],
         testscript=args.test_script.read_text(),
         out_dir=str(args.output_directory.resolve()),
         logger=logger,
+        interactive=args.interactive,
     ) as driver:
-        driver.run_tests()
+        if args.interactive:
+            # Interactive debugging mode
+            import code
+
+            driver.start_all()
+            symbols = driver.test_symbols()
+
+            print(f"\n{Fore.GREEN}=== Interactive Debug Mode ==={Style.RESET_ALL}")
+            print("Available objects:")
+            print("  machine  - the container (use machine.succeed(), machine.execute(), etc.)")
+            print("  driver   - the test driver")
+            print("  machines - list of all machines")
+            print("\nExample commands:")
+            print('  machine.succeed("systemctl status nginx")')
+            print('  machine.execute("journalctl -u nginx --no-pager")')
+            print("  machine.activate()")
+            print('  machine.wait_for_unit("system-manager.target")')
+            print("\nPress Ctrl+D to exit.\n")
+
+            code.interact(local=symbols, banner="")
+        else:
+            driver.run_tests()

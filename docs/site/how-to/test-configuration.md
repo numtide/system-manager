@@ -136,18 +136,30 @@ If a test fails, the output will show:
 
 - Which command failed
 - Exit code and stdout/stderr
-- Container logs and systemd journal entries
+- Full system-manager activation output
 
-For interactive debugging, you can build and run the test driver directly:
+### Interactive debugging
+
+For interactive debugging, build the test driver and run it with `--interactive`:
 
 ```bash
-# Build the test with verbose output
-nix build .#checks.x86_64-linux.config-test -L
-
-# The driver is also available in passthru
+# Build the driver
 nix build .#checks.x86_64-linux.config-test.driver
-./result/bin/run-container-test --help
+
+# Run interactively (requires root for systemd-nspawn)
+sudo ./result/bin/run-container-test --interactive
 ```
+
+This starts the container and drops you into a Python REPL where you can run commands:
+
+```python
+>>> machine.succeed("systemctl status nginx")
+>>> machine.execute("journalctl -u nginx --no-pager")
+>>> machine.activate()
+>>> machine.wait_for_unit("system-manager.target")
+```
+
+Press Ctrl+D to exit and stop the container.
 
 ## Comparison with VM tests
 
