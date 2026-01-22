@@ -57,8 +57,8 @@ in
         machine.wait_for_unit("multi-user.target")
 
         # Nix is installed and profile is copied by the driver automatically
-        # Now activate system-manager
-        machine.succeed("${toplevel}/bin/activate")
+        # Activate system-manager
+        machine.activate()
         machine.wait_for_unit("system-manager.target")
 
         # Verify nginx service is running

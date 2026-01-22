@@ -47,7 +47,7 @@ Add a container test to your project's `flake.nix`:
           testScript = ''
             start_all()
             machine.wait_for_unit("multi-user.target")
-            machine.succeed("${self.systemConfigs.default}/bin/activate")
+            machine.activate()
             machine.wait_for_unit("system-manager.target")
 
             # Verify your services
@@ -77,6 +77,7 @@ The API is designed to be compatible with NixOS VM tests.
 | Method | Description |
 |--------|-------------|
 | `start_all()` | Start all containers (required at script start) |
+| `machine.activate()` | Activate system-manager profile and display output |
 | `machine.succeed(cmd)` | Run command, fail test if exit code != 0 |
 | `machine.fail(cmd)` | Run command, fail test if exit code == 0 |
 | `machine.wait_for_unit(unit)` | Wait for systemd unit to be active |
@@ -94,8 +95,8 @@ start_all()
 # Wait for Ubuntu systemd to be ready
 machine.wait_for_unit("multi-user.target")
 
-# Activate system-manager configuration
-machine.succeed("${toplevel}/bin/activate")
+# Activate system-manager configuration (displays full activation output)
+machine.activate()
 machine.wait_for_unit("system-manager.target")
 
 # Verify services are running

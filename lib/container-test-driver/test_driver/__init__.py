@@ -536,6 +536,37 @@ class Machine:
             raise RuntimeError(msg)
         return res.stdout
 
+    def activate(self, profile: str | None = None) -> str:
+        """Activate system-manager profile and display the output.
+
+        Args:
+            profile: Path to system-manager profile. If None, uses the profile
+                     passed to the container.
+        """
+        if profile is None:
+            profile = str(self.profile) if self.profile else None
+        if profile is None:
+            msg = "No profile specified for activation"
+            raise Error(msg)
+
+        activate_cmd = f"{profile}/bin/activate"
+        print(f"\n{Fore.CYAN}=== Activating system-manager ==={Style.RESET_ALL}")
+        print(f"Profile: {profile}")
+
+        res = self.execute(activate_cmd, timeout=300)
+
+        # Always show the output
+        if res.stdout.strip():
+            for line in res.stdout.strip().split("\n"):
+                print(f"  {line}")
+
+        if res.returncode != 0:
+            msg = f"Activation failed with exit code {res.returncode}"
+            raise Error(msg)
+
+        print(f"{Fore.GREEN}Activation complete{Style.RESET_ALL}")
+        return res.stdout
+
     def fail(self, command: str, timeout: int | None = None) -> str:
         res = self.execute(command, timeout=timeout)
         if res.returncode == 0:
