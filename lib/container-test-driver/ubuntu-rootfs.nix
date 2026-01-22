@@ -55,6 +55,7 @@ pkgs.runCommand "ubuntu-rootfs-base"
     mkdir -p $out
 
     # Extract Ubuntu cloud image
+    # Exclude services that don't work or are slow in containers
     tar --exclude='dev/*' \
         --exclude='etc/systemd/system/network-online.target.wants/*' \
         --exclude='etc/systemd/system/multi-user.target.wants/systemd-resolved.service' \
@@ -63,6 +64,12 @@ pkgs.runCommand "ubuntu-rootfs-base"
         --exclude='usr/lib/systemd/system/systemd-resolved.service' \
         --exclude='usr/lib/systemd/system/proc-sys-fs-binfmt_misc.automount' \
         --exclude='usr/lib/systemd/system/sys-kernel-*' \
+        --exclude='usr/lib/systemd/system/snapd*' \
+        --exclude='usr/lib/systemd/system/snap-*' \
+        --exclude='etc/systemd/system/snapd*' \
+        --exclude='etc/systemd/system/snap-*' \
+        --exclude='etc/systemd/system/multi-user.target.wants/snap*' \
+        --exclude='etc/systemd/system/sockets.target.wants/snapd*' \
         -xJf ${cloudImg} -C $out
 
     # Remove existing symlinks if present and create FHS compatibility symlinks

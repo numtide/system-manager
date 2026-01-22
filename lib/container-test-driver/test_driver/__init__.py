@@ -7,6 +7,7 @@ import re
 import shlex
 import shutil
 import subprocess
+import threading
 import time
 import types
 import uuid
@@ -173,10 +174,28 @@ class Machine:
         self.rootdir: Path = rootdir
         self.logger = logger
         self._nix_installed = False
+        self._output_thread: threading.Thread | None = None
+        self._stop_streaming = threading.Event()
 
     @cached_property
     def container_pid(self) -> int:
         return self.get_systemd_process()
+
+    def _stream_output(self) -> None:
+        """Background thread to stream container console output."""
+        if self.process is None or self.process.stdout is None:
+            return
+
+        prefix = f"{Fore.BLUE}[{self.name}]{Style.RESET_ALL} "
+        try:
+            for line in self.process.stdout:
+                if self._stop_streaming.is_set():
+                    break
+                # Print each line from container console with prefix
+                print(f"{prefix}{line}", end="", flush=True)
+        except (ValueError, OSError):
+            # Pipe closed or process terminated
+            pass
 
     def start(self) -> None:
         prepare_machine_root(self.rootdir)
@@ -213,6 +232,15 @@ class Machine:
             env=env,
         )
 
+        # Start background thread to stream container console output
+        self._stop_streaming.clear()
+        self._output_thread = threading.Thread(
+            target=self._stream_output,
+            daemon=True,
+            name=f"stream-{self.name}",
+        )
+        self._output_thread.start()
+
     def wait_for_boot(self, timeout: int = 120) -> None:
         """Wait for systemd to finish booting inside the container."""
         # First ensure we have the container PID
@@ -223,20 +251,24 @@ class Machine:
         # Poll until systemctl is-system-running returns a boot-complete state
         start_time = time.time()
         last_status = ""
+        last_jobs_print = 0.0
         while time.time() - start_time < timeout:
+            elapsed = time.time() - start_time
             result = self.execute("systemctl is-system-running", timeout=10)
             lines = result.stdout.strip().split("\n")
             status = lines[-1].strip() if lines else ""
             if status != last_status:
-                print(f"Container {self.name} status: {status}")
+                print(f"[{elapsed:.1f}s] Container {self.name} status: {status}")
                 last_status = status
             if status in ("running", "degraded"):
-                print(f"Container {self.name} boot complete: {status}")
+                print(f"[{elapsed:.1f}s] Container {self.name} boot complete: {status}")
                 return
-            if status == "starting":
-                time.sleep(1)
-                continue
-            # Other states like 'initializing' - keep waiting
+            # Show what's still starting every 5 seconds
+            if status == "starting" and elapsed - last_jobs_print >= 5.0:
+                jobs_result = self.execute("systemctl list-jobs --no-pager 2>/dev/null | head -10", timeout=10)
+                if jobs_result.returncode == 0 and jobs_result.stdout.strip():
+                    print(f"[{elapsed:.1f}s] Pending jobs:\n{jobs_result.stdout.strip()}")
+                last_jobs_print = elapsed
             time.sleep(1)
 
         msg = f"Timeout waiting for container {self.name} to boot (last status: {last_status})"
@@ -248,23 +280,26 @@ class Machine:
             raise RuntimeError(msg)
 
         print(f"Looking for child process of nspawn PID {self.process.pid}")
+        start_time = time.time()
 
         # Get the container's init PID from nspawn's child process
         # Wait briefly for the container to start
         for attempt in range(30):
             time.sleep(1)
+            elapsed = time.time() - start_time
             try:
                 children_path = Path(
                     f"/proc/{self.process.pid}/task/{self.process.pid}/children"
                 )
                 children = children_path.read_text().split()
-                print(f"Attempt {attempt + 1}: found children {children}")
                 if len(children) == 1:
+                    print(f"[{elapsed:.1f}s] Found container PID: {children[0]}")
                     return int(children[0])
+                print(f"[{elapsed:.1f}s] Waiting for container init (children: {children})")
             except FileNotFoundError as e:
-                print(f"Attempt {attempt + 1}: {e}")
+                print(f"[{elapsed:.1f}s] Waiting for container init: {e}")
             except ValueError as e:
-                print(f"Attempt {attempt + 1}: parse error {e}")
+                print(f"[{elapsed:.1f}s] Parse error: {e}")
             # Check if nspawn died
             if self.process.poll() is not None:
                 # Try to get any output
@@ -512,6 +547,12 @@ class Machine:
 
     def shutdown(self) -> None:
         """Shut down the machine, waiting for the container to exit."""
+        # Stop the output streaming thread
+        self._stop_streaming.set()
+        if self._output_thread and self._output_thread.is_alive():
+            self._output_thread.join(timeout=2)
+        self._output_thread = None
+
         if self.process:
             self.process.terminate()
             self.process.wait()
@@ -601,16 +642,28 @@ class Driver:
     def start_all(self) -> None:
         """Start all containers and prepare them for testing."""
         init_test_environment()
+        overall_start = time.time()
 
         for machine in self.machines:
             print(f"Starting {machine.name}")
+            phase_start = time.time()
             machine.start()
+            print(f"[{time.time() - phase_start:.1f}s] Container process started")
 
             print(f"Waiting for {machine.name} to boot...")
+            phase_start = time.time()
             machine.wait_for_boot()
+            print(f"[{time.time() - phase_start:.1f}s] Boot complete")
 
+            phase_start = time.time()
             machine.install_nix_if_needed()
+            print(f"[{time.time() - phase_start:.1f}s] Nix installation complete")
+
+            phase_start = time.time()
             machine.copy_profile_to_container()
+            print(f"[{time.time() - phase_start:.1f}s] Profile copy complete")
+
+        print(f"[{time.time() - overall_start:.1f}s] All containers ready")
 
         for machine in self.machines:
             nspawn_uuid = uuid.uuid4()
