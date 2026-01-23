@@ -446,13 +446,13 @@ class Machine(testinfra.host.Host):
 
     def succeed(self, command: str, timeout: int | None = None) -> str:
         """Execute a command that must succeed, returning stdout."""
-        res = self.execute(command, timeout=timeout)
-        if res.returncode != 0:
-            msg = f"Failed to run command {command}\n"
-            msg += f"Exit code: {res.returncode}\n"
-            msg += f"Output: {res.stdout}"
-            raise RuntimeError(msg)
-        return res.stdout
+        with self.nested(f"must succeed: {command}"):
+            res = self.execute(command, timeout=timeout)
+            if res.returncode != 0:
+                self.logger.log(f"output: {res.stdout}")
+                msg = f"command `{command}` failed (exit code {res.returncode})"
+                raise RuntimeError(msg)
+            return res.stdout
 
     def activate(self, profile: str | None = None) -> None:
         """Activate system-manager profile and display the output.
@@ -486,13 +486,12 @@ class Machine(testinfra.host.Host):
 
     def fail(self, command: str, timeout: int | None = None) -> str:
         """Execute a command that must fail, returning stdout."""
-        res = self.execute(command, timeout=timeout)
-        if res.returncode == 0:
-            msg = f"command `{command}` unexpectedly succeeded\n"
-            msg += f"Exit code: {res.returncode}\n"
-            msg += f"Output: {res.stdout}"
-            raise RuntimeError(msg)
-        return res.stdout
+        with self.nested(f"must fail: {command}"):
+            res = self.execute(command, timeout=timeout)
+            if res.returncode == 0:
+                msg = f"command `{command}` unexpectedly succeeded"
+                raise RuntimeError(msg)
+            return res.stdout
 
     def shutdown(self) -> None:
         """Shut down the machine, waiting for the container to exit."""

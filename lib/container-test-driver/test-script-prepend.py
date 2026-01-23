@@ -5,12 +5,15 @@
 # Machine names are appended dynamically by the Nix build process.
 
 from collections.abc import Callable
+from contextlib import contextmanager
+from typing import ContextManager
 
 from test_driver.driver import Driver
 from test_driver.machine import Machine  # Also exposed as a symbol in test scripts
 
 # General symbols exposed by Driver.test_symbols()
 start_all: Callable[[], None]
+subtest: Callable[[str], ContextManager[None]]
 machines: list[Machine]
 driver: Driver
 

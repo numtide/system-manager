@@ -5,6 +5,8 @@ import subprocess
 import time
 import types
 import uuid
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -187,10 +189,25 @@ class Driver:
                 ),
             )
 
+    def subtest(self, name: str) -> Iterator[None]:
+        """Group logs under a given test name with timing information."""
+        with self.logger.subtest(name):
+            try:
+                yield
+            except Exception as e:
+                self.logger.error(f'Test "{name}" failed with error: "{e}"')
+                raise
+
     def test_symbols(self) -> dict[str, Any]:
         """Return symbols to expose in the test script namespace."""
+
+        @contextmanager
+        def subtest(name: str) -> Iterator[None]:
+            return self.subtest(name)
+
         general_symbols: dict[str, Any] = {
             "start_all": self.start_all,
+            "subtest": subtest,
             "machines": self.machines,
             "driver": self,
             "Machine": Machine,

@@ -144,6 +144,7 @@ def generate_driver_symbols() -> None:
     """
     general_symbols = [
         "start_all",
+        "subtest",
         "machines",
         "driver",
         "Machine",
