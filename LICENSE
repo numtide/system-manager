@@ -1,6 +1,12 @@
 MIT License
 
 Copyright (c) 2023 Ramses
+Copyright (c) 2003-2026 Eelco Dolstra and the Nixpkgs/NixOS contributors
+Copyright (c) 2023-2025 Clan contributors
+
+The container test driver includes code derived from:
+- NixOS VM test driver (nixpkgs): nixos/lib/test-driver
+- Clan container test driver (clan-core): lib/test/container-test-driver
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
