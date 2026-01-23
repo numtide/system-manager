@@ -20,6 +20,12 @@ let
     ]
     ++ extraPythonPackages python3Packages;
     nativeBuildInputs = [ python3Packages.setuptools ];
+    nativeCheckInputs = [
+      python3Packages.pytest
+      python3Packages.pytest-mypy
+      python3Packages.pytest-mypy-plugins
+      python3Packages.mypy
+    ];
     format = "pyproject";
     src = ./.;
     passthru.devShell = mkShell {
