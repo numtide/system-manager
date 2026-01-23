@@ -17,6 +17,7 @@ let
       iproute2
       python3Packages.colorama
       python3Packages.junit-xml
+      python3Packages.ptpython
     ]
     ++ extraPythonPackages python3Packages;
     nativeBuildInputs = [ python3Packages.setuptools ];

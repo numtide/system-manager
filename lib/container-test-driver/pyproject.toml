@@ -5,9 +5,15 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "container-test-driver"
 version = "0.0.1"
+dependencies = [
+    "colorama",
+    "junit_xml",
+    "ptpython",
+]
 
 [project.scripts]
 container-test-driver = "test_driver:main"
+generate-driver-symbols = "test_driver:generate_driver_symbols"
 
 [tool.setuptools.packages]
 find = {}

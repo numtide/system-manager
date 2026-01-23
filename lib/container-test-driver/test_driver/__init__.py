@@ -17,6 +17,7 @@ __all__ = [
     "Error",
     "Machine",
     "UbuntuContainerInfo",
+    "generate_driver_symbols",
     "main",
 ]
 
@@ -107,8 +108,8 @@ def main() -> None:
         interactive=args.interactive,
     ) as driver:
         if args.interactive:
-            # Interactive debugging mode
-            import code
+            # Interactive debugging mode with ptpython for tab completion
+            import ptpython.ipython
 
             driver.start_all()
             symbols = driver.test_symbols()
@@ -123,8 +124,30 @@ def main() -> None:
             print('  machine.execute("journalctl -u nginx --no-pager")')
             print("  machine.activate()")
             print('  machine.wait_for_unit("system-manager.target")')
-            print("\nPress Ctrl+D to exit.\n")
+            print("\nUse Tab for completion. Press Ctrl+D to exit.\n")
 
-            code.interact(local=symbols, banner="")
+            history_path = str(args.output_directory / ".container-test-history")
+            ptpython.ipython.embed(
+                user_ns=symbols,
+                history_filename=history_path,
+            )
         else:
             driver.run_tests()
+
+
+def generate_driver_symbols() -> None:
+    """Generate a file with symbols available in test scripts.
+
+    This creates a 'driver-symbols' file containing comma-separated symbol names
+    that can be used by pyflakes to lint test scripts without false positives
+    for undefined names.
+    """
+    general_symbols = [
+        "start_all",
+        "machines",
+        "driver",
+        "Machine",
+        "machine",  # Available when there's exactly one machine
+    ]
+    with open("driver-symbols", "w") as fp:
+        fp.write(",".join(general_symbols))
