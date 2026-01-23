@@ -23,8 +23,6 @@ let
     nativeCheckInputs = [
       python3Packages.pytest
       python3Packages.pytest-mypy
-      python3Packages.pytest-mypy-plugins
-      python3Packages.mypy
     ];
     format = "pyproject";
     src = ./.;
