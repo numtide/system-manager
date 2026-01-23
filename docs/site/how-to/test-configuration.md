@@ -70,13 +70,25 @@ nix build .#checks.x86_64-linux.config-test -L
 ## Test script API
 
 The test script is Python code with access to a `machine` object.
-The API is designed to be compatible with NixOS VM tests.
+The API is designed to be compatible with NixOS VM tests and includes testinfra integration for expressive assertions.
 
-### Available methods
+### Available symbols
+
+The test script has access to these symbols:
+
+| Symbol | Description |
+|--------|-------------|
+| `start_all()` | Start all containers (required at script start) |
+| `subtest(name)` | Context manager to group related assertions with timing |
+| `machine` | The container machine (when exactly one container) |
+| `machines` | List of all machine objects |
+| `driver` | The Driver instance |
+| `Machine` | Machine class for type hints |
+
+### Machine methods
 
 | Method | Description |
 |--------|-------------|
-| `start_all()` | Start all containers (required at script start) |
 | `machine.activate()` | Activate system-manager profile and display output |
 | `machine.succeed(cmd)` | Run command, fail test if exit code != 0 |
 | `machine.fail(cmd)` | Run command, fail test if exit code == 0 |
@@ -86,6 +98,68 @@ The API is designed to be compatible with NixOS VM tests.
 | `machine.wait_until_succeeds(cmd)` | Retry command until it succeeds |
 | `machine.execute(cmd)` | Run command, return result (does not fail test) |
 | `machine.systemctl(args)` | Run systemctl with given arguments |
+
+### Testinfra assertions
+
+The `machine` object provides testinfra assertions for declarative checks on services, files, and users.
+The testinfra API is well-documented at https://testinfra.readthedocs.io/en/latest/modules.html.
+These are more readable and provide better error messages than shell commands.
+
+**Service checks:**
+
+```python
+assert machine.service("nginx").is_running
+assert machine.service("nginx").is_enabled
+```
+
+**File checks:**
+
+```python
+# Existence and type
+assert machine.file("/etc/foo.conf").exists
+assert machine.file("/etc/foo.conf").is_file
+assert machine.file("/etc/baz").is_directory
+assert machine.file("/etc/link").is_symlink
+
+# Content
+assert machine.file("/etc/foo.conf").contains("expected=value")
+
+# Ownership (by uid/gid)
+assert machine.file("/etc/foo.conf").uid == 0
+assert machine.file("/etc/foo.conf").gid == 0
+
+# Ownership (by name)
+assert machine.file("/etc/foo.conf").user == "root"
+assert machine.file("/etc/foo.conf").group == "root"
+```
+
+**User checks:**
+
+```python
+assert machine.user("myuser").exists
+```
+
+### Grouping tests with subtest
+
+Use the `subtest` context manager to group related assertions.
+Each subtest logs timing information and provides clear output when tests fail.
+
+```python
+with subtest("Verify nginx is configured"):
+    assert machine.service("nginx").is_running
+    assert machine.file("/etc/nginx/nginx.conf").exists
+
+with subtest("Verify application files"):
+    assert machine.file("/var/www/index.html").exists
+    assert machine.file("/var/www/index.html").contains("Welcome")
+```
+
+Output shows each subtest name with timing:
+
+```
+Test "Verify nginx is configured" (0.5s)
+Test "Verify application files" (0.3s)
+```
 
 ### Example test script
 
@@ -99,23 +173,23 @@ machine.wait_for_unit("multi-user.target")
 machine.activate()
 machine.wait_for_unit("system-manager.target")
 
-# Verify services are running
-machine.succeed("systemctl is-active my-service")
+with subtest("Verify services are running"):
+    assert machine.service("nginx").is_running
+    assert machine.service("my-service").is_enabled
 
-# Verify files are in place
-machine.succeed("test -f /etc/my-config.conf")
-machine.succeed("grep 'expected_value' /etc/my-config.conf")
+with subtest("Verify configuration files"):
+    config = machine.file("/etc/my-config.conf")
+    assert config.exists
+    assert config.is_file
+    assert config.contains("expected_value")
+    assert config.user == "root"
 
-# Verify packages are in PATH
-machine.succeed("bash --login -c 'which my-tool'")
+with subtest("Verify packages are in PATH"):
+    machine.succeed("bash --login -c 'which my-tool'")
 
-# Check file permissions
-mode = machine.succeed("stat -c %a /etc/my-config.conf").strip()
-assert mode == "644", f"expected mode 644, got {mode}"
-
-# Wait for a service to be ready
-machine.wait_for_open_port(8080)
-machine.succeed("curl -f http://localhost:8080/health")
+with subtest("Verify service is responding"):
+    machine.wait_for_open_port(8080)
+    machine.succeed("curl -f http://localhost:8080/health")
 ```
 
 ## How it works
@@ -129,6 +203,34 @@ The test framework:
 5. Executes your test script
 
 This provides a realistic testing environment that matches how system-manager is deployed on non-NixOS systems.
+
+## Test script validation
+
+Test scripts are automatically validated before execution to catch errors early.
+
+**Type checking with mypy:** Validates that your test script uses the API correctly.
+Type hints are automatically prepended so symbols like `machine`, `subtest`, and `start_all` are recognized.
+
+**Linting with pyflakes:** Catches undefined variables and other common mistakes.
+The test framework symbols are automatically registered as builtins.
+
+Both checks run during the build before the container starts.
+If either fails, you see the error immediately without waiting for container setup.
+
+To disable validation when needed:
+
+```nix
+system-manager.lib.containerTest.makeContainerTest {
+  hostPkgs = pkgs;
+  name = "my-config";
+  toplevel = self.systemConfigs.default;
+  skipTypeCheck = true;  # Disable mypy
+  skipLint = true;       # Disable pyflakes
+  testScript = ''
+    # ...
+  '';
+};
+```
 
 ## Debugging failed tests
 
@@ -160,6 +262,9 @@ This starts the container and drops you into a Python REPL where you can run com
 ```
 
 Press Ctrl+D to exit and stop the container.
+
+To enter the container shell directly, you can use `nsenter`. The command using
+`nsenter` is printed in the test output.
 
 ## Comparison with VM tests
 
