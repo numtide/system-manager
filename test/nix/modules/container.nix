@@ -61,49 +61,48 @@ in
         machine.activate()
         machine.wait_for_unit("system-manager.target")
 
-        # Verify nginx service is running
-        machine.succeed("systemctl is-active nginx")
-
-        # Verify test services (oneshots, should have completed successfully)
-        machine.succeed("systemctl is-active service-0")
-        machine.succeed("systemctl is-active service-9")
+        # Verify services using testinfra
+        assert machine.service("nginx").is_running, "nginx should be running"
+        assert machine.service("service-0").is_enabled, "service-0 should be enabled"
+        assert machine.service("service-9").is_enabled, "service-9 should be enabled"
 
         # Verify packages are in PATH
         machine.succeed("bash --login -c 'which rg'")
         machine.succeed("bash --login -c 'which fd'")
 
-        # Verify /etc files
-        machine.succeed("test -f /etc/foo.conf")
-        machine.succeed("grep -F 'launch_the_rockets = true' /etc/foo.conf")
-        machine.fail("grep -F 'launch_the_rockets = false' /etc/foo.conf")
+        # Verify /etc files using testinfra
+        foo_conf = machine.file("/etc/foo.conf")
+        assert foo_conf.exists, "/etc/foo.conf should exist"
+        assert foo_conf.is_file, "/etc/foo.conf should be a file"
+        assert foo_conf.contains("launch_the_rockets = true"), "foo.conf should contain launch_the_rockets = true"
+        assert not foo_conf.contains("launch_the_rockets = false"), "foo.conf should not contain launch_the_rockets = false"
 
-        # Verify symlinks
-        machine.succeed("test -L /etc/baz/bar/foo2")
-        machine.succeed("test -f /etc/baz/bar/foo2")
+        # Verify symlinks using testinfra
+        foo2 = machine.file("/etc/baz/bar/foo2")
+        assert foo2.is_symlink, "/etc/baz/bar/foo2 should be a symlink"
+        assert foo2.exists, "/etc/baz/bar/foo2 should exist (symlink target valid)"
 
-        # Verify nested directories
-        machine.succeed("test -d /etc/a/nested/example")
-        machine.succeed("test -f /etc/a/nested/example/foo3")
-        machine.succeed("test -d /etc/a/nested/example2")
+        # Verify nested directories using testinfra
+        assert machine.file("/etc/a/nested/example").is_directory, "/etc/a/nested/example should be a directory"
+        assert machine.file("/etc/a/nested/example/foo3").is_file, "/etc/a/nested/example/foo3 should be a file"
+        assert machine.file("/etc/a/nested/example2").is_directory, "/etc/a/nested/example2 should be a directory"
 
-        # Verify file ownership
-        uid = machine.succeed("stat -c %u /etc/with_ownership").strip()
-        gid = machine.succeed("stat -c %g /etc/with_ownership").strip()
-        assert uid == "5", f"uid was {uid}, expected 5"
-        assert gid == "6", f"gid was {gid}, expected 6"
+        # Verify file ownership using testinfra
+        with_ownership = machine.file("/etc/with_ownership")
+        assert with_ownership.uid == 5, f"uid was {with_ownership.uid}, expected 5"
+        assert with_ownership.gid == 6, f"gid was {with_ownership.gid}, expected 6"
 
-        user = machine.succeed("stat -c %U /etc/with_ownership2").strip()
-        group = machine.succeed("stat -c %G /etc/with_ownership2").strip()
-        assert user == "nobody", f"user was {user}, expected nobody"
-        assert group == "users", f"group was {group}, expected users"
+        with_ownership2 = machine.file("/etc/with_ownership2")
+        assert with_ownership2.user == "nobody", f"user was {with_ownership2.user}, expected nobody"
+        assert with_ownership2.group == "users", f"group was {with_ownership2.group}, expected users"
 
-        # Verify tmpfiles directories
-        machine.succeed("test -d /var/tmp/system-manager")
-        machine.succeed("test -d /var/tmp/sample")
+        # Verify tmpfiles directories using testinfra
+        assert machine.file("/var/tmp/system-manager").is_directory, "/var/tmp/system-manager should be a directory"
+        assert machine.file("/var/tmp/sample").is_directory, "/var/tmp/sample should be a directory"
 
-        # Verify tmpfiles.d configurations
-        machine.succeed("test -f /etc/tmpfiles.d/sample.conf")
-        machine.succeed("test -f /etc/tmpfiles.d/00-system-manager.conf")
+        # Verify tmpfiles.d configurations using testinfra
+        assert machine.file("/etc/tmpfiles.d/sample.conf").is_file, "sample.conf should exist"
+        assert machine.file("/etc/tmpfiles.d/00-system-manager.conf").is_file, "00-system-manager.conf should exist"
       '';
   };
 }

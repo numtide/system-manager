@@ -12,6 +12,7 @@ from functools import cached_property
 from pathlib import Path
 from typing import Any
 
+import testinfra  # type: ignore[import-untyped]
 from colorama import Fore, Style
 
 from .errors import Error
@@ -19,8 +20,37 @@ from .logger import AbstractLogger
 from .utils import CONTAINER_PATH, prepare_machine_root, retry
 
 
-class Machine:
-    """Represents a container machine for testing."""
+class TestInfraBackendNix(testinfra.backend.base.BaseBackend):
+    """Testinfra backend that uses the container-test-driver Machine to run commands."""
+
+    NAME = "Nix"
+
+    def __init__(self, host: testinfra.host.Host, *args: Any, **kwargs: Any) -> None:
+        super().__init__(host.name, **kwargs)
+        self._host = host
+
+    def run(
+        self, command: str, *args: str, **kwargs: Any
+    ) -> testinfra.backend.base.CommandResult:
+        cmd = self.get_command(command, *args)
+        result = self._host.execute(cmd)
+        return testinfra.backend.base.CommandResult(
+            backend=self,
+            exit_status=result.returncode,
+            command=cmd,
+            _stdout=result.stdout,
+            _stderr="",
+        )
+
+
+class Machine(testinfra.host.Host):
+    """Represents a container machine for testing.
+
+    Inherits from testinfra.host.Host to provide testinfra assertions like:
+        machine.user('root').exists
+        machine.file('/etc/passwd').is_file
+        machine.service('nginx').is_running
+    """
 
     def __init__(
         self,
@@ -47,6 +77,7 @@ class Machine:
         self._nix_installed = False
         self._output_thread: threading.Thread | None = None
         self._stop_streaming = threading.Event()
+        testinfra.host.Host.__init__(self, backend=TestInfraBackendNix(self))
 
     @cached_property
     def container_pid(self) -> int:

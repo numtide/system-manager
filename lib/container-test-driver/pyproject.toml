@@ -9,6 +9,7 @@ dependencies = [
     "colorama",
     "junit_xml",
     "ptpython",
+    "pytest-testinfra",
 ]
 
 [project.scripts]
