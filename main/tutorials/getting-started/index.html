@@ -1917,7 +1917,7 @@
 </code></pre></div></td></tr></table></div>
 <p>Note: By default, <code>system.nix</code> includes starter code and some commented-out examples, and nothing else. You can leave it in the list; in its original state, it does nothing.</p>
 <p>Next, we'll run System Manager to apply the configuration.</p>
-<p>The System Manager requires root privileges to modify <code>/etc</code>, manage systemd services, and create system profiles. Use the <code>--sudo</code> flag to run these operations via sudo:</p>
+<p>System Manager requires root privileges to modify <code>/etc</code>, manage systemd services, and create system profiles. Use the <code>--sudo</code> flag to run these operations via sudo:</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1"></a>nix<span class="w"> </span>run<span class="w"> </span><span class="s1">&#39;github:numtide/system-manager&#39;</span><span class="w"> </span>--<span class="w"> </span>switch<span class="w"> </span>--flake<span class="w"> </span>.<span class="w"> </span>--sudo
 </code></pre></div></td></tr></table></div>
 <p>After a short moment, the <code>tldr</code> app should be installed on your system.</p>
@@ -2009,21 +2009,28 @@
 <p>To make the above work, your best bet is to create a single flake and add in individual files that contain the apps you want to install, and always run from that same location.</p>
 <h1 id="concepts-for-people-new-to-nix">Concepts for people new to Nix<a class="headerlink" href="#concepts-for-people-new-to-nix" title="Permanent link">&para;</a></h1>
 <h2 id="understanding-imperative-state-vs-declarative-state">Understanding Imperative State vs Declarative State<a class="headerlink" href="#understanding-imperative-state-vs-declarative-state" title="Permanent link">&para;</a></h2>
-<p>An imperative state means you change the system by hand, step by step. You run commands like <code>apt install</code>, edit files under <code>/etc</code> with a text editor, toggle systemd services, and make changes as you think of them. You're telling the computer how to do something:</p>
+<p><strong>Imperative state</strong> means you change the system by hand, step by step. You run commands like <code>apt install</code>, edit files under <code>/etc</code> with a text editor, toggle systemd services, and make changes as you think of them. You're telling the computer <em>how</em> to do something:</p>
 <blockquote>
 <p>"Install this package, then edit this file, then restart this service."</p>
 </blockquote>
 <p>Each action mutates the system in place, and over time, the machine can drift into a state that's hard to reproduce.</p>
-<p>(To "mutate" something simply means to change it in place. When a system mutates, its files, settings, or state are altered directly, step by step, rather than being reconstructed from a clean, known description.)</p>
-<p>Declarative state, on the other hand, means you don't tell the system how to do the steps — you tell it what you want the final system to look like, and the tool (System Manager, NixOS, Home Manager, etc.) figures out the steps automatically.</p>
+<p>(To <em>mutate</em> something simply means to change it in place. When a system mutates, its files, settings, or state are altered directly, step by step, rather than being reconstructed from a clean, known description.)</p>
+<p><strong>Declarative state</strong>, on the other hand, means you don't tell the system how to do the steps — you tell it what you want the final system to look like, and the tool (System Manager, NixOS, Home Manager, etc.) figures out the steps automatically.</p>
 <blockquote>
 <p>"This machine should have these packages, these <code>/etc</code> files, and these services enabled."
 When you activate that configuration, the tool builds the desired end state and applies it in a predictable and repeatable manner.</p>
 </blockquote>
 <p>Here's A simple analogy:</p>
-<p>An imperative is like writing a recipe with every individual action: "Chop onions. Heat the pan. Add oil..."</p>
-<p>Declarative is like saying, "I want a finished lasagna," and the system knows how to assemble it reliably every time.</p>
-<p>A declarative state avoids drift, keeps everything versioned and reproducible, and makes rollbacks simple. An imperative state is flexible and quick, but much harder to track or repeat.</p>
+<p><strong>Imperative</strong> is like writing a recipe with every individual action:</p>
+<blockquote>
+<p>"Chop onions. Heat the pan. Add oil..."</p>
+</blockquote>
+<p><strong>Declarative</strong> is like saying:</p>
+<blockquote>
+<p>"I want a finished lasagna"</p>
+</blockquote>
+<p>and the system knows how to assemble it reliably every time.</p>
+<p><strong>Declarative</strong> state avoids drift, keeps everything versioned and reproducible, and makes rollbacks simple. <strong>Imperative state</strong> is flexible and quick, but much harder to track or repeat.</p>
 <blockquote>
 <p>Traditional programming languages are typically imperative in nature. </p>
 </blockquote>
@@ -2076,7 +2083,7 @@ This creates the exact same object. Nix allows you to string together members wi
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="January 15, 2026 10:16:06 UTC">January 15, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="January 27, 2026 18:58:50 UTC">January 27, 2026</span>
   </span>
 
     
