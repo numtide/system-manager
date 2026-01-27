@@ -319,3 +319,34 @@ pub fn restart_sysinit_reactivation_target() -> anyhow::Result<()> {
     wait_for_jobs(&service_manager, &job_monitor, jobs, &timeout)?;
     Ok(())
 }
+
+/// This must be called after daemon-reload so systemd knows about the unit,
+/// but before tmpfiles activation since tmpfiles may reference users that
+/// userborn needs to create.
+pub fn restart_userborn_if_exists() -> anyhow::Result<()> {
+    let service_manager = systemd::ServiceManager::new_session()?;
+
+    // Check if userborn.service exists by listing units matching the pattern
+    let units = service_manager.list_units_by_patterns(&[], &["userborn.service"])?;
+
+    if units.is_empty() {
+        log::debug!("userborn.service not found, skipping");
+        return Ok(());
+    }
+
+    log::info!("Restarting userborn.service to create users before tmpfiles...");
+    let job_monitor = service_manager.monitor_jobs_init()?;
+    let timeout = Some(Duration::from_secs(30));
+
+    // We use restart rather than start because userborn is a oneshot service
+    // with RemainAfterExit=true.
+    let jobs = for_each_unit(
+        |unit| service_manager.restart_unit(unit),
+        ["userborn.service"],
+        "restarting",
+    );
+
+    wait_for_jobs(&service_manager, &job_monitor, jobs, &timeout)?;
+    log::info!("userborn.service completed");
+    Ok(())
+}

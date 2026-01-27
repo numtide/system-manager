@@ -9,7 +9,6 @@
   inputs = {
     system-manager.url = "path:..";
     nixpkgs.follows = "system-manager/nixpkgs";
-    userborn.url = "github:JulienMalka/userborn/stateful-users";
     nix-vm-test = {
       url = "github:numtide/nix-vm-test";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -20,7 +19,6 @@
     {
       self,
       system-manager,
-      userborn,
       nixpkgs,
       nix-vm-test,
     }:
@@ -43,7 +41,6 @@
           inherit (nixpkgs) lib;
           nix-vm-test = vmTestLib;
           inherit system-manager;
-          userborn = userborn.packages.${system}.default;
         };
       containerChecks =
         system:

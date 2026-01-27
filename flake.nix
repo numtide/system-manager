@@ -7,11 +7,13 @@
   };
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  inputs.userborn.url = "github:nikstur/userborn";
 
   outputs =
     {
       self,
       nixpkgs,
+      userborn,
     }:
     let
       systems = [
@@ -30,7 +32,7 @@
         );
     in
     {
-      lib = (import ./nix/lib.nix { inherit nixpkgs; }) // {
+      lib = (import ./nix/lib.nix { inherit nixpkgs userborn; }) // {
         # Container test library for external projects
         containerTest = import ./lib/container-test-driver { inherit (nixpkgs) lib; };
       };

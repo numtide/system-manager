@@ -107,7 +107,7 @@ fn go(args: Args) -> Result<()> {
                 let path = std::path::Path::new(PROFILE_DIR).join("system-manager");
                 log::info!("No store path provided, using {}", path.display());
             }
-            system_manager_engine::activate::deactivate()
+            system_manager_engine::deactivate::deactivate()
         }
 
         Action::Prepopulate {
