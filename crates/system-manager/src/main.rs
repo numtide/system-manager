@@ -20,11 +20,11 @@ use system_manager_engine::{NixOptions, StorePath, PROFILE_DIR};
 
 /// The bytes for the NixOS flake template is included in the binary to avoid unnecessary
 /// network calls when initializing a system-manager configuration from the command line.
-pub const NIXOS_FLAKE_TEMPLATE: &[u8; 683] = include_bytes!("../../../templates/nixos/flake.nix");
+pub const NIXOS_FLAKE_TEMPLATE: &[u8; 808] = include_bytes!("../../../templates/nixos/flake.nix");
 
 /// The bytes for the standalone flake template is included in the binary to avoid unnecessary
 /// network calls when initializing a system-manager configuration from the command line.
-pub const STANDALONE_FLAKE_TEMPLATE: &[u8; 739] =
+pub const STANDALONE_FLAKE_TEMPLATE: &[u8; 864] =
     include_bytes!("../../../templates/standalone/flake.nix");
 
 /// The bytes for the standalone module template is included in the binary to avoid unnecessary

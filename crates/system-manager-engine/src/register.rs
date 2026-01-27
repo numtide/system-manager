@@ -178,10 +178,7 @@ fn parse_nix_build_output(output: String) -> Result<StorePath> {
 
 fn run_nix_build(flake_uri: &str, nix_options: &NixOptions) -> Result<process::Output> {
     let mut cmd = nix_cmd(nix_options);
-    cmd.arg("build")
-        .arg(flake_uri)
-        .arg("--json")
-        .arg("--accept-flake-config");
+    cmd.arg("build").arg(flake_uri).arg("--json");
 
     log::debug!("Running nix command: {cmd:?}");
 
@@ -200,8 +197,7 @@ fn try_nix_eval(flake: &str, attr: &str, nix_options: &NixOptions) -> Result<boo
         .arg(format!("{flake}#{FLAKE_ATTR}"))
         .arg("--json")
         .arg("--apply")
-        .arg(format!("_: _ ? {attr}"))
-        .arg("--accept-flake-config");
+        .arg(format!("_: _ ? {attr}"));
 
     log::debug!("Running nix command: {cmd:?}");
 
@@ -234,7 +230,11 @@ fn get_nix_system(nix_options: &NixOptions) -> Result<String> {
 fn nix_cmd(nix_options: &NixOptions) -> process::Command {
     let mut cmd = process::Command::new("nix");
     cmd.arg("--extra-experimental-features")
-        .arg("nix-command flakes");
+        .arg("nix-command flakes")
+        .arg("--extra-substituters")
+        .arg("https://cache.numtide.com")
+        .arg("--extra-trusted-public-keys")
+        .arg("niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=");
     nix_options.options.iter().for_each(|option| {
         cmd.arg("--option").arg(&option.0).arg(&option.1);
     });
