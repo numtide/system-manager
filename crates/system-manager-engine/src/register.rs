@@ -178,7 +178,10 @@ fn parse_nix_build_output(output: String) -> Result<StorePath> {
 
 fn run_nix_build(flake_uri: &str, nix_options: &NixOptions) -> Result<process::Output> {
     let mut cmd = nix_cmd(nix_options);
-    cmd.arg("build").arg(flake_uri).arg("--json");
+    cmd.arg("build")
+        .arg(flake_uri)
+        .arg("--json")
+        .arg("--accept-flake-config");
 
     log::debug!("Running nix command: {cmd:?}");
 
@@ -197,7 +200,8 @@ fn try_nix_eval(flake: &str, attr: &str, nix_options: &NixOptions) -> Result<boo
         .arg(format!("{flake}#{FLAKE_ATTR}"))
         .arg("--json")
         .arg("--apply")
-        .arg(format!("_: _ ? {attr}"));
+        .arg(format!("_: _ ? {attr}"))
+        .arg("--accept-flake-config");
 
     log::debug!("Running nix command: {cmd:?}");
 
