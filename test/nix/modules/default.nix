@@ -3,7 +3,6 @@
   system-manager,
   system,
   nix-vm-test,
-  userborn,
 }:
 
 let
@@ -102,9 +101,6 @@ let
             nixpkgs.hostPlatform = system;
 
             services.nginx.enable = false;
-            services.userborn.enable = true;
-            services.userborn.package = userborn;
-            systemd.services.userborn.environment.USERBORN_STATEFUL = "1";
 
             environment = {
               etc = {
@@ -205,7 +201,7 @@ forEachUbuntuImage "example" {
 
       print(vm.succeed("cat /etc/passwd"))
       passwd_out = vm.succeed("passwd -S luj | awk '{print $2}'")
-      assert "P" in passwd_out
+      assert "P" in passwd_out, f"Expected luj to be unlocked with 'P' status, got: {passwd_out}"
 
       user = vm.succeed("stat -c %U /etc/with_ownership2").strip()
       group = vm.succeed("stat -c %G /etc/with_ownership2").strip()
@@ -222,6 +218,8 @@ forEachUbuntuImage "example" {
         node = "vm";
         profile = newConfig;
       }}
+      print(vm.succeed("cat /tmp/output.log"))
+
       vm.succeed("systemctl status new-service.service")
       vm.fail("systemctl status service-9.service")
       vm.fail("test -f /etc/a/nested/example/foo3")
@@ -250,9 +248,13 @@ forEachUbuntuImage "example" {
 
       vm.succeed("id -u zimbatm")
 
+      print(vm.succeed("systemctl status userborn.service"))
+      print(vm.succeed("journalctl -u userborn.service"))
+      print(vm.succeed("cat /var/lib/userborn/previous-userborn.json"))
+
       print(vm.succeed("cat /etc/passwd"))
       passwd_out = vm.succeed("passwd -S luj | awk '{print $2}'")
-      assert "P" in passwd_out
+      assert "P" in passwd_out, f"Expected luj to be unlocked with 'P' status, got: {passwd_out}"
 
 
 

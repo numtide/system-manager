@@ -2,6 +2,7 @@
   nixpkgs ? <nixpkgs>,
   lib ? import "${nixpkgs}/lib",
   nixos ? "${nixpkgs}/nixos",
+  userborn,
 }:
 let
   self = {
@@ -77,6 +78,7 @@ let
               # Pass the wrapped system-manager binary down
               # TODO: Use nixpkgs version by default.
               system-manager = pkgs.callPackage ../package.nix { };
+              userborn = userborn.packages.${config.nixpkgs.hostPlatform}.default;
             };
           };
 

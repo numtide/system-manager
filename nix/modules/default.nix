@@ -39,13 +39,13 @@
 
         config = lib.mkOption {
           type = types.attrs;
-          description = ''Configuration used to instantiate nixpkgs.'';
+          description = "Configuration used to instantiate nixpkgs.";
           default = { };
         };
 
         pkgs = lib.mkOption {
           type = lib.types.pkgs;
-          description = ''The pkgs module argument.'';
+          description = "The pkgs module argument.";
           default = pkgs;
           readOnly = true;
           internal = true;
@@ -229,22 +229,10 @@
             "$@"
         '';
 
-        deactivationScript =
-          let
-            # Lock any users that were managed by system-manager
-            minimalUserbornConfig = pkgs.writeText "userborn-deactivate.json" (
-              builtins.toJSON {
-                users = [ ];
-                groups = [ ];
-              }
-            );
-          in
-          pkgs.writeShellScript "deactivate" ''
-            echo "Locking previously managed user accounts..."
-            USERBORN_STATEFUL=1 ${lib.getExe config.services.userborn.package} ${minimalUserbornConfig} /etc || true
-
-            ${system-manager}/bin/system-manager-engine deactivate "$@"
-          '';
+        deactivationScript = pkgs.writeShellScript "deactivate" ''
+          export PATH="$PATH:${lib.makeBinPath [ config.services.userborn.package ]}"
+          ${system-manager}/bin/system-manager-engine deactivate "$@"
+        '';
 
         preActivationAssertionScript =
           let
@@ -325,7 +313,7 @@
       services = lib.mapAttrs' (
         unitName: unit:
         lib.nameValuePair unitName {
-          storePath = ''${unit.unit}/${unitName}'';
+          storePath = "${unit.unit}/${unitName}";
         }
       ) (lib.filterAttrs (_: unit: unit.enable) config.systemd.units);
     };

@@ -7,7 +7,7 @@
   };
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-  inputs.userborn.url = "github:JulienMalka/userborn/stateful-users";
+  inputs.userborn.url = "github:nikstur/userborn";
 
   outputs =
     {
@@ -42,7 +42,7 @@
         }/lib.nix";
     in
     {
-      lib = import ./nix/lib.nix { inherit nixpkgs; };
+      lib = import ./nix/lib.nix { inherit nixpkgs userborn; };
 
       packages = eachSystem (
         { pkgs, system }:
@@ -90,7 +90,6 @@
               (import ./test/nix/modules {
                 inherit system;
                 inherit (nixpkgs) lib;
-                userborn = userborn.packages.${system}.default;
                 nix-vm-test = import nix-vm-test-lib {
                   inherit nixpkgs;
                   inherit system;
