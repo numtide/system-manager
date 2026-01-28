@@ -230,7 +230,11 @@ fn get_nix_system(nix_options: &NixOptions) -> Result<String> {
 fn nix_cmd(nix_options: &NixOptions) -> process::Command {
     let mut cmd = process::Command::new("nix");
     cmd.arg("--extra-experimental-features")
-        .arg("nix-command flakes");
+        .arg("nix-command flakes")
+        .arg("--extra-substituters")
+        .arg("https://cache.numtide.com")
+        .arg("--extra-trusted-public-keys")
+        .arg("niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=");
     nix_options.options.iter().for_each(|option| {
         cmd.arg("--option").arg(&option.0).arg(&option.1);
     });
