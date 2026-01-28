@@ -136,6 +136,7 @@ nav:
         - Deploy Remotely: how-to/deploy-remotely.md
         - Use Remote Flakes: how-to/use-remote-flakes.md
         - Use Blueprint: how-to/use-blueprint.md
+        - Test Configuration: how-to/test-configuration.md
         - Rollback Changes: how-to/rollback.md
     - Reference:
         - Overview: reference/index.md
