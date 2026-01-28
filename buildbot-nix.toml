@@ -1,0 +1,6 @@
+# Buildbot-nix configuration
+#
+# Evaluate testFlake which includes:
+# - Parent flake checks (package builds for all systems)
+# - VM integration tests (Ubuntu variants on x86_64-linux)
+flake_dir = "./testFlake"
