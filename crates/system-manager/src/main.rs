@@ -96,7 +96,7 @@ struct Args {
     #[command(subcommand)]
     action: Action,
 
-    #[arg(long)]
+    #[arg(long, global = true)]
     /// The host to deploy the system-manager profile to
     target_host: Option<String>,
 
@@ -783,5 +783,35 @@ mod tests {
         let result =
             Args::try_parse_from(["system-manager", "build", "--sudo", "--flake", ".#test"]);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn target_host_after_subcommand() {
+        let args = Args::try_parse_from([
+            "system-manager",
+            "switch",
+            "--target-host",
+            "admin@web.example.com",
+            "--flake",
+            ".#test",
+        ])
+        .expect("failed to parse args");
+
+        assert_eq!(args.target_host.as_deref(), Some("admin@web.example.com"));
+    }
+
+    #[test]
+    fn target_host_before_subcommand() {
+        let args = Args::try_parse_from([
+            "system-manager",
+            "--target-host",
+            "admin@web.example.com",
+            "switch",
+            "--flake",
+            ".#test",
+        ])
+        .expect("failed to parse args");
+
+        assert_eq!(args.target_host.as_deref(), Some("admin@web.example.com"));
     }
 }
