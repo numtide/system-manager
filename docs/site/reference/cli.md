@@ -24,7 +24,7 @@ This subcommand creates two initial files for use with System Manager, a fully-f
 nix run 'github:numtide/system-manager' -- init
 ```
 
-This will create the initial files in `~/.config/system-manager`.
+This will create the initial files in `~/.config/system-manager` by default.
 
 ```sh
 nix run 'github:numtide/system-manager' -- init --path='/home/ubuntu/system-manager'
@@ -41,9 +41,7 @@ The `switch` subcommand builds and activates your configuration immediately, mak
 
 **Note: Rollbacks are not yet implemented.**
 
-The following two parameters are currently both required:
-
-**--flake**: Specifies a flake to use for configuration.
+**--flake**: Specifies a flake to use for configuration. Defaults to `~/.config/system-manager` if not provided.
 
 **--sudo**: Specifies that System Manager can use sudo.
 
