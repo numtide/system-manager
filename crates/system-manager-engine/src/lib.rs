@@ -1,4 +1,5 @@
 pub mod activate;
+pub mod deactivate;
 pub mod register;
 mod systemd;
 

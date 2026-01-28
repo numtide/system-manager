@@ -24,6 +24,7 @@ regex = "1.11.1"
 rpassword = "7.3.1"
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = "1.0.91"
+tempfile = "3"
 thiserror = "2.0.0"
 
 # Internal crates

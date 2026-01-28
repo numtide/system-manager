@@ -2,32 +2,31 @@
 
 This example shows how to install and configure PostgreSQL as a systemd service.
 
-## Prerequisites
-
-System Manager is still in its early state, and doesn't yet have user management, which is a planned feature that will be here soon. As such, for now, before you run this, you'll need to manually create the postgres user. Additionally, go ahead and create two directories and grant the postgres user access to them:
-
-```sh
-# Create postgres user and group
-sudo groupadd -r postgres
-sudo useradd -r -g postgres -d /var/lib/postgresql -s /bin/bash postgres
-
-# Create directories with proper permissions
-sudo mkdir -p /var/lib/postgresql
-sudo chown postgres:postgres /var/lib/postgresql
-
-sudo mkdir -p /run/postgresql
-sudo chown postgres:postgres /run/postgresql
-```
-
 ## Configuration
 
-Here's the `.nix` file that installs PostgreSQL.
+Here's the `.nix` file that installs PostgreSQL with declarative user management.
 
 ```nix
 { config, lib, pkgs, ... }:
 {
   config = {
     nixpkgs.hostPlatform = "x86_64-linux";
+
+    # Create the postgres system user and group
+    users.users.postgres = {
+      isSystemUser = true;
+      group = "postgres";
+      home = "/var/lib/postgresql";
+      createHome = true;
+      description = "PostgreSQL server";
+    };
+
+    users.groups.postgres = {};
+
+    # Create the runtime directory for PostgreSQL socket
+    systemd.tmpfiles.rules = [
+      "d /run/postgresql 0755 postgres postgres -"
+    ];
 
     environment.systemPackages = with pkgs; [
       postgresql_16
@@ -103,13 +102,15 @@ Here's the `.nix` file that installs PostgreSQL.
 
 ## What this configuration does
 
-1. **Installs PostgreSQL 16** as a system package
-2. **Creates a systemd service** that:
+1. **Creates the postgres user and group** declaratively via `users.users` and `users.groups`
+2. **Creates the runtime directory** `/run/postgresql` via tmpfiles for the PostgreSQL socket
+3. **Installs PostgreSQL 16** as a system package
+4. **Creates a systemd service** that:
    - Runs as the `postgres` user
    - Initializes the database directory on first run
    - Starts PostgreSQL with the data directory at `/var/lib/postgresql/16`
-3. **Creates an initialization service** that:
+5. **Creates an initialization service** that:
    - Waits for PostgreSQL to be ready
    - Creates a database called `myapp`
-   - Creates a user called `myapp`
+   - Creates a database user called `myapp`
    - Grants appropriate privileges

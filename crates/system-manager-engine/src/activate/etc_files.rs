@@ -69,12 +69,6 @@ impl std::fmt::Display for EtcFilesConfig {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct CreatedEtcFile {
-    path: PathBuf,
-}
-
 fn read_config(store_path: &StorePath) -> anyhow::Result<EtcFilesConfig> {
     log::info!("Reading etc file definitions...");
     let file = fs::File::open(

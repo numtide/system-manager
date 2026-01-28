@@ -7,9 +7,14 @@
   };
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  inputs.userborn.url = "github:nikstur/userborn";
 
   outputs =
-    { self, nixpkgs }:
+    {
+      self,
+      nixpkgs,
+      userborn,
+    }:
     let
       systems = [
         "aarch64-linux"
@@ -38,7 +43,7 @@
         }/lib.nix";
     in
     {
-      lib = import ./nix/lib.nix { inherit nixpkgs; };
+      lib = import ./nix/lib.nix { inherit nixpkgs userborn; };
 
       packages = eachSystem (
         { pkgs, system }:
