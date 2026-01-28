@@ -27,9 +27,9 @@ sudo systemctl restart nix-daemon
 Deploy your local configuration to a remote machine:
 
 ```bash
-nix run 'github:numtide/system-manager' -- switch \
+nix run 'github:numtide/system-manager' -- --target-host user@remote-host \
+  switch \
   --flake . \
-  --target-host user@remote-host \
   --sudo
 ```
 
@@ -38,9 +38,9 @@ nix run 'github:numtide/system-manager' -- switch \
 Deploy a configuration hosted on GitHub directly to a remote machine:
 
 ```bash
-nix run 'github:numtide/system-manager' -- switch \
+nix run 'github:numtide/system-manager' -- --target-host user@remote-host \
+  switch \
   --flake github:your-username/your-config \
-  --target-host user@remote-host \
   --sudo
 ```
 
@@ -50,15 +50,15 @@ If you have different configurations for different hosts, use the flake output n
 
 ```bash
 # Deploy the "webserver" configuration to web.example.com
-nix run 'github:numtide/system-manager' -- switch \
+nix run 'github:numtide/system-manager' -- --target-host admin@web.example.com \
+  switch \
   --flake .#webserver \
-  --target-host admin@web.example.com \
   --sudo
 
 # Deploy the "database" configuration to db.example.com
-nix run 'github:numtide/system-manager' -- switch \
+nix run 'github:numtide/system-manager' -- --target-host admin@db.example.com \
+  switch \
   --flake .#database \
-  --target-host admin@db.example.com \
   --sudo
 ```
 
@@ -85,9 +85,9 @@ Host dbserver
 Then deploy with just:
 
 ```bash
-nix run 'github:numtide/system-manager' -- switch \
+nix run 'github:numtide/system-manager' -- --target-host webserver \
+switch \
   --flake . \
-  --target-host webserver \
   --sudo
 ```
 
