@@ -61,7 +61,10 @@
 
       # Only useful for quick tests
       systemConfigs.default = self.lib.makeSystemConfig {
-        modules = [ ./examples/example.nix ];
+        modules = [
+          ./examples/example.nix
+          { nixpkgs.hostPlatform = "x86_64-linux"; }
+        ];
       };
 
       formatter = eachSystem ({ pkgs, ... }: pkgs.treefmt);

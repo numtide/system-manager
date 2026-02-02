@@ -27,7 +27,10 @@ let
                 type = lib.types.raw;
                 readOnly = true;
               };
-              config.hostPkgs = pkgs;
+              config = {
+                nixpkgs.hostPlatform = system;
+                hostPkgs = pkgs;
+              };
             }
           )
         ];
