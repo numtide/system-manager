@@ -200,6 +200,13 @@ forEachUbuntuImage "example" {
       assert user == "nobody", f"user was {user}, expected nobody"
       assert group == "users", f"group was {group}, expected users"
 
+      vm.fail("test -e /etc/with_ownership.uid")
+      vm.fail("test -e /etc/with_ownership.gid")
+      vm.fail("test -e /etc/with_ownership.mode")
+      vm.fail("test -e /etc/with_ownership2.uid")
+      vm.fail("test -e /etc/with_ownership2.gid")
+      vm.fail("test -e /etc/with_ownership2.mode")
+
       vm.succeed("test -d /var/tmp/system-manager")
       vm.succeed("test -d /var/tmp/sample")
 
