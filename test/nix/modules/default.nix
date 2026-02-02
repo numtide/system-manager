@@ -321,6 +321,7 @@ forEachUbuntuImage "example" {
 
         vm.fail("bash --login -c '$(which rg)'")
         vm.fail("bash --login -c '$(which fd)'")
+        vm.fail("bash --login -c '$(which direnv)'")
 
         ${system-manager.lib.activateProfileSnippet {
           node = "vm";
@@ -333,6 +334,7 @@ forEachUbuntuImage "example" {
         #vm.fail("bash --login -c '$(which fish)'")
         vm.succeed("bash --login -c 'realpath $(which rg) | grep -F ${hostPkgs.ripgrep}/bin/rg'")
         vm.succeed("bash --login -c 'realpath $(which fd) | grep -F ${hostPkgs.fd}/bin/fd'")
+        vm.succeed("bash --login -c 'realpath $(which direnv) | grep -F ${hostPkgs.direnv}/bin/direnv'")
 
         ${system-manager.lib.activateProfileSnippet {
           node = "vm";
@@ -341,6 +343,7 @@ forEachUbuntuImage "example" {
 
         vm.fail("bash --login -c '$(which rg)'")
         vm.fail("bash --login -c '$(which fd)'")
+        vm.fail("bash --login -c '$(which direnv)'")
         vm.succeed("bash --login -c 'realpath $(which fish) | grep -F ${hostPkgs.fish}/bin/fish'")
       '';
   }

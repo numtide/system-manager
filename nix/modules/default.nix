@@ -9,6 +9,7 @@
   imports = [
     ./environment.nix
     ./etc.nix
+    ./direnv.nix
     ./systemd.nix
     ./tmpfiles.nix
     ./upstream/nixpkgs
