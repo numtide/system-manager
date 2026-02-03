@@ -7,20 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-02-03
+
 ### Added
 
+- User and group management via userborn integration with activation/deactivation lifecycle
+- sops-nix activation script stubs for secrets management
+- services.openssh.hostKeys stub for NixOS module compatibility
+- Container test driver with Ubuntu support, testinfra integration, interactive debugging, subtest support, and streaming boot process
+- Test script validation with mypy/pyflakes and ptpython
+- Default value for `--flake` CLI option
+- `target_host` as global CLI argument
+- Cache substituters from flake config support
+- Numtide cache substituter configured in flake templates
+- Flakes enabled by default in module configuration
 - Support running system-manager from macOS to deploy configurations to Linux (#325)
 
 ### Fixed
 
+- Remote deployment issues
+- Replace deprecated `mkAliasOptionModuleMD` with `mkAliasOptionModule`
+- Use system-manager path for shell in /etc/passwd entries
+- Add stub for `system.activationScripts.users` option
+- Set `nixpkgs.hostPlatform` in examples and tests
+- Remove unused .mode/.uid/.gid sidecar files from etc static environment
+- Container test driver command execution and PATH handling
+- Re-activation idempotency for same profile
 - Remove eval warnings (#324)
 
 ### Documentation
 
+- Add users and groups example and documentation
+- Update Nix installation instructions to recommend nix-installer
+- Add container test driver documentation
+- Improve remote deployment documentation
 - Reorganize documentation with tutorials, how-to guides, explanations, and reference pages
 - Add CONTRIBUTING.md with developer guidelines
 - Add supported platforms reference page
 - Add file permissions and ownership reference
+- Auto-generated module options reference integrated into MkDocs
+
+### Contributors
+
+Thanks to all the contributors who made this release possible:
+
+- Aaron Honeycutt
+- David Chocholatý
+- Francisco-Andre-Martins
+- Jean-François Roche
+- Jeffrey Cogswell
+- Jonas Chevalier
+- Julien Malka
 
 ## [1.0.0] - 2026-01-06
 
@@ -103,5 +140,6 @@ Thanks to all the contributors who made this release possible:
 - Steve Dodd
 - Yvan Sraka
 
-[unreleased]: https://github.com/numtide/system-manager/compare/v1.0.0...HEAD
+[unreleased]: https://github.com/numtide/system-manager/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/numtide/system-manager/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/numtide/system-manager/releases/tag/v1.0.0
