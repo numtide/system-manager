@@ -13,6 +13,8 @@
       url = "github:numtide/nix-vm-test";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    sops-nix.url = "github:Mic92/sops-nix";
+    sops-nix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
@@ -21,6 +23,7 @@
       system-manager,
       nixpkgs,
       nix-vm-test,
+      sops-nix,
     }:
     let
       testedSystems = [
@@ -41,6 +44,7 @@
           inherit (nixpkgs) lib;
           nix-vm-test = vmTestLib;
           inherit system-manager;
+          inherit sops-nix;
         };
       containerChecks =
         system:
