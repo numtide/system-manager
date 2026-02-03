@@ -286,12 +286,6 @@
             pkgs.runCommandLocal "${name}-etc-link" { } ''
               mkdir -p "$out/$(dirname "${file.target}")"
               ln -s "${file.source}" "$out/${file.target}"
-
-              if [ "${file.mode}" != symlink ]; then
-                echo "${file.mode}" > "$out/${file.target}.mode"
-                echo "${file.user}" > "$out/${file.target}.uid"
-                echo "${file.group}" > "$out/${file.target}.gid"
-              fi
             '';
 
           filteredEntries = lib.filterAttrs (_name: etcFile: etcFile.enable) config.environment.etc;
