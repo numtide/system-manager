@@ -11,22 +11,12 @@ To use System Manager, you need:
 !!! Warning
     Rollback functionality is not yet fully implemented. While you can list and switch between generations manually, automatic rollback on failure is not available. Always test configuration changes in a VM or non-production environment first.
 
-# Installing Nix
-
-If you don't have Nix installed yet, you have two options:
-
-## Option 1: Official Nix Installer (Recommended)
+## Installing Nix
 
 Use the official multi-user installer:
 
 ```sh
-sh <(curl -L https://nixos.org/nix/install) --daemon
-```
-
-After installation, open a new terminal or source the profile:
-
-```sh
-. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+curl -sSfL https://artifacts.nixos.org/nix-installer | sh -s -- install
 ```
 
 Verify the installation:
@@ -35,16 +25,10 @@ Verify the installation:
 nix --version
 ```
 
-## Option 2: Determinate Systems Installer
+### Enabling flakes
 
-The [Determinate Systems installer](https://github.com/DeterminateSystems/nix-installer) is a wrapper around the official installer with SELinux support and flakes enabled by default.
-
-!!! Warning
-    The Determinate Systems installer offers both official Nix and their own variant (Determinate Nix). When prompted, choose **official Nix**. System Manager is not tested against Determinate Nix.
-
-## Enabling Flakes
-
-The official installer does not enable flakes by default. Add this line to `/etc/nix/nix.conf`:
+The nix-installer enables flakes by default.
+If you installed Nix using a different installer, you may need to enable flakes manually by adding this line to `/etc/nix/nix.conf`:
 
 ```ini
 experimental-features = nix-command flakes
