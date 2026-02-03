@@ -812,6 +812,45 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#installing-nix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installing Nix
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Installing Nix">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#enabling-flakes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enabling flakes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checking-your-installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checking Your Installation
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1691,6 +1730,45 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#installing-nix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installing Nix
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Installing Nix">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#enabling-flakes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enabling flakes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checking-your-installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checking Your Installation
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1771,27 +1849,17 @@
 <p class="admonition-title">Warning</p>
 <p>Rollback functionality is not yet fully implemented. While you can list and switch between generations manually, automatic rollback on failure is not available. Always test configuration changes in a VM or non-production environment first.</p>
 </div>
-<h1 id="installing-nix">Installing Nix<a class="headerlink" href="#installing-nix" title="Permanent link">&para;</a></h1>
-<p>If you don't have Nix installed yet, you have two options:</p>
-<h2 id="option-1-official-nix-installer-recommended">Option 1: Official Nix Installer (Recommended)<a class="headerlink" href="#option-1-official-nix-installer-recommended" title="Permanent link">&para;</a></h2>
+<h2 id="installing-nix">Installing Nix<a class="headerlink" href="#installing-nix" title="Permanent link">&para;</a></h2>
 <p>Use the official multi-user installer:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a>sh<span class="w"> </span>&lt;<span class="o">(</span>curl<span class="w"> </span>-L<span class="w"> </span>https://nixos.org/nix/install<span class="o">)</span><span class="w"> </span>--daemon
-</code></pre></div></td></tr></table></div>
-<p>After installation, open a new terminal or source the profile:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a>.<span class="w"> </span>/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a>curl<span class="w"> </span>-sSfL<span class="w"> </span>https://artifacts.nixos.org/nix-installer<span class="w"> </span><span class="p">|</span><span class="w"> </span>sh<span class="w"> </span>-s<span class="w"> </span>--<span class="w"> </span>install
 </code></pre></div></td></tr></table></div>
 <p>Verify the installation:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1"></a>nix<span class="w"> </span>--version
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a>nix<span class="w"> </span>--version
 </code></pre></div></td></tr></table></div>
-<h2 id="option-2-determinate-systems-installer">Option 2: Determinate Systems Installer<a class="headerlink" href="#option-2-determinate-systems-installer" title="Permanent link">&para;</a></h2>
-<p>The <a href="https://github.com/DeterminateSystems/nix-installer">Determinate Systems installer</a> is a wrapper around the official installer with SELinux support and flakes enabled by default.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>The Determinate Systems installer offers both official Nix and their own variant (Determinate Nix). When prompted, choose <strong>official Nix</strong>. System Manager is not tested against Determinate Nix.</p>
-</div>
-<h2 id="enabling-flakes">Enabling Flakes<a class="headerlink" href="#enabling-flakes" title="Permanent link">&para;</a></h2>
-<p>The official installer does not enable flakes by default. Add this line to <code>/etc/nix/nix.conf</code>:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="na">experimental-features</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">nix-command flakes</span>
+<h3 id="enabling-flakes">Enabling flakes<a class="headerlink" href="#enabling-flakes" title="Permanent link">&para;</a></h3>
+<p>The nix-installer enables flakes by default.
+If you installed Nix using a different installer, you may need to enable flakes manually by adding this line to <code>/etc/nix/nix.conf</code>:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="na">experimental-features</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">nix-command flakes</span>
 </code></pre></div></td></tr></table></div>
 <p>Alternatively, you can pass the <code>--extra-experimental-features</code> option to each <code>nix</code> command, but this is less convenient.</p>
 <div class="admonition tip">
@@ -1800,21 +1868,21 @@
 </div>
 <h2 id="checking-your-installation">Checking Your Installation<a class="headerlink" href="#checking-your-installation" title="Permanent link">&para;</a></h2>
 <p>To check if Nix is installed system-wide (required for System Manager), run:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1"></a>which<span class="w"> </span>nix
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1"></a>which<span class="w"> </span>nix
 </code></pre></div></td></tr></table></div>
 <p>If the output shows a path in your home directory (e.g., <code>/home/username/.nix-profile/bin/nix</code>), Nix is installed per-user and won't work with System Manager. A system-wide installation shows <code>/nix/var/nix/profiles/default/bin/nix</code>.</p>
 <h1 id="running-system-manager">Running System Manager<a class="headerlink" href="#running-system-manager" title="Permanent link">&para;</a></h1>
 <p>Because Nix can load code (called "flakes") remotely, you don't need to download or install System Manager. Simply running it the first time will automatically fetch it into the Nix Store (<code>/nix/store</code>).</p>
 <p>To get started, run:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1"></a>nix<span class="w"> </span>run<span class="w"> </span><span class="s1">&#39;github:numtide/system-manager&#39;</span><span class="w"> </span>--<span class="w"> </span>init
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1"></a>nix<span class="w"> </span>run<span class="w"> </span><span class="s1">&#39;github:numtide/system-manager&#39;</span><span class="w"> </span>--<span class="w"> </span>init
 </code></pre></div></td></tr></table></div>
 <p>This will create initial configuration files in <code>~/.config/system-manager/</code>. See <a href="../../tutorials/getting-started/">Getting Started</a> for a complete walkthrough.</p>
 <h1 id="optional-installing-system-manager-locally">Optional: Installing System Manager Locally<a class="headerlink" href="#optional-installing-system-manager-locally" title="Permanent link">&para;</a></h1>
 <p>Nix allows you to run code that's stored remotely in a repo, such as in GitHub. As such, you don't have to install System Manager locally to use it. However, if you want to install locally, you can do so with the following <code>nix profile</code> command:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1"></a>nix<span class="w"> </span>profile<span class="w"> </span>add<span class="w"> </span><span class="s1">&#39;github:numtide/system-manager&#39;</span>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1"></a>nix<span class="w"> </span>profile<span class="w"> </span>add<span class="w"> </span><span class="s1">&#39;github:numtide/system-manager&#39;</span>
 </code></pre></div></td></tr></table></div>
 <p>Or, if you don't have the experimental features set in <code>/etc/nix/nix.conf</code>, you can provide them through the command line:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1"></a>nix<span class="w"> </span>profile<span class="w"> </span>add<span class="w"> </span><span class="s1">&#39;github:numtide/system-manager&#39;</span><span class="w"> </span>--extra-experimental-features<span class="w"> </span><span class="s1">&#39;nix-command flakes&#39;</span>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1"></a>nix<span class="w"> </span>profile<span class="w"> </span>add<span class="w"> </span><span class="s1">&#39;github:numtide/system-manager&#39;</span><span class="w"> </span>--extra-experimental-features<span class="w"> </span><span class="s1">&#39;nix-command flakes&#39;</span>
 </code></pre></div></td></tr></table></div>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
@@ -1822,12 +1890,12 @@
 </div>
 <p>When you install System Manager, you might get some warnings about trusted user; this simply means you're not in the trusted user list of Nix. But System Manager will still install and work fine.</p>
 <p>Then you can find System Manager:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1">1</a></span>
-<span class="normal"><a href="#__codelineno-8-2">2</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="gp">$ </span>which<span class="w"> </span>system-manager
-<a id="__codelineno-8-2" name="__codelineno-8-2"></a><span class="go">/home/ubuntu/.nix-profile/bin/system-manager</span>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1">1</a></span>
+<span class="normal"><a href="#__codelineno-7-2">2</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="gp">$ </span>which<span class="w"> </span>system-manager
+<a id="__codelineno-7-2" name="__codelineno-7-2"></a><span class="go">/home/ubuntu/.nix-profile/bin/system-manager</span>
 </code></pre></div></td></tr></table></div>
 <p>And you can run System Manager:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1"></a>system-manager<span class="w"> </span>switch<span class="w"> </span>--flake<span class="w"> </span>.<span class="w"> </span>--sudo
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1"></a>system-manager<span class="w"> </span>switch<span class="w"> </span>--flake<span class="w"> </span>.<span class="w"> </span>--sudo
 </code></pre></div></td></tr></table></div>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
@@ -1835,88 +1903,88 @@
 </div>
 <h1 id="installing-on-nixos">Installing on NixOS<a class="headerlink" href="#installing-on-nixos" title="Permanent link">&para;</a></h1>
 <p>If you're on NixOS and want to install the <code>system-manager</code> CLI as a system package, add it to your NixOS configuration:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1"> 1</a></span>
-<span class="normal"><a href="#__codelineno-10-2"> 2</a></span>
-<span class="normal"><a href="#__codelineno-10-3"> 3</a></span>
-<span class="normal"><a href="#__codelineno-10-4"> 4</a></span>
-<span class="normal"><a href="#__codelineno-10-5"> 5</a></span>
-<span class="normal"><a href="#__codelineno-10-6"> 6</a></span>
-<span class="normal"><a href="#__codelineno-10-7"> 7</a></span>
-<span class="normal"><a href="#__codelineno-10-8"> 8</a></span>
-<span class="normal"><a href="#__codelineno-10-9"> 9</a></span>
-<span class="normal"><a href="#__codelineno-10-10">10</a></span>
-<span class="normal"><a href="#__codelineno-10-11">11</a></span>
-<span class="normal"><a href="#__codelineno-10-12">12</a></span>
-<span class="normal"><a href="#__codelineno-10-13">13</a></span>
-<span class="normal"><a href="#__codelineno-10-14">14</a></span>
-<span class="normal"><a href="#__codelineno-10-15">15</a></span>
-<span class="normal"><a href="#__codelineno-10-16">16</a></span>
-<span class="normal"><a href="#__codelineno-10-17">17</a></span>
-<span class="normal"><a href="#__codelineno-10-18">18</a></span>
-<span class="normal"><a href="#__codelineno-10-19">19</a></span>
-<span class="normal"><a href="#__codelineno-10-20">20</a></span>
-<span class="normal"><a href="#__codelineno-10-21">21</a></span>
-<span class="normal"><a href="#__codelineno-10-22">22</a></span>
-<span class="normal"><a href="#__codelineno-10-23">23</a></span>
-<span class="normal"><a href="#__codelineno-10-24">24</a></span>
-<span class="normal"><a href="#__codelineno-10-25">25</a></span>
-<span class="normal"><a href="#__codelineno-10-26">26</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="c1"># flake.nix</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2"></a><span class="p">{</span>
-<a id="__codelineno-10-3" name="__codelineno-10-3"></a>  <span class="ss">inputs</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-10-4" name="__codelineno-10-4"></a>    nixpkgs<span class="o">.</span><span class="ss">url</span> <span class="o">=</span> <span class="s2">&quot;github:NixOS/nixpkgs/nixos-unstable&quot;</span><span class="p">;</span>
-<a id="__codelineno-10-5" name="__codelineno-10-5"></a>    <span class="ss">system-manager</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-10-6" name="__codelineno-10-6"></a>      <span class="ss">url</span> <span class="o">=</span> <span class="s2">&quot;github:numtide/system-manager&quot;</span><span class="p">;</span>
-<a id="__codelineno-10-7" name="__codelineno-10-7"></a>      inputs<span class="o">.</span>nixpkgs<span class="o">.</span><span class="ss">follows</span> <span class="o">=</span> <span class="s2">&quot;nixpkgs&quot;</span><span class="p">;</span>
-<a id="__codelineno-10-8" name="__codelineno-10-8"></a>    <span class="p">};</span>
-<a id="__codelineno-10-9" name="__codelineno-10-9"></a>  <span class="p">};</span>
-<a id="__codelineno-10-10" name="__codelineno-10-10"></a>
-<a id="__codelineno-10-11" name="__codelineno-10-11"></a>  <span class="ss">outputs</span> <span class="o">=</span> <span class="p">{</span> self<span class="p">,</span> nixpkgs<span class="p">,</span> system-manager<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
-<a id="__codelineno-10-12" name="__codelineno-10-12"></a>    <span class="k">let</span>
-<a id="__codelineno-10-13" name="__codelineno-10-13"></a>      <span class="ss">system</span> <span class="o">=</span> <span class="s2">&quot;x86_64-linux&quot;</span><span class="p">;</span>
-<a id="__codelineno-10-14" name="__codelineno-10-14"></a>    <span class="k">in</span> <span class="p">{</span>
-<a id="__codelineno-10-15" name="__codelineno-10-15"></a>      nixosConfigurations<span class="o">.</span><span class="ss">myhost</span> <span class="o">=</span> nixpkgs<span class="o">.</span>lib<span class="o">.</span>nixosSystem <span class="p">{</span>
-<a id="__codelineno-10-16" name="__codelineno-10-16"></a>        <span class="k">inherit</span> system<span class="p">;</span>
-<a id="__codelineno-10-17" name="__codelineno-10-17"></a>        <span class="ss">modules</span> <span class="o">=</span> <span class="p">[</span>
-<a id="__codelineno-10-18" name="__codelineno-10-18"></a>          <span class="p">({</span> config<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span> <span class="p">{</span>
-<a id="__codelineno-10-19" name="__codelineno-10-19"></a>            environment<span class="o">.</span><span class="ss">systemPackages</span> <span class="o">=</span> <span class="p">[</span>
-<a id="__codelineno-10-20" name="__codelineno-10-20"></a>              system-manager<span class="o">.</span>packages<span class="o">.</span><span class="si">${</span>system<span class="si">}</span><span class="o">.</span>system-manager
-<a id="__codelineno-10-21" name="__codelineno-10-21"></a>            <span class="p">];</span>
-<a id="__codelineno-10-22" name="__codelineno-10-22"></a>          <span class="p">})</span>
-<a id="__codelineno-10-23" name="__codelineno-10-23"></a>        <span class="p">];</span>
-<a id="__codelineno-10-24" name="__codelineno-10-24"></a>      <span class="p">};</span>
-<a id="__codelineno-10-25" name="__codelineno-10-25"></a>    <span class="p">};</span>
-<a id="__codelineno-10-26" name="__codelineno-10-26"></a><span class="p">}</span>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-9-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-9-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-9-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-9-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-9-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-9-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-9-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-9-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-9-10">10</a></span>
+<span class="normal"><a href="#__codelineno-9-11">11</a></span>
+<span class="normal"><a href="#__codelineno-9-12">12</a></span>
+<span class="normal"><a href="#__codelineno-9-13">13</a></span>
+<span class="normal"><a href="#__codelineno-9-14">14</a></span>
+<span class="normal"><a href="#__codelineno-9-15">15</a></span>
+<span class="normal"><a href="#__codelineno-9-16">16</a></span>
+<span class="normal"><a href="#__codelineno-9-17">17</a></span>
+<span class="normal"><a href="#__codelineno-9-18">18</a></span>
+<span class="normal"><a href="#__codelineno-9-19">19</a></span>
+<span class="normal"><a href="#__codelineno-9-20">20</a></span>
+<span class="normal"><a href="#__codelineno-9-21">21</a></span>
+<span class="normal"><a href="#__codelineno-9-22">22</a></span>
+<span class="normal"><a href="#__codelineno-9-23">23</a></span>
+<span class="normal"><a href="#__codelineno-9-24">24</a></span>
+<span class="normal"><a href="#__codelineno-9-25">25</a></span>
+<span class="normal"><a href="#__codelineno-9-26">26</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="c1"># flake.nix</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2"></a><span class="p">{</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3"></a>  <span class="ss">inputs</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4"></a>    nixpkgs<span class="o">.</span><span class="ss">url</span> <span class="o">=</span> <span class="s2">&quot;github:NixOS/nixpkgs/nixos-unstable&quot;</span><span class="p">;</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5"></a>    <span class="ss">system-manager</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6"></a>      <span class="ss">url</span> <span class="o">=</span> <span class="s2">&quot;github:numtide/system-manager&quot;</span><span class="p">;</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7"></a>      inputs<span class="o">.</span>nixpkgs<span class="o">.</span><span class="ss">follows</span> <span class="o">=</span> <span class="s2">&quot;nixpkgs&quot;</span><span class="p">;</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8"></a>    <span class="p">};</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9"></a>  <span class="p">};</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10"></a>
+<a id="__codelineno-9-11" name="__codelineno-9-11"></a>  <span class="ss">outputs</span> <span class="o">=</span> <span class="p">{</span> self<span class="p">,</span> nixpkgs<span class="p">,</span> system-manager<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12"></a>    <span class="k">let</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13"></a>      <span class="ss">system</span> <span class="o">=</span> <span class="s2">&quot;x86_64-linux&quot;</span><span class="p">;</span>
+<a id="__codelineno-9-14" name="__codelineno-9-14"></a>    <span class="k">in</span> <span class="p">{</span>
+<a id="__codelineno-9-15" name="__codelineno-9-15"></a>      nixosConfigurations<span class="o">.</span><span class="ss">myhost</span> <span class="o">=</span> nixpkgs<span class="o">.</span>lib<span class="o">.</span>nixosSystem <span class="p">{</span>
+<a id="__codelineno-9-16" name="__codelineno-9-16"></a>        <span class="k">inherit</span> system<span class="p">;</span>
+<a id="__codelineno-9-17" name="__codelineno-9-17"></a>        <span class="ss">modules</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-9-18" name="__codelineno-9-18"></a>          <span class="p">({</span> config<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span> <span class="p">{</span>
+<a id="__codelineno-9-19" name="__codelineno-9-19"></a>            environment<span class="o">.</span><span class="ss">systemPackages</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-9-20" name="__codelineno-9-20"></a>              system-manager<span class="o">.</span>packages<span class="o">.</span><span class="si">${</span>system<span class="si">}</span><span class="o">.</span>system-manager
+<a id="__codelineno-9-21" name="__codelineno-9-21"></a>            <span class="p">];</span>
+<a id="__codelineno-9-22" name="__codelineno-9-22"></a>          <span class="p">})</span>
+<a id="__codelineno-9-23" name="__codelineno-9-23"></a>        <span class="p">];</span>
+<a id="__codelineno-9-24" name="__codelineno-9-24"></a>      <span class="p">};</span>
+<a id="__codelineno-9-25" name="__codelineno-9-25"></a>    <span class="p">};</span>
+<a id="__codelineno-9-26" name="__codelineno-9-26"></a><span class="p">}</span>
 </code></pre></div></td></tr></table></div>
 <p>Then rebuild:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-11-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1"></a>sudo<span class="w"> </span>nixos-rebuild<span class="w"> </span>switch<span class="w"> </span>--flake<span class="w"> </span>.#myhost
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1"></a>sudo<span class="w"> </span>nixos-rebuild<span class="w"> </span>switch<span class="w"> </span>--flake<span class="w"> </span>.#myhost
 </code></pre></div></td></tr></table></div>
 <h1 id="version-compatibility">Version Compatibility<a class="headerlink" href="#version-compatibility" title="Permanent link">&para;</a></h1>
 <p>Occasionally, the nixpkgs version may be incompatible with the <code>main</code> branch of System Manager. If you encounter build errors, you may need to pin to a specific commit.</p>
 <h2 id="pinning-to-a-specific-version">Pinning to a Specific Version<a class="headerlink" href="#pinning-to-a-specific-version" title="Permanent link">&para;</a></h2>
 <p>For older nixpkgs versions (e.g., 24.05), you may need to pin System Manager to a compatible commit:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-12-1"> 1</a></span>
-<span class="normal"><a href="#__codelineno-12-2"> 2</a></span>
-<span class="normal"><a href="#__codelineno-12-3"> 3</a></span>
-<span class="normal"><a href="#__codelineno-12-4"> 4</a></span>
-<span class="normal"><a href="#__codelineno-12-5"> 5</a></span>
-<span class="normal"><a href="#__codelineno-12-6"> 6</a></span>
-<span class="normal"><a href="#__codelineno-12-7"> 7</a></span>
-<span class="normal"><a href="#__codelineno-12-8"> 8</a></span>
-<span class="normal"><a href="#__codelineno-12-9"> 9</a></span>
-<span class="normal"><a href="#__codelineno-12-10">10</a></span>
-<span class="normal"><a href="#__codelineno-12-11">11</a></span>
-<span class="normal"><a href="#__codelineno-12-12">12</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="p">{</span>
-<a id="__codelineno-12-2" name="__codelineno-12-2"></a>  <span class="ss">inputs</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-12-3" name="__codelineno-12-3"></a>    nixpkgs<span class="o">.</span><span class="ss">url</span> <span class="o">=</span> <span class="s2">&quot;github:NixOS/nixpkgs/24.05&quot;</span><span class="p">;</span>
-<a id="__codelineno-12-4" name="__codelineno-12-4"></a>    <span class="ss">system-manager</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-12-5" name="__codelineno-12-5"></a>      <span class="ss">type</span> <span class="o">=</span> <span class="s2">&quot;github&quot;</span><span class="p">;</span>
-<a id="__codelineno-12-6" name="__codelineno-12-6"></a>      <span class="ss">owner</span> <span class="o">=</span> <span class="s2">&quot;numtide&quot;</span><span class="p">;</span>
-<a id="__codelineno-12-7" name="__codelineno-12-7"></a>      <span class="ss">repo</span> <span class="o">=</span> <span class="s2">&quot;system-manager&quot;</span><span class="p">;</span>
-<a id="__codelineno-12-8" name="__codelineno-12-8"></a>      <span class="ss">ref</span> <span class="o">=</span> <span class="s2">&quot;64627568a52fd5f4d24ecb504cb33a51ffec086d&quot;</span><span class="p">;</span>
-<a id="__codelineno-12-9" name="__codelineno-12-9"></a>      inputs<span class="o">.</span>nixpkgs<span class="o">.</span><span class="ss">follows</span> <span class="o">=</span> <span class="s2">&quot;nixpkgs&quot;</span><span class="p">;</span>
-<a id="__codelineno-12-10" name="__codelineno-12-10"></a>    <span class="p">};</span>
-<a id="__codelineno-12-11" name="__codelineno-12-11"></a>  <span class="p">};</span>
-<a id="__codelineno-12-12" name="__codelineno-12-12"></a><span class="p">}</span>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-11-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-11-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-11-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-11-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-11-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-11-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-11-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-11-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-11-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-11-10">10</a></span>
+<span class="normal"><a href="#__codelineno-11-11">11</a></span>
+<span class="normal"><a href="#__codelineno-11-12">12</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="p">{</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2"></a>  <span class="ss">inputs</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3"></a>    nixpkgs<span class="o">.</span><span class="ss">url</span> <span class="o">=</span> <span class="s2">&quot;github:NixOS/nixpkgs/24.05&quot;</span><span class="p">;</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4"></a>    <span class="ss">system-manager</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5"></a>      <span class="ss">type</span> <span class="o">=</span> <span class="s2">&quot;github&quot;</span><span class="p">;</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6"></a>      <span class="ss">owner</span> <span class="o">=</span> <span class="s2">&quot;numtide&quot;</span><span class="p">;</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7"></a>      <span class="ss">repo</span> <span class="o">=</span> <span class="s2">&quot;system-manager&quot;</span><span class="p">;</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8"></a>      <span class="ss">ref</span> <span class="o">=</span> <span class="s2">&quot;64627568a52fd5f4d24ecb504cb33a51ffec086d&quot;</span><span class="p">;</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9"></a>      inputs<span class="o">.</span>nixpkgs<span class="o">.</span><span class="ss">follows</span> <span class="o">=</span> <span class="s2">&quot;nixpkgs&quot;</span><span class="p">;</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10"></a>    <span class="p">};</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11"></a>  <span class="p">};</span>
+<a id="__codelineno-11-12" name="__codelineno-11-12"></a><span class="p">}</span>
 </code></pre></div></td></tr></table></div>
 <p>See <a href="https://github.com/numtide/system-manager/issues/207">GitHub Issue #207</a> for updates on release versioning.</p>
 
@@ -1941,7 +2009,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="January 10, 2026 12:40:46 UTC">January 10, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="February 3, 2026 00:05:49 UTC">February 3, 2026</span>
   </span>
 
     
