@@ -1517,6 +1517,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1692,6 +1703,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1783,8 +1805,8 @@
 
 <h1 id="postgresql">PostgreSQL<a class="headerlink" href="#postgresql" title="Permanent link">&para;</a></h1>
 <p>This example shows how to install and configure PostgreSQL as a systemd service.</p>
-<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
-<p>Here's the <code>.nix</code> file that installs PostgreSQL with declarative user management.</p>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
+<p>System Manager is still in its early state, and doesn't yet have user management, which is a planned feature that will be here soon. As such, for now, before you run this, you'll need to manually create the postgres user. Additionally, go ahead and create two directories and grant the postgres user access to them:</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1"> 1</a></span>
 <span class="normal"><a href="#__codelineno-0-2"> 2</a></span>
 <span class="normal"><a href="#__codelineno-0-3"> 3</a></span>
@@ -1794,183 +1816,171 @@
 <span class="normal"><a href="#__codelineno-0-7"> 7</a></span>
 <span class="normal"><a href="#__codelineno-0-8"> 8</a></span>
 <span class="normal"><a href="#__codelineno-0-9"> 9</a></span>
-<span class="normal"><a href="#__codelineno-0-10">10</a></span>
-<span class="normal"><a href="#__codelineno-0-11">11</a></span>
-<span class="normal"><a href="#__codelineno-0-12">12</a></span>
-<span class="normal"><a href="#__codelineno-0-13">13</a></span>
-<span class="normal"><a href="#__codelineno-0-14">14</a></span>
-<span class="normal"><a href="#__codelineno-0-15">15</a></span>
-<span class="normal"><a href="#__codelineno-0-16">16</a></span>
-<span class="normal"><a href="#__codelineno-0-17">17</a></span>
-<span class="normal"><a href="#__codelineno-0-18">18</a></span>
-<span class="normal"><a href="#__codelineno-0-19">19</a></span>
-<span class="normal"><a href="#__codelineno-0-20">20</a></span>
-<span class="normal"><a href="#__codelineno-0-21">21</a></span>
-<span class="normal"><a href="#__codelineno-0-22">22</a></span>
-<span class="normal"><a href="#__codelineno-0-23">23</a></span>
-<span class="normal"><a href="#__codelineno-0-24">24</a></span>
-<span class="normal"><a href="#__codelineno-0-25">25</a></span>
-<span class="normal"><a href="#__codelineno-0-26">26</a></span>
-<span class="normal"><a href="#__codelineno-0-27">27</a></span>
-<span class="normal"><a href="#__codelineno-0-28">28</a></span>
-<span class="normal"><a href="#__codelineno-0-29">29</a></span>
-<span class="normal"><a href="#__codelineno-0-30">30</a></span>
-<span class="normal"><a href="#__codelineno-0-31">31</a></span>
-<span class="normal"><a href="#__codelineno-0-32">32</a></span>
-<span class="normal"><a href="#__codelineno-0-33">33</a></span>
-<span class="normal"><a href="#__codelineno-0-34">34</a></span>
-<span class="normal"><a href="#__codelineno-0-35">35</a></span>
-<span class="normal"><a href="#__codelineno-0-36">36</a></span>
-<span class="normal"><a href="#__codelineno-0-37">37</a></span>
-<span class="normal"><a href="#__codelineno-0-38">38</a></span>
-<span class="normal"><a href="#__codelineno-0-39">39</a></span>
-<span class="normal"><a href="#__codelineno-0-40">40</a></span>
-<span class="normal"><a href="#__codelineno-0-41">41</a></span>
-<span class="normal"><a href="#__codelineno-0-42">42</a></span>
-<span class="normal"><a href="#__codelineno-0-43">43</a></span>
-<span class="normal"><a href="#__codelineno-0-44">44</a></span>
-<span class="normal"><a href="#__codelineno-0-45">45</a></span>
-<span class="normal"><a href="#__codelineno-0-46">46</a></span>
-<span class="normal"><a href="#__codelineno-0-47">47</a></span>
-<span class="normal"><a href="#__codelineno-0-48">48</a></span>
-<span class="normal"><a href="#__codelineno-0-49">49</a></span>
-<span class="normal"><a href="#__codelineno-0-50">50</a></span>
-<span class="normal"><a href="#__codelineno-0-51">51</a></span>
-<span class="normal"><a href="#__codelineno-0-52">52</a></span>
-<span class="normal"><a href="#__codelineno-0-53">53</a></span>
-<span class="normal"><a href="#__codelineno-0-54">54</a></span>
-<span class="normal"><a href="#__codelineno-0-55">55</a></span>
-<span class="normal"><a href="#__codelineno-0-56">56</a></span>
-<span class="normal"><a href="#__codelineno-0-57">57</a></span>
-<span class="normal"><a href="#__codelineno-0-58">58</a></span>
-<span class="normal"><a href="#__codelineno-0-59">59</a></span>
-<span class="normal"><a href="#__codelineno-0-60">60</a></span>
-<span class="normal"><a href="#__codelineno-0-61">61</a></span>
-<span class="normal"><a href="#__codelineno-0-62">62</a></span>
-<span class="normal"><a href="#__codelineno-0-63">63</a></span>
-<span class="normal"><a href="#__codelineno-0-64">64</a></span>
-<span class="normal"><a href="#__codelineno-0-65">65</a></span>
-<span class="normal"><a href="#__codelineno-0-66">66</a></span>
-<span class="normal"><a href="#__codelineno-0-67">67</a></span>
-<span class="normal"><a href="#__codelineno-0-68">68</a></span>
-<span class="normal"><a href="#__codelineno-0-69">69</a></span>
-<span class="normal"><a href="#__codelineno-0-70">70</a></span>
-<span class="normal"><a href="#__codelineno-0-71">71</a></span>
-<span class="normal"><a href="#__codelineno-0-72">72</a></span>
-<span class="normal"><a href="#__codelineno-0-73">73</a></span>
-<span class="normal"><a href="#__codelineno-0-74">74</a></span>
-<span class="normal"><a href="#__codelineno-0-75">75</a></span>
-<span class="normal"><a href="#__codelineno-0-76">76</a></span>
-<span class="normal"><a href="#__codelineno-0-77">77</a></span>
-<span class="normal"><a href="#__codelineno-0-78">78</a></span>
-<span class="normal"><a href="#__codelineno-0-79">79</a></span>
-<span class="normal"><a href="#__codelineno-0-80">80</a></span>
-<span class="normal"><a href="#__codelineno-0-81">81</a></span>
-<span class="normal"><a href="#__codelineno-0-82">82</a></span>
-<span class="normal"><a href="#__codelineno-0-83">83</a></span>
-<span class="normal"><a href="#__codelineno-0-84">84</a></span>
-<span class="normal"><a href="#__codelineno-0-85">85</a></span>
-<span class="normal"><a href="#__codelineno-0-86">86</a></span>
-<span class="normal"><a href="#__codelineno-0-87">87</a></span>
-<span class="normal"><a href="#__codelineno-0-88">88</a></span>
-<span class="normal"><a href="#__codelineno-0-89">89</a></span>
-<span class="normal"><a href="#__codelineno-0-90">90</a></span>
-<span class="normal"><a href="#__codelineno-0-91">91</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="p">{</span> config<span class="p">,</span> lib<span class="p">,</span> pkgs<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2"></a><span class="p">{</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3"></a>  <span class="ss">config</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4"></a>    nixpkgs<span class="o">.</span><span class="ss">hostPlatform</span> <span class="o">=</span> <span class="s2">&quot;x86_64-linux&quot;</span><span class="p">;</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5"></a>
-<a id="__codelineno-0-6" name="__codelineno-0-6"></a>    <span class="c1"># Create the postgres system user and group</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7"></a>    users<span class="o">.</span>users<span class="o">.</span><span class="ss">postgres</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8"></a>      <span class="ss">isSystemUser</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9"></a>      <span class="ss">group</span> <span class="o">=</span> <span class="s2">&quot;postgres&quot;</span><span class="p">;</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10"></a>      <span class="ss">home</span> <span class="o">=</span> <span class="s2">&quot;/var/lib/postgresql&quot;</span><span class="p">;</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11"></a>      <span class="ss">createHome</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12"></a>      <span class="ss">description</span> <span class="o">=</span> <span class="s2">&quot;PostgreSQL server&quot;</span><span class="p">;</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13"></a>    <span class="p">};</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14"></a>
-<a id="__codelineno-0-15" name="__codelineno-0-15"></a>    users<span class="o">.</span>groups<span class="o">.</span><span class="ss">postgres</span> <span class="o">=</span> <span class="p">{};</span>
-<a id="__codelineno-0-16" name="__codelineno-0-16"></a>
-<a id="__codelineno-0-17" name="__codelineno-0-17"></a>    <span class="c1"># Create the runtime directory for PostgreSQL socket</span>
-<a id="__codelineno-0-18" name="__codelineno-0-18"></a>    systemd<span class="o">.</span>tmpfiles<span class="o">.</span><span class="ss">rules</span> <span class="o">=</span> <span class="p">[</span>
-<a id="__codelineno-0-19" name="__codelineno-0-19"></a>      <span class="s2">&quot;d /run/postgresql 0755 postgres postgres -&quot;</span>
-<a id="__codelineno-0-20" name="__codelineno-0-20"></a>    <span class="p">];</span>
-<a id="__codelineno-0-21" name="__codelineno-0-21"></a>
-<a id="__codelineno-0-22" name="__codelineno-0-22"></a>    environment<span class="o">.</span><span class="ss">systemPackages</span> <span class="o">=</span> <span class="k">with</span> pkgs<span class="p">;</span> <span class="p">[</span>
-<a id="__codelineno-0-23" name="__codelineno-0-23"></a>      postgresql_16
-<a id="__codelineno-0-24" name="__codelineno-0-24"></a>    <span class="p">];</span>
-<a id="__codelineno-0-25" name="__codelineno-0-25"></a>
-<a id="__codelineno-0-26" name="__codelineno-0-26"></a>    <span class="c1"># PostgreSQL service</span>
-<a id="__codelineno-0-27" name="__codelineno-0-27"></a>    systemd<span class="o">.</span>services<span class="o">.</span><span class="ss">postgresql</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-0-28" name="__codelineno-0-28"></a>      <span class="ss">description</span> <span class="o">=</span> <span class="s2">&quot;PostgreSQL database server&quot;</span><span class="p">;</span>
-<a id="__codelineno-0-29" name="__codelineno-0-29"></a>      <span class="ss">wantedBy</span> <span class="o">=</span> <span class="p">[</span> <span class="s2">&quot;multi-user.target&quot;</span> <span class="p">];</span>
-<a id="__codelineno-0-30" name="__codelineno-0-30"></a>      <span class="ss">after</span> <span class="o">=</span> <span class="p">[</span> <span class="s2">&quot;network.target&quot;</span> <span class="p">];</span>
-<a id="__codelineno-0-31" name="__codelineno-0-31"></a>
-<a id="__codelineno-0-32" name="__codelineno-0-32"></a>      <span class="ss">serviceConfig</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-0-33" name="__codelineno-0-33"></a>        <span class="ss">Type</span> <span class="o">=</span> <span class="s2">&quot;notify&quot;</span><span class="p">;</span>
-<a id="__codelineno-0-34" name="__codelineno-0-34"></a>        <span class="ss">User</span> <span class="o">=</span> <span class="s2">&quot;postgres&quot;</span><span class="p">;</span>
-<a id="__codelineno-0-35" name="__codelineno-0-35"></a>        <span class="ss">Group</span> <span class="o">=</span> <span class="s2">&quot;postgres&quot;</span><span class="p">;</span>
-<a id="__codelineno-0-36" name="__codelineno-0-36"></a>        <span class="ss">ExecStart</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">${</span>pkgs<span class="o">.</span>postgresql_16<span class="si">}</span><span class="s2">/bin/postgres -D /var/lib/postgresql/16&quot;</span><span class="p">;</span>
-<a id="__codelineno-0-37" name="__codelineno-0-37"></a>        <span class="ss">ExecReload</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">${</span>pkgs<span class="o">.</span>coreutils<span class="si">}</span><span class="s2">/bin/kill -HUP $MAINPID&quot;</span><span class="p">;</span>
-<a id="__codelineno-0-38" name="__codelineno-0-38"></a>        <span class="ss">KillMode</span> <span class="o">=</span> <span class="s2">&quot;mixed&quot;</span><span class="p">;</span>
-<a id="__codelineno-0-39" name="__codelineno-0-39"></a>        <span class="ss">KillSignal</span> <span class="o">=</span> <span class="s2">&quot;SIGINT&quot;</span><span class="p">;</span>
-<a id="__codelineno-0-40" name="__codelineno-0-40"></a>        <span class="ss">TimeoutSec</span> <span class="o">=</span> <span class="mi">120</span><span class="p">;</span>
-<a id="__codelineno-0-41" name="__codelineno-0-41"></a>
-<a id="__codelineno-0-42" name="__codelineno-0-42"></a>        <span class="c1"># Create directories and initialize database</span>
-<a id="__codelineno-0-43" name="__codelineno-0-43"></a>        <span class="ss">ExecStartPre</span> <span class="o">=</span> <span class="p">[</span>
-<a id="__codelineno-0-44" name="__codelineno-0-44"></a>          <span class="s2">&quot;</span><span class="si">${</span>pkgs<span class="o">.</span>coreutils<span class="si">}</span><span class="s2">/bin/mkdir -p /var/lib/postgresql/16&quot;</span>
-<a id="__codelineno-0-45" name="__codelineno-0-45"></a>          <span class="s2">&quot;</span><span class="si">${</span>pkgs<span class="o">.</span>bash<span class="si">}</span><span class="s2">/bin/bash -c &#39;if [ ! -d /var/lib/postgresql/16/base ]; then </span><span class="si">${</span>pkgs<span class="o">.</span>postgresql_16<span class="si">}</span><span class="s2">/bin/initdb -D /var/lib/postgresql/16; fi&#39;&quot;</span>
-<a id="__codelineno-0-46" name="__codelineno-0-46"></a>        <span class="p">];</span>
-<a id="__codelineno-0-47" name="__codelineno-0-47"></a>      <span class="p">};</span>
-<a id="__codelineno-0-48" name="__codelineno-0-48"></a>
-<a id="__codelineno-0-49" name="__codelineno-0-49"></a>      <span class="ss">environment</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-0-50" name="__codelineno-0-50"></a>        <span class="ss">PGDATA</span> <span class="o">=</span> <span class="s2">&quot;/var/lib/postgresql/16&quot;</span><span class="p">;</span>
-<a id="__codelineno-0-51" name="__codelineno-0-51"></a>      <span class="p">};</span>
-<a id="__codelineno-0-52" name="__codelineno-0-52"></a>    <span class="p">};</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53"></a>
-<a id="__codelineno-0-54" name="__codelineno-0-54"></a>    <span class="c1"># Initialize database and user</span>
-<a id="__codelineno-0-55" name="__codelineno-0-55"></a>    systemd<span class="o">.</span>services<span class="o">.</span><span class="ss">postgresql-init</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-0-56" name="__codelineno-0-56"></a>      <span class="ss">description</span> <span class="o">=</span> <span class="s2">&quot;Initialize PostgreSQL database for myapp&quot;</span><span class="p">;</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57"></a>      <span class="ss">after</span> <span class="o">=</span> <span class="p">[</span> <span class="s2">&quot;postgresql.service&quot;</span> <span class="p">];</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58"></a>      <span class="ss">wantedBy</span> <span class="o">=</span> <span class="p">[</span> <span class="s2">&quot;multi-user.target&quot;</span> <span class="p">];</span>
-<a id="__codelineno-0-59" name="__codelineno-0-59"></a>      <span class="ss">serviceConfig</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-0-60" name="__codelineno-0-60"></a>        <span class="ss">Type</span> <span class="o">=</span> <span class="s2">&quot;oneshot&quot;</span><span class="p">;</span>
-<a id="__codelineno-0-61" name="__codelineno-0-61"></a>        <span class="ss">RemainAfterExit</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
-<a id="__codelineno-0-62" name="__codelineno-0-62"></a>        <span class="ss">User</span> <span class="o">=</span> <span class="s2">&quot;postgres&quot;</span><span class="p">;</span>
-<a id="__codelineno-0-63" name="__codelineno-0-63"></a>      <span class="p">};</span>
-<a id="__codelineno-0-64" name="__codelineno-0-64"></a>      <span class="ss">script</span> <span class="o">=</span> <span class="s s-Multiline">&#39;&#39;</span>
-<a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="s s-Multiline">        # Wait for PostgreSQL to be ready</span>
-<a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="s s-Multiline">        until </span><span class="si">${</span>pkgs<span class="o">.</span>postgresql_16<span class="si">}</span><span class="s s-Multiline">/bin/pg_isready; do</span>
-<a id="__codelineno-0-67" name="__codelineno-0-67"></a><span class="s s-Multiline">          echo &quot;Waiting for PostgreSQL...&quot;</span>
-<a id="__codelineno-0-68" name="__codelineno-0-68"></a><span class="s s-Multiline">          sleep 2</span>
-<a id="__codelineno-0-69" name="__codelineno-0-69"></a><span class="s s-Multiline">        done</span>
-<a id="__codelineno-0-70" name="__codelineno-0-70"></a>
-<a id="__codelineno-0-71" name="__codelineno-0-71"></a><span class="s s-Multiline">        # Optional: Create database if it doesn&#39;t exist</span>
-<a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="s s-Multiline">        </span><span class="si">${</span>pkgs<span class="o">.</span>postgresql_16<span class="si">}</span><span class="s s-Multiline">/bin/psql -lqt | </span><span class="si">${</span>pkgs<span class="o">.</span>coreutils<span class="si">}</span><span class="s s-Multiline">/bin/cut -d \| -f 1 | </span><span class="si">${</span>pkgs<span class="o">.</span>gnugrep<span class="si">}</span><span class="s s-Multiline">/bin/grep -qw myapp || \</span>
-<a id="__codelineno-0-73" name="__codelineno-0-73"></a><span class="s s-Multiline">          </span><span class="si">${</span>pkgs<span class="o">.</span>postgresql_16<span class="si">}</span><span class="s s-Multiline">/bin/createdb myapp</span>
-<a id="__codelineno-0-74" name="__codelineno-0-74"></a>
-<a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="s s-Multiline">        # Optional: Create user if it doesn&#39;t exist</span>
-<a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="s s-Multiline">        </span><span class="si">${</span>pkgs<span class="o">.</span>postgresql_16<span class="si">}</span><span class="s s-Multiline">/bin/psql -tAc &quot;SELECT 1 FROM pg_roles WHERE rolname=&#39;myapp&#39;&quot; | </span><span class="si">${</span>pkgs<span class="o">.</span>gnugrep<span class="si">}</span><span class="s s-Multiline">/bin/grep -q 1 || \</span>
-<a id="__codelineno-0-77" name="__codelineno-0-77"></a><span class="s s-Multiline">          </span><span class="si">${</span>pkgs<span class="o">.</span>postgresql_16<span class="si">}</span><span class="s s-Multiline">/bin/createuser myapp</span>
-<a id="__codelineno-0-78" name="__codelineno-0-78"></a>
-<a id="__codelineno-0-79" name="__codelineno-0-79"></a><span class="s s-Multiline">        # Grant database privileges</span>
-<a id="__codelineno-0-80" name="__codelineno-0-80"></a><span class="s s-Multiline">        </span><span class="si">${</span>pkgs<span class="o">.</span>postgresql_16<span class="si">}</span><span class="s s-Multiline">/bin/psql -c &quot;GRANT ALL PRIVILEGES ON DATABASE myapp TO myapp&quot;</span>
-<a id="__codelineno-0-81" name="__codelineno-0-81"></a>
-<a id="__codelineno-0-82" name="__codelineno-0-82"></a><span class="s s-Multiline">        # Grant schema privileges (allows creating tables!)</span>
-<a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="s s-Multiline">        </span><span class="si">${</span>pkgs<span class="o">.</span>postgresql_16<span class="si">}</span><span class="s s-Multiline">/bin/psql -d myapp -c &quot;GRANT ALL ON SCHEMA public TO myapp&quot;</span>
-<a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="s s-Multiline">        </span><span class="si">${</span>pkgs<span class="o">.</span>postgresql_16<span class="si">}</span><span class="s s-Multiline">/bin/psql -d myapp -c &quot;GRANT ALL ON ALL TABLES IN SCHEMA public TO myapp&quot;</span>
-<a id="__codelineno-0-85" name="__codelineno-0-85"></a><span class="s s-Multiline">        </span><span class="si">${</span>pkgs<span class="o">.</span>postgresql_16<span class="si">}</span><span class="s s-Multiline">/bin/psql -d myapp -c &quot;GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO myapp&quot;</span>
-<a id="__codelineno-0-86" name="__codelineno-0-86"></a>
-<a id="__codelineno-0-87" name="__codelineno-0-87"></a><span class="s s-Multiline">        echo &quot;PostgreSQL is ready and configured!&quot;</span>
-<a id="__codelineno-0-88" name="__codelineno-0-88"></a><span class="s s-Multiline">      &#39;&#39;</span><span class="p">;</span>
-<a id="__codelineno-0-89" name="__codelineno-0-89"></a>    <span class="p">};</span>
-<a id="__codelineno-0-90" name="__codelineno-0-90"></a>  <span class="p">};</span>
-<a id="__codelineno-0-91" name="__codelineno-0-91"></a><span class="p">}</span>
+<span class="normal"><a href="#__codelineno-0-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="c1"># Create postgres user and group</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2"></a>sudo<span class="w"> </span>groupadd<span class="w"> </span>-r<span class="w"> </span>postgres
+<a id="__codelineno-0-3" name="__codelineno-0-3"></a>sudo<span class="w"> </span>useradd<span class="w"> </span>-r<span class="w"> </span>-g<span class="w"> </span>postgres<span class="w"> </span>-d<span class="w"> </span>/var/lib/postgresql<span class="w"> </span>-s<span class="w"> </span>/bin/bash<span class="w"> </span>postgres
+<a id="__codelineno-0-4" name="__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5"></a><span class="c1"># Create directories with proper permissions</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6"></a>sudo<span class="w"> </span>mkdir<span class="w"> </span>-p<span class="w"> </span>/var/lib/postgresql
+<a id="__codelineno-0-7" name="__codelineno-0-7"></a>sudo<span class="w"> </span>chown<span class="w"> </span>postgres:postgres<span class="w"> </span>/var/lib/postgresql
+<a id="__codelineno-0-8" name="__codelineno-0-8"></a>
+<a id="__codelineno-0-9" name="__codelineno-0-9"></a>sudo<span class="w"> </span>mkdir<span class="w"> </span>-p<span class="w"> </span>/run/postgresql
+<a id="__codelineno-0-10" name="__codelineno-0-10"></a>sudo<span class="w"> </span>chown<span class="w"> </span>postgres:postgres<span class="w"> </span>/run/postgresql
+</code></pre></div></td></tr></table></div>
+<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
+<p>Here's the <code>.nix</code> file that installs PostgreSQL.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-1-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-1-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-1-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-1-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-1-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-1-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-1-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-1-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-1-10">10</a></span>
+<span class="normal"><a href="#__codelineno-1-11">11</a></span>
+<span class="normal"><a href="#__codelineno-1-12">12</a></span>
+<span class="normal"><a href="#__codelineno-1-13">13</a></span>
+<span class="normal"><a href="#__codelineno-1-14">14</a></span>
+<span class="normal"><a href="#__codelineno-1-15">15</a></span>
+<span class="normal"><a href="#__codelineno-1-16">16</a></span>
+<span class="normal"><a href="#__codelineno-1-17">17</a></span>
+<span class="normal"><a href="#__codelineno-1-18">18</a></span>
+<span class="normal"><a href="#__codelineno-1-19">19</a></span>
+<span class="normal"><a href="#__codelineno-1-20">20</a></span>
+<span class="normal"><a href="#__codelineno-1-21">21</a></span>
+<span class="normal"><a href="#__codelineno-1-22">22</a></span>
+<span class="normal"><a href="#__codelineno-1-23">23</a></span>
+<span class="normal"><a href="#__codelineno-1-24">24</a></span>
+<span class="normal"><a href="#__codelineno-1-25">25</a></span>
+<span class="normal"><a href="#__codelineno-1-26">26</a></span>
+<span class="normal"><a href="#__codelineno-1-27">27</a></span>
+<span class="normal"><a href="#__codelineno-1-28">28</a></span>
+<span class="normal"><a href="#__codelineno-1-29">29</a></span>
+<span class="normal"><a href="#__codelineno-1-30">30</a></span>
+<span class="normal"><a href="#__codelineno-1-31">31</a></span>
+<span class="normal"><a href="#__codelineno-1-32">32</a></span>
+<span class="normal"><a href="#__codelineno-1-33">33</a></span>
+<span class="normal"><a href="#__codelineno-1-34">34</a></span>
+<span class="normal"><a href="#__codelineno-1-35">35</a></span>
+<span class="normal"><a href="#__codelineno-1-36">36</a></span>
+<span class="normal"><a href="#__codelineno-1-37">37</a></span>
+<span class="normal"><a href="#__codelineno-1-38">38</a></span>
+<span class="normal"><a href="#__codelineno-1-39">39</a></span>
+<span class="normal"><a href="#__codelineno-1-40">40</a></span>
+<span class="normal"><a href="#__codelineno-1-41">41</a></span>
+<span class="normal"><a href="#__codelineno-1-42">42</a></span>
+<span class="normal"><a href="#__codelineno-1-43">43</a></span>
+<span class="normal"><a href="#__codelineno-1-44">44</a></span>
+<span class="normal"><a href="#__codelineno-1-45">45</a></span>
+<span class="normal"><a href="#__codelineno-1-46">46</a></span>
+<span class="normal"><a href="#__codelineno-1-47">47</a></span>
+<span class="normal"><a href="#__codelineno-1-48">48</a></span>
+<span class="normal"><a href="#__codelineno-1-49">49</a></span>
+<span class="normal"><a href="#__codelineno-1-50">50</a></span>
+<span class="normal"><a href="#__codelineno-1-51">51</a></span>
+<span class="normal"><a href="#__codelineno-1-52">52</a></span>
+<span class="normal"><a href="#__codelineno-1-53">53</a></span>
+<span class="normal"><a href="#__codelineno-1-54">54</a></span>
+<span class="normal"><a href="#__codelineno-1-55">55</a></span>
+<span class="normal"><a href="#__codelineno-1-56">56</a></span>
+<span class="normal"><a href="#__codelineno-1-57">57</a></span>
+<span class="normal"><a href="#__codelineno-1-58">58</a></span>
+<span class="normal"><a href="#__codelineno-1-59">59</a></span>
+<span class="normal"><a href="#__codelineno-1-60">60</a></span>
+<span class="normal"><a href="#__codelineno-1-61">61</a></span>
+<span class="normal"><a href="#__codelineno-1-62">62</a></span>
+<span class="normal"><a href="#__codelineno-1-63">63</a></span>
+<span class="normal"><a href="#__codelineno-1-64">64</a></span>
+<span class="normal"><a href="#__codelineno-1-65">65</a></span>
+<span class="normal"><a href="#__codelineno-1-66">66</a></span>
+<span class="normal"><a href="#__codelineno-1-67">67</a></span>
+<span class="normal"><a href="#__codelineno-1-68">68</a></span>
+<span class="normal"><a href="#__codelineno-1-69">69</a></span>
+<span class="normal"><a href="#__codelineno-1-70">70</a></span>
+<span class="normal"><a href="#__codelineno-1-71">71</a></span>
+<span class="normal"><a href="#__codelineno-1-72">72</a></span>
+<span class="normal"><a href="#__codelineno-1-73">73</a></span>
+<span class="normal"><a href="#__codelineno-1-74">74</a></span>
+<span class="normal"><a href="#__codelineno-1-75">75</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="p">{</span> config<span class="p">,</span> lib<span class="p">,</span> pkgs<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="p">{</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3"></a>  <span class="ss">config</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4"></a>    nixpkgs<span class="o">.</span><span class="ss">hostPlatform</span> <span class="o">=</span> <span class="s2">&quot;x86_64-linux&quot;</span><span class="p">;</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5"></a>
+<a id="__codelineno-1-6" name="__codelineno-1-6"></a>    environment<span class="o">.</span><span class="ss">systemPackages</span> <span class="o">=</span> <span class="k">with</span> pkgs<span class="p">;</span> <span class="p">[</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7"></a>      postgresql_16
+<a id="__codelineno-1-8" name="__codelineno-1-8"></a>    <span class="p">];</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9"></a>
+<a id="__codelineno-1-10" name="__codelineno-1-10"></a>    <span class="c1"># PostgreSQL service</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11"></a>    systemd<span class="o">.</span>services<span class="o">.</span><span class="ss">postgresql</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12"></a>      <span class="ss">description</span> <span class="o">=</span> <span class="s2">&quot;PostgreSQL database server&quot;</span><span class="p">;</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13"></a>      <span class="ss">wantedBy</span> <span class="o">=</span> <span class="p">[</span> <span class="s2">&quot;multi-user.target&quot;</span> <span class="p">];</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14"></a>      <span class="ss">after</span> <span class="o">=</span> <span class="p">[</span> <span class="s2">&quot;network.target&quot;</span> <span class="p">];</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15"></a>
+<a id="__codelineno-1-16" name="__codelineno-1-16"></a>      <span class="ss">serviceConfig</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17"></a>        <span class="ss">Type</span> <span class="o">=</span> <span class="s2">&quot;notify&quot;</span><span class="p">;</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18"></a>        <span class="ss">User</span> <span class="o">=</span> <span class="s2">&quot;postgres&quot;</span><span class="p">;</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19"></a>        <span class="ss">Group</span> <span class="o">=</span> <span class="s2">&quot;postgres&quot;</span><span class="p">;</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20"></a>        <span class="ss">ExecStart</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">${</span>pkgs<span class="o">.</span>postgresql_16<span class="si">}</span><span class="s2">/bin/postgres -D /var/lib/postgresql/16&quot;</span><span class="p">;</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21"></a>        <span class="ss">ExecReload</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">${</span>pkgs<span class="o">.</span>coreutils<span class="si">}</span><span class="s2">/bin/kill -HUP $MAINPID&quot;</span><span class="p">;</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22"></a>        <span class="ss">KillMode</span> <span class="o">=</span> <span class="s2">&quot;mixed&quot;</span><span class="p">;</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23"></a>        <span class="ss">KillSignal</span> <span class="o">=</span> <span class="s2">&quot;SIGINT&quot;</span><span class="p">;</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24"></a>        <span class="ss">TimeoutSec</span> <span class="o">=</span> <span class="mi">120</span><span class="p">;</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25"></a>
+<a id="__codelineno-1-26" name="__codelineno-1-26"></a>        <span class="c1"># Create directories and initialize database</span>
+<a id="__codelineno-1-27" name="__codelineno-1-27"></a>        <span class="ss">ExecStartPre</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-1-28" name="__codelineno-1-28"></a>          <span class="s2">&quot;</span><span class="si">${</span>pkgs<span class="o">.</span>coreutils<span class="si">}</span><span class="s2">/bin/mkdir -p /var/lib/postgresql/16&quot;</span>
+<a id="__codelineno-1-29" name="__codelineno-1-29"></a>          <span class="s2">&quot;</span><span class="si">${</span>pkgs<span class="o">.</span>bash<span class="si">}</span><span class="s2">/bin/bash -c &#39;if [ ! -d /var/lib/postgresql/16/base ]; then </span><span class="si">${</span>pkgs<span class="o">.</span>postgresql_16<span class="si">}</span><span class="s2">/bin/initdb -D /var/lib/postgresql/16; fi&#39;&quot;</span>
+<a id="__codelineno-1-30" name="__codelineno-1-30"></a>        <span class="p">];</span>
+<a id="__codelineno-1-31" name="__codelineno-1-31"></a>      <span class="p">};</span>
+<a id="__codelineno-1-32" name="__codelineno-1-32"></a>
+<a id="__codelineno-1-33" name="__codelineno-1-33"></a>      <span class="ss">environment</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-1-34" name="__codelineno-1-34"></a>        <span class="ss">PGDATA</span> <span class="o">=</span> <span class="s2">&quot;/var/lib/postgresql/16&quot;</span><span class="p">;</span>
+<a id="__codelineno-1-35" name="__codelineno-1-35"></a>      <span class="p">};</span>
+<a id="__codelineno-1-36" name="__codelineno-1-36"></a>    <span class="p">};</span>
+<a id="__codelineno-1-37" name="__codelineno-1-37"></a>
+<a id="__codelineno-1-38" name="__codelineno-1-38"></a>    <span class="c1"># Initialize database and user</span>
+<a id="__codelineno-1-39" name="__codelineno-1-39"></a>    systemd<span class="o">.</span>services<span class="o">.</span><span class="ss">postgresql-init</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-1-40" name="__codelineno-1-40"></a>      <span class="ss">description</span> <span class="o">=</span> <span class="s2">&quot;Initialize PostgreSQL database for myapp&quot;</span><span class="p">;</span>
+<a id="__codelineno-1-41" name="__codelineno-1-41"></a>      <span class="ss">after</span> <span class="o">=</span> <span class="p">[</span> <span class="s2">&quot;postgresql.service&quot;</span> <span class="p">];</span>
+<a id="__codelineno-1-42" name="__codelineno-1-42"></a>      <span class="ss">wantedBy</span> <span class="o">=</span> <span class="p">[</span> <span class="s2">&quot;multi-user.target&quot;</span> <span class="p">];</span>
+<a id="__codelineno-1-43" name="__codelineno-1-43"></a>      <span class="ss">serviceConfig</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-1-44" name="__codelineno-1-44"></a>        <span class="ss">Type</span> <span class="o">=</span> <span class="s2">&quot;oneshot&quot;</span><span class="p">;</span>
+<a id="__codelineno-1-45" name="__codelineno-1-45"></a>        <span class="ss">RemainAfterExit</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
+<a id="__codelineno-1-46" name="__codelineno-1-46"></a>        <span class="ss">User</span> <span class="o">=</span> <span class="s2">&quot;postgres&quot;</span><span class="p">;</span>
+<a id="__codelineno-1-47" name="__codelineno-1-47"></a>      <span class="p">};</span>
+<a id="__codelineno-1-48" name="__codelineno-1-48"></a>      <span class="ss">script</span> <span class="o">=</span> <span class="s s-Multiline">&#39;&#39;</span>
+<a id="__codelineno-1-49" name="__codelineno-1-49"></a><span class="s s-Multiline">        # Wait for PostgreSQL to be ready</span>
+<a id="__codelineno-1-50" name="__codelineno-1-50"></a><span class="s s-Multiline">        until </span><span class="si">${</span>pkgs<span class="o">.</span>postgresql_16<span class="si">}</span><span class="s s-Multiline">/bin/pg_isready; do</span>
+<a id="__codelineno-1-51" name="__codelineno-1-51"></a><span class="s s-Multiline">          echo &quot;Waiting for PostgreSQL...&quot;</span>
+<a id="__codelineno-1-52" name="__codelineno-1-52"></a><span class="s s-Multiline">          sleep 2</span>
+<a id="__codelineno-1-53" name="__codelineno-1-53"></a><span class="s s-Multiline">        done</span>
+<a id="__codelineno-1-54" name="__codelineno-1-54"></a>
+<a id="__codelineno-1-55" name="__codelineno-1-55"></a><span class="s s-Multiline">        # Optional: Create database if it doesn&#39;t exist</span>
+<a id="__codelineno-1-56" name="__codelineno-1-56"></a><span class="s s-Multiline">        </span><span class="si">${</span>pkgs<span class="o">.</span>postgresql_16<span class="si">}</span><span class="s s-Multiline">/bin/psql -lqt | </span><span class="si">${</span>pkgs<span class="o">.</span>coreutils<span class="si">}</span><span class="s s-Multiline">/bin/cut -d \| -f 1 | </span><span class="si">${</span>pkgs<span class="o">.</span>gnugrep<span class="si">}</span><span class="s s-Multiline">/bin/grep -qw myapp || \</span>
+<a id="__codelineno-1-57" name="__codelineno-1-57"></a><span class="s s-Multiline">          </span><span class="si">${</span>pkgs<span class="o">.</span>postgresql_16<span class="si">}</span><span class="s s-Multiline">/bin/createdb myapp</span>
+<a id="__codelineno-1-58" name="__codelineno-1-58"></a>
+<a id="__codelineno-1-59" name="__codelineno-1-59"></a><span class="s s-Multiline">        # Optional: Create user if it doesn&#39;t exist</span>
+<a id="__codelineno-1-60" name="__codelineno-1-60"></a><span class="s s-Multiline">        </span><span class="si">${</span>pkgs<span class="o">.</span>postgresql_16<span class="si">}</span><span class="s s-Multiline">/bin/psql -tAc &quot;SELECT 1 FROM pg_roles WHERE rolname=&#39;myapp&#39;&quot; | </span><span class="si">${</span>pkgs<span class="o">.</span>gnugrep<span class="si">}</span><span class="s s-Multiline">/bin/grep -q 1 || \</span>
+<a id="__codelineno-1-61" name="__codelineno-1-61"></a><span class="s s-Multiline">          </span><span class="si">${</span>pkgs<span class="o">.</span>postgresql_16<span class="si">}</span><span class="s s-Multiline">/bin/createuser myapp</span>
+<a id="__codelineno-1-62" name="__codelineno-1-62"></a>
+<a id="__codelineno-1-63" name="__codelineno-1-63"></a><span class="s s-Multiline">        # Grant database privileges</span>
+<a id="__codelineno-1-64" name="__codelineno-1-64"></a><span class="s s-Multiline">        </span><span class="si">${</span>pkgs<span class="o">.</span>postgresql_16<span class="si">}</span><span class="s s-Multiline">/bin/psql -c &quot;GRANT ALL PRIVILEGES ON DATABASE myapp TO myapp&quot;</span>
+<a id="__codelineno-1-65" name="__codelineno-1-65"></a>
+<a id="__codelineno-1-66" name="__codelineno-1-66"></a><span class="s s-Multiline">        # Grant schema privileges (allows creating tables!)</span>
+<a id="__codelineno-1-67" name="__codelineno-1-67"></a><span class="s s-Multiline">        </span><span class="si">${</span>pkgs<span class="o">.</span>postgresql_16<span class="si">}</span><span class="s s-Multiline">/bin/psql -d myapp -c &quot;GRANT ALL ON SCHEMA public TO myapp&quot;</span>
+<a id="__codelineno-1-68" name="__codelineno-1-68"></a><span class="s s-Multiline">        </span><span class="si">${</span>pkgs<span class="o">.</span>postgresql_16<span class="si">}</span><span class="s s-Multiline">/bin/psql -d myapp -c &quot;GRANT ALL ON ALL TABLES IN SCHEMA public TO myapp&quot;</span>
+<a id="__codelineno-1-69" name="__codelineno-1-69"></a><span class="s s-Multiline">        </span><span class="si">${</span>pkgs<span class="o">.</span>postgresql_16<span class="si">}</span><span class="s s-Multiline">/bin/psql -d myapp -c &quot;GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO myapp&quot;</span>
+<a id="__codelineno-1-70" name="__codelineno-1-70"></a>
+<a id="__codelineno-1-71" name="__codelineno-1-71"></a><span class="s s-Multiline">        echo &quot;PostgreSQL is ready and configured!&quot;</span>
+<a id="__codelineno-1-72" name="__codelineno-1-72"></a><span class="s s-Multiline">      &#39;&#39;</span><span class="p">;</span>
+<a id="__codelineno-1-73" name="__codelineno-1-73"></a>    <span class="p">};</span>
+<a id="__codelineno-1-74" name="__codelineno-1-74"></a>  <span class="p">};</span>
+<a id="__codelineno-1-75" name="__codelineno-1-75"></a><span class="p">}</span>
 </code></pre></div></td></tr></table></div>
 <h2 id="what-this-configuration-does">What this configuration does<a class="headerlink" href="#what-this-configuration-does" title="Permanent link">&para;</a></h2>
 <ol>
-<li><strong>Creates the postgres user and group</strong> declaratively via <code>users.users</code> and <code>users.groups</code></li>
-<li><strong>Creates the runtime directory</strong> <code>/run/postgresql</code> via tmpfiles for the PostgreSQL socket</li>
 <li><strong>Installs PostgreSQL 16</strong> as a system package</li>
 <li><strong>Creates a systemd service</strong> that:</li>
 <li>Runs as the <code>postgres</code> user</li>
@@ -1979,7 +1989,7 @@
 <li><strong>Creates an initialization service</strong> that:</li>
 <li>Waits for PostgreSQL to be ready</li>
 <li>Creates a database called <code>myapp</code></li>
-<li>Creates a database user called <code>myapp</code></li>
+<li>Creates a user called <code>myapp</code></li>
 <li>Grants appropriate privileges</li>
 </ol>
 
@@ -2004,7 +2014,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="January 19, 2026 15:05:51 UTC">January 19, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="January 10, 2026 12:40:24 UTC">January 10, 2026</span>
   </span>
 
     
