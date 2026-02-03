@@ -1,6 +1,7 @@
-mod etc_files;
-mod services;
+pub(crate) mod etc_files;
+pub(crate) mod services;
 mod tmp_files;
+pub(crate) mod users;
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -35,8 +36,8 @@ pub type ActivationResult<R> = Result<R, ActivationError<R>>;
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct State {
-    file_tree: FileTree,
-    services: services::Services,
+    pub(crate) file_tree: FileTree,
+    pub(crate) services: services::Services,
 }
 
 impl State {
@@ -81,6 +82,14 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
 
     match etc_files::activate(store_path, old_state.file_tree, ephemeral) {
         Ok(etc_tree) => {
+            log::info!("Restarting sysinit-reactivation.target...");
+            services::restart_sysinit_reactivation_target()?;
+
+            // Restart userborn before tmpfiles so users exist when tmpfiles runs
+            if let Err(e) = services::restart_userborn_if_exists() {
+                log::error!("Error restarting userborn.service: {e}");
+            }
+
             log::info!("Activating tmp files...");
             let tmp_result = tmp_files::activate(&etc_tree);
             if let Err(e) = &tmp_result {
@@ -169,42 +178,6 @@ pub fn prepopulate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
     Ok(())
 }
 
-pub fn deactivate() -> Result<()> {
-    log::info!("Deactivating system-manager");
-    let state_file = &get_state_file()?;
-    let old_state = State::from_file(state_file)?;
-    log::debug!("{old_state:?}");
-
-    match etc_files::deactivate(old_state.file_tree) {
-        Ok(etc_tree) => {
-            log::info!("Deactivating systemd services...");
-            match services::deactivate(old_state.services) {
-                Ok(services) => State {
-                    file_tree: etc_tree,
-                    services,
-                },
-                Err(ActivationError::WithPartialResult { result, source }) => {
-                    log::error!("Error during deactivation: {source:?}");
-                    State {
-                        file_tree: etc_tree,
-                        services: result,
-                    }
-                }
-            }
-        }
-        Err(ActivationError::WithPartialResult { result, source }) => {
-            log::error!("Error during deactivation: {source:?}");
-            State {
-                file_tree: result,
-                ..old_state
-            }
-        }
-    }
-    .write_to_file(state_file)?;
-
-    Ok(())
-}
-
 fn run_preactivation_assertions(store_path: &StorePath) -> Result<process::ExitStatus> {
     let status = process::Command::new(
         store_path
@@ -218,7 +191,7 @@ fn run_preactivation_assertions(store_path: &StorePath) -> Result<process::ExitS
     Ok(status)
 }
 
-fn get_state_file() -> Result<PathBuf> {
+pub(crate) fn get_state_file() -> Result<PathBuf> {
     let state_file = Path::new(SYSTEM_MANAGER_STATE_DIR).join(STATE_FILE_NAME);
     DirBuilder::new()
         .recursive(true)

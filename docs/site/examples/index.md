@@ -4,6 +4,10 @@ Complete, working examples demonstrating System Manager configurations for commo
 
 ## Available Examples
 
+### [Users and Groups](users.md)
+
+Declaratively manage user accounts and groups, including normal users, system users for services, and group membership.
+
 ### [Timer](timer.md)
 
 Create a simple systemd timer that runs every minute, demonstrating how to set up scheduled tasks.

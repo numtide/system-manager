@@ -34,12 +34,14 @@
         inherit nixpkgs;
         system = vmTestSystem;
       };
-      vmChecks = import ./vm-tests.nix {
-        system = vmTestSystem;
-        inherit (nixpkgs) lib;
-        nix-vm-test = vmTestLib;
-        inherit system-manager;
-      };
+      vmChecks =
+        system:
+        import ./vm-tests.nix {
+          system = vmTestSystem;
+          inherit (nixpkgs) lib;
+          nix-vm-test = vmTestLib;
+          inherit system-manager;
+        };
       containerChecks =
         system:
         import ./container-tests.nix {
@@ -53,7 +55,7 @@
       checks = nixpkgs.lib.genAttrs testedSystems (
         system:
         system-manager.checks.${system}
-        // nixpkgs.lib.optionalAttrs (system == vmTestSystem) vmChecks
+        // nixpkgs.lib.optionalAttrs (system == vmTestSystem) (vmChecks system)
         // (containerChecks system)
       );
     };

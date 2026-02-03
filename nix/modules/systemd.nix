@@ -140,12 +140,32 @@ in
         `/etc/systemd/system-shutdown/NAME` to `VALUE`.
       '';
     };
+
+    sysusers = {
+      enable = lib.mkEnableOption "systemd-sysusers" // {
+        description = ''
+          If enabled, users are created with systemd-sysusers instead of with
+          the custom `update-users-groups.pl` script.
+
+          Note: This is experimental.
+        '';
+      };
+    };
   };
 
   config = {
     systemd = {
+      sysusers.enable = false;
+
       targets.system-manager = {
         wantedBy = [ "default.target" ];
+      };
+
+      # This target only exists so that services ordered before sysinit.target
+      # are restarted in the correct order, notably BEFORE the other services,
+      # when switching configurations.
+      targets.sysinit-reactivation = {
+        description = "Reactivate sysinit units";
       };
 
       timers = lib.mapAttrs (name: service: {

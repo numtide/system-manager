@@ -147,6 +147,12 @@ let
                 trusted-users = [ "zimbatm" ];
               };
             };
+
+            users.users.zimbatm = {
+              isNormalUser = true;
+              extraGroups = [ "wheel" ];
+              initialPassword = "test123";
+            };
           };
         }
       )
@@ -193,7 +199,12 @@ forEachUbuntuImage "example" {
       assert uid == "5", f"uid was {uid}, expected 5"
       assert gid == "6", f"gid was {gid}, expected 6"
 
+      vm.succeed("useradd luj")
+      vm.succeed("echo \"luj:test\" | chpasswd")
+
       print(vm.succeed("cat /etc/passwd"))
+      passwd_out = vm.succeed("passwd -S luj | awk '{print $2}'")
+      assert "P" in passwd_out, f"Expected luj to be unlocked with 'P' status, got: {passwd_out}"
 
       user = vm.succeed("stat -c %U /etc/with_ownership2").strip()
       group = vm.succeed("stat -c %G /etc/with_ownership2").strip()
@@ -217,6 +228,8 @@ forEachUbuntuImage "example" {
         node = "vm";
         profile = newConfig;
       }}
+      print(vm.succeed("cat /tmp/output.log"))
+
       vm.succeed("systemctl status new-service.service")
       vm.fail("systemctl status service-9.service")
       vm.fail("test -f /etc/a/nested/example/foo3")
@@ -243,8 +256,29 @@ forEachUbuntuImage "example" {
       vm.fail("test -f /etc/baz/bar/foo2")
       vm.succeed("test -f /etc/foo_new")
 
+      vm.succeed("id -u zimbatm")
+
+      print(vm.succeed("systemctl status userborn.service"))
+      print(vm.succeed("journalctl -u userborn.service"))
+      print(vm.succeed("cat /var/lib/userborn/previous-userborn.json"))
+
+      print(vm.succeed("cat /etc/passwd"))
+      passwd_out = vm.succeed("passwd -S luj | awk '{print $2}'")
+      assert "P" in passwd_out, f"Expected luj to be unlocked with 'P' status, got: {passwd_out}"
+
       nix_trusted_users = vm.succeed("${hostPkgs.nix}/bin/nix config show trusted-users").strip()
       assert "zimbatm" in nix_trusted_users, f"Expected 'zimbatm' to be in trusted-users, got {nix_trusted_users}"
+
+      luj_entry = vm.succeed("grep '^luj:' /etc/passwd").strip()
+      assert luj_entry != "", "Expected user 'luj' to exist"
+
+      # Verify zimbatm user exists with correct shell path
+      zimbatm_entry = vm.succeed("grep '^zimbatm:' /etc/passwd").strip()
+      assert "/run/system-manager/sw/bin/bash" in zimbatm_entry, f"Expected shell to be /run/system-manager/sw/bin/bash, got: {zimbatm_entry}"
+
+      zimbatm_shadow_before = vm.succeed("grep '^zimbatm:' /etc/shadow").strip()
+      print(f"Shadow entry before deactivation: {zimbatm_shadow_before}")
+      assert not zimbatm_shadow_before.startswith("zimbatm:!*"), f"Expected unlocked account before deactivation, got: {zimbatm_shadow_before}"
 
       # Re-activate the same profile to verify idempotency and no ERROR in output
       ${system-manager.lib.activateProfileSnippet {
@@ -260,7 +294,20 @@ forEachUbuntuImage "example" {
       }}
       vm.fail("systemctl status new-service.service")
       vm.fail("test -f /etc/foo_new")
-      #vm.fail("test -f /var/tmp/system-manager/foo1")
+
+      # userborn never deletes users
+      zimbatm_entry = vm.succeed("grep '^zimbatm:' /etc/passwd").strip()
+      assert zimbatm_entry != "", f"Expected user 'zimbatm' to persist in /etc/passwd after deactivation, got empty"
+
+      # userborn locks user in shadow (password = "!*") after deactivation
+      zimbatm_shadow = vm.succeed("grep '^zimbatm:' /etc/shadow").strip()
+      print(f"Shadow entry after deactivation: {zimbatm_shadow}")
+      assert zimbatm_shadow.startswith("zimbatm:!*"), f"Expected locked account (zimbatm:!*), got: {zimbatm_shadow}"
+
+      # Stateful user 'luj' (not managed by userborn) should NOT be locked
+      luj_shadow = vm.succeed("grep '^luj:' /etc/shadow").strip()
+      print(f"Stateful user shadow after deactivation: {luj_shadow}")
+      assert not luj_shadow.startswith("luj:!*"), f"Stateful user 'luj' should NOT be locked after deactivation, got: {luj_shadow}"
     '';
 }
 

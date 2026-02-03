@@ -7,16 +7,20 @@
   imports = [
     ./nginx.nix
     ./nix.nix
+    ./userborn.nix
+    ./users-groups.nix
   ]
   ++
     # List of imported NixOS modules
     # TODO: how will we manage this in the long term?
     map (path: nixosModulesPath + path) [
       "/misc/meta.nix"
+      "/misc/ids.nix"
       "/security/acme/"
       "/services/web-servers/nginx/"
       # nix settings
       "/config/nix.nix"
+      "/services/system/userborn.nix"
     ];
 
   options =
@@ -27,6 +31,14 @@
     {
       boot = lib.mkOption {
         type = lib.types.raw;
+      };
+
+      # nixos/modules/services/system/userborn.nix still depends on activation scripts
+      # but just to verify that the "users" activation script is disabled.
+      # We try to avoid having to import the whole activationScripts module.
+      system.activationScripts.users = lib.mkOption {
+        type = lib.types.str;
+        default = "";
       };
     };
 
