@@ -227,12 +227,13 @@ System Manager is currently only supported on NixOS and Ubuntu. However, it can 
 > [!WARNING]
 > This is unsupported and untested. Use at your own risk.
 
+## Supported Nix
+
+Nix should be installed with the [nix-installer](https://github.com/NixOS/nix-installer).
+System manager is tested against Nix 2.32 and above installed via nix-installer.
+
 ## Commercial support
 
 Looking for help or customization?
 
 Get in touch with Numtide to get a quote. We make it easy for companies to work with Open Source projects: <https://numtide.com/contact>
-
-[detsys-installer]: https://github.com/DeterminateSystems/nix-installer
-[nixos]: https://nixos.org
-[official-installer]: https://nixos.org/download.html
