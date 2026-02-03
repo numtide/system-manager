@@ -7,45 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.1.0] - 2026-02-03
-
 ### Added
 
-- User and group management via userborn integration with activation/deactivation lifecycle
-- sops-nix activation script stubs for secrets management
-- services.openssh.hostKeys stub for NixOS module compatibility
-- Container test driver with Ubuntu support, testinfra integration, interactive debugging, subtest support, and streaming boot process
-- Test script validation with mypy/pyflakes and ptpython
-- Default value for `--flake` CLI option
-- `target_host` as global CLI argument
-- Cache substituters from flake config support
-- Numtide cache substituter configured in flake templates
-- Flakes enabled by default in module configuration
+- User and group management via [userborn](https://github.com/nikstur/userborn) integration (#266)
+- Secrets management via [sops-nix](https://github.com/Mic92/sops-nix) integration (#270)
+- Container test driver with Ubuntu support, testinfra integration, interactive debugging (#333)
+- Default value for `--flake` CLI option set to `~/.config/system-manager/flake.nix` (#326)
+- `target_host` is now global CLI argument (#340)
+- Speed up system-manager build using Numtide cache substituter (#337)
 - Support running system-manager from macOS to deploy configurations to Linux (#325)
+- Reduce the number of flake inputs using a sub-flake (#329)
+- Add mocks for `networking.firewall` options (#356)
+- Support `systemd.maskedUnits` option (#361)
+- Add `replaceExisting` option to `environment.etc` entries to backup and replace existing files that are not managed by system-manager (#359)
+- Support `systemd.packages` option (#372)
+- Handle wildcards in `environment.etc` entries (#373)
+- Enable systemd unit overrides (#376)
+- Support `environment.extraInit` option (#389)
+- Support `system.checks` option (#390)
 
 ### Fixed
 
-- Remote deployment issues
-- Replace deprecated `mkAliasOptionModuleMD` with `mkAliasOptionModule`
-- Use system-manager path for shell in /etc/passwd entries
-- Add stub for `system.activationScripts.users` option
-- Set `nixpkgs.hostPlatform` in examples and tests
-- Remove unused .mode/.uid/.gid sidecar files from etc static environment
-- Container test driver command execution and PATH handling
-- Re-activation idempotency for same profile
-- Remove eval warnings (#324)
+- Fix directory/file/symlink creation order in etc (#374)
+- Remove unused .mode/.uid/.gid sidecar files from etc static environment (#344)
+- Remove multiple eval warnings
 
 ### Documentation
 
-- Add users and groups example and documentation
+- Reorganize documentation with tutorials, how-to guides, explanations, and reference pages
 - Update Nix installation instructions to recommend nix-installer
+- Add users, groups example and documentation
 - Add container test driver documentation
 - Improve remote deployment documentation
-- Reorganize documentation with tutorials, how-to guides, explanations, and reference pages
 - Add CONTRIBUTING.md with developer guidelines
 - Add supported platforms reference page
 - Add file permissions and ownership reference
 - Auto-generated module options reference integrated into MkDocs
+- Document how to import upstream NixOS modules
 
 ### Contributors
 
@@ -58,6 +56,8 @@ Thanks to all the contributors who made this release possible:
 - Jeffrey Cogswell
 - Jonas Chevalier
 - Julien Malka
+- Picnoir
+- Rowan Amber-Jones
 
 ## [1.0.0] - 2026-01-06
 
