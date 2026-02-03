@@ -34,6 +34,9 @@ pub const SYSTEM_MODULE_TEMPLATE: &[u8; 1159] = include_bytes!("../../../templat
 /// Name of the engine binary in the store path
 const ENGINE_BIN: &str = "system-manager-engine";
 
+/// Default path for system-manager configuration flake
+const DEFAULT_FLAKE_PATH: &str = "~/.config/system-manager";
+
 #[derive(Debug)]
 struct SudoOptions {
     enabled: bool,
@@ -112,7 +115,7 @@ struct Args {
 struct InitArgs {
     /// The path to initialize the configuration at.
     #[arg(
-        default_value = "~/.config/system-manager",
+        default_value = DEFAULT_FLAKE_PATH,
         value_parser = |src: &str| -> Result<PathBuf> {
             if src.starts_with("~") {
                 if let Some(home) = std::env::home_dir() {
@@ -132,8 +135,22 @@ struct InitArgs {
 
 #[derive(clap::Args, Debug)]
 struct BuildArgs {
-    #[arg(long = "flake", name = "FLAKE_URI")]
     /// The flake URI defining the system-manager profile
+    #[arg(
+        long = "flake",
+        name = "FLAKE_URI",
+        default_value = DEFAULT_FLAKE_PATH,
+        value_parser = |src: &str| -> Result<String> {
+            if src.starts_with("~") {
+                if let Some(home) = std::env::home_dir() {
+                    let expanded = src.replace("~", &home.to_string_lossy());
+                    return Ok(expanded);
+                }
+                bail!("Failed to determine a home directory for the flake URI.")
+            }
+            Ok(src.to_string())
+        },
+    )]
     flake_uri: String,
 }
 

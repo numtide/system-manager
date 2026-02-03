@@ -94,8 +94,7 @@ fn find_flake_attr(flake_uri: &str, nix_options: &NixOptions) -> Result<String> 
     if let Some(attr) = attr {
         let Some(full_uri) = try_flake_attr(flake, attr, nix_options, &system)? else {
             anyhow::bail!(
-                "Explicitly provided flake URI does not point to a valid system-manager configuration: {}",
-                format!("{flake}#{attr}")
+                "Explicitly provided flake URI does not point to a valid system-manager configuration: {flake}#{attr}"
             )
         };
         return Ok(full_uri);

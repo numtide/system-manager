@@ -260,13 +260,13 @@ sudo rm /etc/nix/nix.conf
 
 ```sh
 cd ~/.config/system-manager
-nix run 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes' -- switch --flake . --sudo
+nix run 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes' -- switch --sudo
 ```
 
 System Manager is now managing your system for you, including the `/etc/nix/nix.conf` file. And experimental features are required and turned on through the `flake.nix` file, meaning you do not need to include the `--extra-experimental-features` option when you run System Manager:
 
 ```
-nix run 'github:numtide/system-manager' -- switch --flake . --sudo
+nix run 'github:numtide/system-manager' -- switch --sudo
 ```
 
 Next, if you want to make sure experimental features are always on, you can add it to your flake.
