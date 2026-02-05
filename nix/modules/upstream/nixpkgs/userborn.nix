@@ -34,11 +34,11 @@ let
   userbornConfigJson = pkgs.writeText "userborn.json" (builtins.toJSON userbornConfig);
 in
 {
-  services.userborn.enable = true;
+  services.userborn.enable = lib.mkDefault true;
   services.userborn.package = userborn;
 
   # REMOVE when https://github.com/NixOS/nixpkgs/pull/483684 is merged
-  systemd.services.userborn = {
+  systemd.services.userborn = lib.mkIf config.services.userborn.enable {
     environment = {
       USERBORN_MUTABLE_USERS = "true";
       USERBORN_PREVIOUS_CONFIG = previousConfigPath;
