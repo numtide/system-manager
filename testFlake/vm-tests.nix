@@ -152,7 +152,10 @@ let
 
             users.users.zimbatm = {
               isNormalUser = true;
-              extraGroups = [ "wheel" ];
+              extraGroups = [
+                "wheel"
+                "sudo"
+              ];
               initialPassword = "test123";
             };
 
@@ -323,6 +326,23 @@ forEachUbuntuImage "example" {
       # Verify zimbatm user exists with correct shell path
       zimbatm_entry = vm.succeed("grep '^zimbatm:' /etc/passwd").strip()
       assert "/run/system-manager/sw/bin/bash" in zimbatm_entry, f"Expected shell to be /run/system-manager/sw/bin/bash, got: {zimbatm_entry}"
+
+      # Verify wheel group exists and zimbatm is in it
+      wheel_entry = vm.succeed("grep '^wheel:' /etc/group").strip()
+      print(f"Wheel group: {wheel_entry}")
+      assert wheel_entry != "", "Expected wheel group to exist"
+
+      zimbatm_groups = vm.succeed("id -Gn zimbatm").strip()
+      print(f"zimbatm groups: {zimbatm_groups}")
+      assert "wheel" in zimbatm_groups, f"Expected zimbatm to be in wheel group, got: {zimbatm_groups}"
+
+      # Verify zimbatm is added to pre-existing sudo group (gid 27 on Ubuntu)
+      # This tests that userborn correctly adds users to groups that existed
+      # on the system before system-manager was activated.
+      sudo_entry = vm.succeed("grep '^sudo:' /etc/group").strip()
+      print(f"Sudo group: {sudo_entry}")
+      assert "zimbatm" in sudo_entry, f"Expected zimbatm in sudo group, got: {sudo_entry}"
+      assert "sudo" in zimbatm_groups, f"Expected zimbatm to be in sudo group, got: {zimbatm_groups}"
 
       zimbatm_shadow_before = vm.succeed("grep '^zimbatm:' /etc/shadow").strip()
       print(f"Shadow entry before deactivation: {zimbatm_shadow_before}")

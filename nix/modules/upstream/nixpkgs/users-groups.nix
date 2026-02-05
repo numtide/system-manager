@@ -851,30 +851,36 @@ in
         };
       };
 
+      # GIDs are set to match Debian/Ubuntu defaults to avoid conflicts.
+      # NixOS uses different GIDs which conflict with existing system groups.
+      #
+      # To add a user to a group via extraGroups, the group must be declared here.
+      # For pre-existing system groups, declare them with the matching GID.
       users.groups = {
-        root.gid = ids.gids.root;
-        wheel.gid = ids.gids.wheel;
-        disk.gid = ids.gids.disk;
-        kmem.gid = ids.gids.kmem;
-        tty.gid = ids.gids.tty;
-        floppy.gid = ids.gids.floppy;
-        uucp.gid = ids.gids.uucp;
-        lp.gid = ids.gids.lp;
-        cdrom.gid = ids.gids.cdrom;
-        tape.gid = ids.gids.tape;
-        audio.gid = ids.gids.audio;
-        video.gid = ids.gids.video;
-        dialout.gid = ids.gids.dialout;
-        nogroup.gid = ids.gids.nogroup;
-        users.gid = ids.gids.users;
-        nixbld.gid = ids.gids.nixbld;
-        utmp.gid = ids.gids.utmp;
-        adm.gid = ids.gids.adm;
-        input.gid = ids.gids.input;
-        kvm.gid = ids.gids.kvm;
-        render.gid = ids.gids.render;
-        sgx.gid = ids.gids.sgx;
-        shadow.gid = ids.gids.shadow;
+        root.gid = lib.mkDefault 0;
+        wheel.gid = lib.mkDefault 900;
+        sudo.gid = lib.mkDefault 27;
+        disk.gid = lib.mkDefault 6;
+        kmem.gid = lib.mkDefault 15;
+        tty.gid = lib.mkDefault 5;
+        floppy.gid = lib.mkDefault 25;
+        uucp.gid = lib.mkDefault 10;
+        lp.gid = lib.mkDefault 7;
+        cdrom.gid = lib.mkDefault 24;
+        tape.gid = lib.mkDefault 26;
+        audio.gid = lib.mkDefault 29;
+        video.gid = lib.mkDefault 44;
+        dialout.gid = lib.mkDefault 20;
+        nogroup.gid = lib.mkDefault 65534;
+        users.gid = lib.mkDefault 100;
+        nixbld.gid = lib.mkDefault ids.gids.nixbld;
+        utmp.gid = lib.mkDefault 43;
+        adm.gid = lib.mkDefault 4;
+        input.gid = lib.mkDefault 996;
+        kvm.gid = lib.mkDefault 994;
+        render.gid = lib.mkDefault 993;
+        sgx.gid = lib.mkDefault 995;
+        shadow.gid = lib.mkDefault 42;
       };
 
       systemd.services.linger-users = lib.mkIf ((length lingeringUsers) > 0) {
