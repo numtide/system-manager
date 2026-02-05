@@ -1,14 +1,19 @@
 { config, lib, ... }:
 {
-  systemd.services.nginx = lib.mkIf config.services.nginx.enable {
-    serviceConfig.DynamicUser = true;
+  config = lib.mkIf config.services.nginx.enable {
+    users.users.nginx.uid = lib.mkForce 980;
+    users.groups.nginx.gid = lib.mkForce 980;
 
-    # TODO: can we handle this better?
-    wantedBy = lib.mkForce [
-      "system-manager.target"
-    ];
+    systemd.services.nginx = {
+      serviceConfig.DynamicUser = true;
+
+      # TODO: can we handle this better?
+      wantedBy = lib.mkForce [
+        "system-manager.target"
+      ];
+    };
+
+    # Disable this for now
+    services.logrotate.settings.nginx = { };
   };
-
-  # Disable this for now
-  services.logrotate.settings.nginx = { };
 }

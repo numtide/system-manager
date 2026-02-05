@@ -133,16 +133,16 @@
         "systems": "systems"
       },
       "locked": {
-        "lastModified": 1769903681,
-        "narHash": "sha256-mXXakR75Iz6AFf/TYgIHE8SxOri2HyReYUYTT3lCEPA=",
-        "owner": "nikstur",
+        "lastModified": 1770243776,
+        "narHash": "sha256-Nc7V8fmtW4but0LU0tEwjokRirDFuX6fmnmivmAvMZ8=",
+        "owner": "jfroche",
         "repo": "userborn",
-        "rev": "88666e2d8931c7252411498c5b82feb9a8a4d8d4",
+        "rev": "9252a66ae12fff9f6e992310203a7aa763ba89ef",
         "type": "github"
       },
       "original": {
-        "owner": "nikstur",
-        "ref": "0.5.0",
+        "owner": "jfroche",
+        "ref": "fix-existing-groups-members",
         "repo": "userborn",
         "type": "github"
       }

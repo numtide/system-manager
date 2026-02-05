@@ -8,7 +8,7 @@
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   inputs.userborn = {
-    url = "github:nikstur/userborn/0.5.0";
+    url = "github:jfroche/userborn/fix-existing-groups-members";
     inputs.nixpkgs.follows = "nixpkgs";
   };
 

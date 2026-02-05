@@ -143,11 +143,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1770110318,
-        "narHash": "sha256-NUVGVtYBTC96WhPh4Y3SVM7vf0o1z5W4uqRBn9v1pfo=",
+        "lastModified": 1770145881,
+        "narHash": "sha256-ktjWTq+D5MTXQcL9N6cDZXUf9kX8JBLLBLT0ZyOTSYY=",
         "owner": "Mic92",
         "repo": "sops-nix",
-        "rev": "f990b0a334e96d3ef9ca09d4bd92778b42fd84f9",
+        "rev": "17eea6f3816ba6568b8c81db8a4e6ca438b30b7c",
         "type": "github"
       },
       "original": {
@@ -198,16 +198,16 @@
         "systems": "systems"
       },
       "locked": {
-        "lastModified": 1769903681,
-        "narHash": "sha256-mXXakR75Iz6AFf/TYgIHE8SxOri2HyReYUYTT3lCEPA=",
-        "owner": "nikstur",
+        "lastModified": 1770243776,
+        "narHash": "sha256-Nc7V8fmtW4but0LU0tEwjokRirDFuX6fmnmivmAvMZ8=",
+        "owner": "jfroche",
         "repo": "userborn",
-        "rev": "88666e2d8931c7252411498c5b82feb9a8a4d8d4",
+        "rev": "9252a66ae12fff9f6e992310203a7aa763ba89ef",
         "type": "github"
       },
       "original": {
-        "owner": "nikstur",
-        "ref": "0.5.0",
+        "owner": "jfroche",
+        "ref": "fix-existing-groups-members",
         "repo": "userborn",
         "type": "github"
       }
