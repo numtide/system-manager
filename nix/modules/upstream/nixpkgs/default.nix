@@ -5,6 +5,7 @@
 }:
 {
   imports = [
+    ./firewall.nix
     ./nginx.nix
     ./nix.nix
     ./userborn.nix
