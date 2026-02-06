@@ -344,6 +344,13 @@ forEachUbuntuImage "example" {
       assert "zimbatm" in sudo_entry, f"Expected zimbatm in sudo group, got: {sudo_entry}"
       assert "sudo" in zimbatm_groups, f"Expected zimbatm to be in sudo group, got: {zimbatm_groups}"
 
+      # Verify /etc/shadow has correct permissions after userborn activation
+      shadow_mode = vm.succeed("stat -c '%a' /etc/shadow").strip()
+      shadow_group = vm.succeed("stat -c '%G' /etc/shadow").strip()
+      print(f"Shadow permissions: mode={shadow_mode}, group={shadow_group}")
+      assert shadow_mode == "640", f"Expected /etc/shadow mode 640, got: {shadow_mode}"
+      assert shadow_group == "shadow", f"Expected /etc/shadow group shadow, got: {shadow_group}"
+
       zimbatm_shadow_before = vm.succeed("grep '^zimbatm:' /etc/shadow").strip()
       print(f"Shadow entry before deactivation: {zimbatm_shadow_before}")
       assert not zimbatm_shadow_before.startswith("zimbatm:!*"), f"Expected unlocked account before deactivation, got: {zimbatm_shadow_before}"
@@ -376,6 +383,13 @@ forEachUbuntuImage "example" {
       luj_shadow = vm.succeed("grep '^luj:' /etc/shadow").strip()
       print(f"Stateful user shadow after deactivation: {luj_shadow}")
       assert not luj_shadow.startswith("luj:!*"), f"Stateful user 'luj' should NOT be locked after deactivation, got: {luj_shadow}"
+
+      # Verify /etc/shadow permissions are preserved after deactivation
+      shadow_mode_after = vm.succeed("stat -c '%a' /etc/shadow").strip()
+      shadow_group_after = vm.succeed("stat -c '%G' /etc/shadow").strip()
+      print(f"Shadow permissions after deactivation: mode={shadow_mode_after}, group={shadow_group_after}")
+      assert shadow_mode_after == "640", f"Expected /etc/shadow mode 640 after deactivation, got: {shadow_mode_after}"
+      assert shadow_group_after == "shadow", f"Expected /etc/shadow group shadow after deactivation, got: {shadow_group_after}"
     '';
 }
 
