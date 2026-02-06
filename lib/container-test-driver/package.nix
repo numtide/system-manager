@@ -18,6 +18,7 @@ let
       python3Packages.colorama
       python3Packages.junit-xml
       python3Packages.ptpython
+      python3Packages.ipython
       python3Packages.pytest-testinfra
     ]
     ++ extraPythonPackages python3Packages;
