@@ -4,8 +4,40 @@
 # firewall ports (e.g. networking.firewall.allowedTCPPorts) can be imported
 # by system-manager without evaluation errors.
 #
-# No config section: system-manager does not manage firewall rules on the host.
-{ lib, ... }:
+# Emits a warning when port options are configured, since system-manager
+# does not manage firewall rules on the host.
+{ config, lib, ... }:
+let
+  cfg = config.networking.firewall;
+
+  hasPortConfig =
+    cfg.allowedTCPPorts != [ ]
+    || cfg.allowedTCPPortRanges != [ ]
+    || cfg.allowedUDPPorts != [ ]
+    || cfg.allowedUDPPortRanges != [ ]
+    || lib.any (
+      iface:
+      iface.allowedTCPPorts != [ ]
+      || iface.allowedTCPPortRanges != [ ]
+      || iface.allowedUDPPorts != [ ]
+      || iface.allowedUDPPortRanges != [ ]
+    ) (lib.attrValues cfg.interfaces);
+
+  formatPorts = ports: lib.concatMapStringsSep ", " toString ports;
+  formatRanges =
+    ranges: lib.concatMapStringsSep ", " (r: "${toString r.from}-${toString r.to}") ranges;
+
+  portSummary = lib.concatStringsSep "" (
+    lib.optional (cfg.allowedTCPPorts != [ ]) "\n  TCP: ${formatPorts cfg.allowedTCPPorts}"
+    ++ lib.optional (
+      cfg.allowedTCPPortRanges != [ ]
+    ) "\n  TCP ranges: ${formatRanges cfg.allowedTCPPortRanges}"
+    ++ lib.optional (cfg.allowedUDPPorts != [ ]) "\n  UDP: ${formatPorts cfg.allowedUDPPorts}"
+    ++ lib.optional (
+      cfg.allowedUDPPortRanges != [ ]
+    ) "\n  UDP ranges: ${formatRanges cfg.allowedUDPPortRanges}"
+  );
+in
 let
   canonicalizePortList = ports: lib.unique (builtins.sort builtins.lessThan ports);
 
@@ -203,4 +235,10 @@ in
     };
   }
   // commonOptions;
+
+  config.warnings = lib.optional hasPortConfig ''
+    Firewall port configurations are set but will not be applied.
+    system-manager does not manage firewall rules on the host.
+    Ensure these ports are opened in your host firewall:${portSummary}
+  '';
 }
