@@ -120,6 +120,18 @@
                   Changing this option takes precedence over `gid`.
                 '';
               };
+
+              replaceExisting = lib.mkOption {
+                type = lib.types.bool;
+                default = false;
+                description = lib.mdDoc ''
+                  Whether to replace a pre-existing file at the target path.
+                  When enabled, the existing file is backed up to
+                  `{file}`<path>.system-manager-backup` before being replaced.
+                  The backup is restored when system-manager is deactivated or
+                  when the entry is removed from the configuration.
+                '';
+              };
             };
 
             config = {

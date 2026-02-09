@@ -30,6 +30,8 @@ fn get_uid_gid_regex() -> &'static regex::Regex {
     UID_GID_REGEX.get_or_init(|| regex::Regex::new(r"^\+[0-9]+$").expect("could not compile regex"))
 }
 
+const BACKUP_SUFFIX: &str = ".system-manager-backup";
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct EtcFile {
@@ -40,6 +42,8 @@ struct EtcFile {
     group: String,
     user: String,
     mode: String,
+    #[serde(default)]
+    replace_existing: bool,
 }
 
 type EtcFiles = HashMap<String, EtcFile>;
@@ -118,29 +122,68 @@ pub fn deactivate(old_state: FileTree) -> EtcActivationResult {
     Ok(final_state)
 }
 
+fn backup_path_for(path: &Path) -> PathBuf {
+    let mut s = path.as_os_str().to_owned();
+    s.push(BACKUP_SUFFIX);
+    PathBuf::from(s)
+}
+
+fn backup_existing_file(path: &Path) -> anyhow::Result<()> {
+    let backup_path = backup_path_for(path);
+    log::info!(
+        "Backing up existing file {} to {}",
+        path.display(),
+        backup_path.display()
+    );
+    fs::rename(path, &backup_path)?;
+    Ok(())
+}
+
+fn restore_backup(path: &Path) -> anyhow::Result<()> {
+    let backup_path = backup_path_for(path);
+    if backup_path.exists() || backup_path.is_symlink() {
+        log::info!(
+            "Restoring backup {} to {}",
+            backup_path.display(),
+            path.display()
+        );
+        fs::rename(&backup_path, path)?;
+    } else {
+        log::warn!(
+            "Backup file {} not found, cannot restore",
+            backup_path.display()
+        );
+    }
+    Ok(())
+}
+
 fn try_delete_path(path: &Path, status: &FileStatus) -> bool {
     fn do_try_delete(path: &Path, status: &FileStatus) -> anyhow::Result<()> {
         // exists() returns false for broken symlinks
         if path.exists() || path.is_symlink() {
             if path.is_symlink() {
-                remove_link(path)
+                remove_link(path)?;
             } else if path.is_file() {
-                remove_file(path)
+                remove_file(path)?;
             } else if path.is_dir() {
                 if path.read_dir()?.next().is_none() {
-                    remove_dir(path)
+                    remove_dir(path)?;
                 } else {
-                    if let FileStatus::Managed = status {
+                    if matches!(status, FileStatus::Managed | FileStatus::ManagedWithBackup) {
                         log::warn!("Managed directory not empty, ignoring: {}", path.display());
                     }
-                    Ok(())
+                    return Ok(());
                 }
             } else {
                 anyhow::bail!("Unsupported file type! {}", path.display())
             }
-        } else {
-            Ok(())
         }
+
+        if *status == FileStatus::ManagedWithBackup {
+            restore_backup(path)?;
+        }
+
+        Ok(())
     }
 
     log::debug!("Deactivating: {}", path.display());
@@ -198,6 +241,7 @@ fn create_etc_link<P>(
     etc_dir: &Path,
     state: FileTree,
     old_state: &FileTree,
+    replace_existing: bool,
 ) -> EtcActivationResult
 where
     P: AsRef<Path>,
@@ -209,6 +253,7 @@ where
         state: FileTree,
         old_state: &FileTree,
         upwards_path: &Path,
+        replace_existing: bool,
     ) -> EtcActivationResult {
         let link_path = etc_dir.join(link_target);
         // Create the dir if it doesn't exist yet
@@ -232,6 +277,7 @@ where
                     state,
                     old_state,
                     &upwards_path.join(".."),
+                    replace_existing,
                 );
                 match new_state {
                     Ok(new_state) => new_state,
@@ -260,12 +306,42 @@ where
                 .is_some()
     }
 
+    /// Check whether link_path is inside a systemd .wants or .requires directory.
+    fn is_inside_systemd_dependency_dir(link_path: &Path) -> bool {
+        link_path
+            .parent()
+            .map(|parent| {
+                parent
+                    .extension()
+                    .filter(|ext| ["wants", "requires"].iter().any(|other| other == ext))
+                    .is_some()
+                    && parent
+                        .parent()
+                        .map(|pp| pp.ends_with("systemd/system"))
+                        .unwrap_or(false)
+            })
+            .unwrap_or(false)
+    }
+
+    fn backup_and_link(
+        target: &Path,
+        link_path: &Path,
+        dir_state: FileTree,
+    ) -> EtcActivationResult {
+        backup_existing_file(link_path)
+            .map_err(|e| ActivationError::with_partial_result(dir_state.clone(), e))?;
+        create_link(target, link_path)
+            .map_err(|e| ActivationError::with_partial_result(dir_state.clone(), e))?;
+        Ok(dir_state.register_backed_up_entry(link_path))
+    }
+
     fn go(
         link_target: &Path,
         etc_dir: &Path,
         state: FileTree,
         old_state: &FileTree,
         upwards_path: &Path,
+        replace_existing: bool,
     ) -> EtcActivationResult {
         let link_path = etc_dir.join(link_target);
         let dir_state = create_dir_recursively(link_path.parent().unwrap(), state)?;
@@ -278,6 +354,9 @@ where
             || is_systemd_dependency_dir(&absolute_target)
         {
             if absolute_target.is_dir() {
+                // Auto-replace inside .wants/.requires directories
+                let effective_replace =
+                    replace_existing || is_systemd_dependency_dir(&absolute_target);
                 link_dir_contents(
                     link_target,
                     &absolute_target,
@@ -285,7 +364,10 @@ where
                     dir_state,
                     old_state,
                     upwards_path,
+                    effective_replace,
                 )
+            } else if replace_existing || is_inside_systemd_dependency_dir(&link_path) {
+                backup_and_link(&target, &link_path, dir_state)
             } else {
                 Err(ActivationError::with_partial_result(
                     dir_state,
@@ -300,14 +382,20 @@ where
         {
             log::debug!("Link {} up to date.", link_path.display());
             Ok(dir_state.register_managed_entry(&link_path))
-        } else if link_path.exists() && !old_state.is_managed(&link_path) {
-            Err(ActivationError::with_partial_result(
-                dir_state,
-                anyhow::anyhow!("Unmanaged path already exists in filesystem, please remove it and run system-manager again: {}",
-                                link_path.display()),
-            ))
+        } else if (link_path.exists() || link_path.is_symlink())
+            && !old_state.is_managed(&link_path)
+        {
+            if replace_existing || is_inside_systemd_dependency_dir(&link_path) {
+                backup_and_link(&target, &link_path, dir_state)
+            } else {
+                Err(ActivationError::with_partial_result(
+                    dir_state,
+                    anyhow::anyhow!("Unmanaged path already exists in filesystem, please remove it and run system-manager again: {}",
+                                    link_path.display()),
+                ))
+            }
         } else {
-            let result = if link_path.exists() {
+            let result = if link_path.exists() || link_path.is_symlink() {
                 fs::remove_file(&link_path)
                     .map_err(|e| ActivationError::with_partial_result(dir_state.clone(), e))
             } else {
@@ -330,6 +418,7 @@ where
         state,
         old_state,
         Path::new("."),
+        replace_existing,
     )
 }
 
@@ -341,7 +430,13 @@ fn create_etc_entry(
 ) -> EtcActivationResult {
     if entry.mode == "symlink" {
         if let Some(path::Component::Normal(link_target)) = entry.target.components().next() {
-            create_etc_link(&link_target, etc_dir, state, old_state)
+            create_etc_link(
+                &link_target,
+                etc_dir,
+                state,
+                old_state,
+                entry.replace_existing,
+            )
         } else {
             Err(ActivationError::with_partial_result(
                 state,
@@ -357,7 +452,14 @@ fn create_etc_entry(
             entry,
             old_state,
         ) {
-            Ok(_) => Ok(new_state.register_managed_entry(&target_path)),
+            Ok(backed_up) => {
+                let register = if backed_up {
+                    FileTree::register_backed_up_entry
+                } else {
+                    FileTree::register_managed_entry
+                };
+                Ok(register(new_state, &target_path))
+            }
             Err(e) => Err(ActivationError::with_partial_result(new_state, e)),
         }
     }
@@ -456,25 +558,33 @@ fn find_gid(entry: &EtcFile) -> anyhow::Result<u32> {
     }
 }
 
+/// Copy a file from source to target. Returns `Ok(true)` if a pre-existing
+/// file was backed up, `Ok(false)` if no backup was needed.
 fn copy_file(
     source: &Path,
     target: &Path,
     entry: &EtcFile,
     old_state: &FileTree,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<bool> {
     let exists = target.try_exists()?;
-    if !exists || old_state.is_managed(target) {
-        log::debug!(
-            "Copying file {} to {}...",
-            source.display(),
-            target.display()
-        );
-        fs::copy(source, target)?;
-        let mode_int = u32::from_str_radix(&entry.mode, 8)?;
-        fs::set_permissions(target, Permissions::from_mode(mode_int))?;
-        unixfs::chown(target, Some(find_uid(entry)?), Some(find_gid(entry)?))?;
-        Ok(())
+    let backed_up = if exists && !old_state.is_managed(target) {
+        if entry.replace_existing {
+            backup_existing_file(target)?;
+            true
+        } else {
+            anyhow::bail!("File {} already exists, ignoring.", target.display());
+        }
     } else {
-        anyhow::bail!("File {} already exists, ignoring.", target.display());
-    }
+        false
+    };
+    log::debug!(
+        "Copying file {} to {}...",
+        source.display(),
+        target.display()
+    );
+    fs::copy(source, target)?;
+    let mode_int = u32::from_str_radix(&entry.mode, 8)?;
+    fs::set_permissions(target, Permissions::from_mode(mode_int))?;
+    unixfs::chown(target, Some(find_uid(entry)?), Some(find_gid(entry)?))?;
+    Ok(backed_up)
 }
