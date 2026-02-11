@@ -141,6 +141,19 @@ in
       '';
     };
 
+    maskedUnits = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      example = [
+        "ssh.service"
+        "ModemManager.service"
+      ];
+      description = lib.mdDoc ''
+        Units to mask by symlinking to `/dev/null`. Use this for
+        distro-shipped units; for units you define, use `enable = false`
+      '';
+    };
+
     sysusers = {
       enable = lib.mkEnableOption "systemd-sysusers" // {
         description = ''

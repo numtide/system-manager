@@ -263,6 +263,28 @@ impl ServiceManager {
         })
     }
 
+    pub fn mask_unit_files(&self, units: &[&str], runtime: bool) -> Result<(), Error> {
+        let changes = OrgFreedesktopSystemd1Manager::mask_unit_files(
+            &self.proxy,
+            units.to_vec(),
+            runtime,
+            true, // force: replace existing symlinks
+        )?;
+        for (change_type, from, to) in &changes {
+            log::debug!("Mask change: {change_type} {from} -> {to}");
+        }
+        Ok(())
+    }
+
+    pub fn unmask_unit_files(&self, units: &[&str], runtime: bool) -> Result<(), Error> {
+        let changes =
+            OrgFreedesktopSystemd1Manager::unmask_unit_files(&self.proxy, units.to_vec(), runtime)?;
+        for (change_type, from, to) in &changes {
+            log::debug!("Unmask change: {change_type} {from} -> {to}");
+        }
+        Ok(())
+    }
+
     pub fn list_units_by_patterns(
         &self,
         states: &[&str],

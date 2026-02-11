@@ -179,6 +179,18 @@
     };
 
   config = {
+    assertions =
+      let
+        enabledUnitNames = lib.attrNames (lib.filterAttrs (_: u: u.enable) config.systemd.units);
+        overlap = lib.intersectLists enabledUnitNames config.systemd.maskedUnits;
+      in
+      [
+        {
+          assertion = overlap == [ ];
+          message = "units cannot be both defined and masked: ${lib.concatStringsSep ", " overlap}";
+        }
+      ];
+
     system-manager.preActivationAssertions = {
       osVersion =
         let
@@ -304,12 +316,29 @@
           inherit entries staticEnv;
         };
 
-      services = lib.mapAttrs' (
-        unitName: unit:
-        lib.nameValuePair unitName {
-          storePath = "${unit.unit}/${unitName}";
-        }
-      ) (lib.filterAttrs (_: unit: unit.enable) config.systemd.units);
+      services =
+        let
+          enabledUnits = lib.filterAttrs (_: unit: unit.enable) config.systemd.units;
+
+          activeServices = lib.mapAttrs' (
+            unitName: unit:
+            lib.nameValuePair unitName {
+              storePath = "${unit.unit}/${unitName}";
+              masked = false;
+            }
+          ) enabledUnits;
+
+          maskedServices = lib.listToAttrs (
+            map (
+              unitName:
+              lib.nameValuePair unitName {
+                storePath = null;
+                masked = true;
+              }
+            ) config.systemd.maskedUnits
+          );
+        in
+        activeServices // maskedServices;
     };
   };
 }
