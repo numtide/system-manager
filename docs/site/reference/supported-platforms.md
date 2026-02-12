@@ -26,31 +26,25 @@ System Manager runs on Linux systems that use systemd for service management.
 - **Init system**: systemd (required)
 - **Nix**: System-wide multi-user installation with flakes enabled
 
-## Platform Detection
+## Platform detection
 
-System Manager checks the platform at activation time. By default, it only allows activation on Ubuntu and NixOS. This is controlled by the `assertions.osChecks` option.
+System Manager checks the platform at activation time using a pre-activation assertion that reads `/etc/os-release`.
+By default, it only allows activation on Ubuntu and NixOS.
 
-### Enabling Other Distributions
+### Enabling other distributions
 
-To enable System Manager on other distributions, add this to your configuration:
-
-```nix
-{
-  config = {
-    assertions.osChecks = false;
-  };
-}
-```
-
-Or specify allowed OS IDs explicitly:
+To allow System Manager to run on untested distributions, set the `system-manager.allowAnyDistro` option in your configuration:
 
 ```nix
 {
   config = {
-    assertions.osRelease.id = [ "ubuntu" "debian" "fedora" ];
+    system-manager.allowAnyDistro = true;
   };
 }
 ```
+
+This disables the OS check entirely.
+There is no option to selectively allow specific distributions; the check is either on (default, allowing only Ubuntu and NixOS) or off.
 
 ## Limitations
 
