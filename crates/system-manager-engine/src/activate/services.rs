@@ -3,7 +3,7 @@ use im::{HashMap, HashSet};
 use serde::{Deserialize, Serialize};
 use std::path::{self, Path, PathBuf};
 use std::time::Duration;
-use std::{fs, io, str};
+use std::{fs, io};
 
 use super::ActivationResult;
 use crate::activate::ActivationError;
@@ -14,16 +14,25 @@ type ServiceActivationResult = ActivationResult<Services>;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ServiceConfig {
-    store_path: StorePath,
+    /// absent for masked units
+    store_path: Option<StorePath>,
+    #[serde(default)]
+    masked: bool,
 }
 
 pub type Services = HashMap<String, ServiceConfig>;
 
 fn print_services(services: &Services) -> String {
     let out = itertools::intersperse(
-        services
-            .iter()
-            .map(|(name, entry)| format!("name: {name}, source:{}", entry.store_path)),
+        services.iter().map(|(name, entry)| {
+            if entry.masked {
+                format!("name: {name}, masked")
+            } else if let Some(ref path) = entry.store_path {
+                format!("name: {name}, source:{path}")
+            } else {
+                format!("name: {name}, source:<none>")
+            }
+        }),
         "\n".to_owned(),
     )
     .collect();
@@ -58,8 +67,13 @@ pub fn activate(
 
     let services = get_active_services(store_path, old_services.clone())?;
 
-    let services_to_stop = old_services.clone().relative_complement(services.clone());
-    let services_to_reload = get_services_to_reload(services.clone(), old_services.clone());
+    let (masked, active): (Services, Services) = services
+        .clone()
+        .into_iter()
+        .partition(|(_, cfg)| cfg.masked);
+
+    let services_to_stop = old_services.clone().relative_complement(active.clone());
+    let services_to_reload = get_services_to_reload(active.clone(), old_services.clone());
 
     let service_manager = systemd::ServiceManager::new_session()
         .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
@@ -68,13 +82,15 @@ pub fn activate(
         .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
     let timeout = Some(Duration::from_secs(30));
 
-    // We need to do this before we reload the systemd daemon, so that the daemon
+    // Stop removed services and any masked services that might still be running
+    // (e.g. distro-provided units). Must happen before daemon-reload so systemd
     // still knows about these units.
-    // TODO: handle jobs that were not running, this throws an error now.
+    let mut units_to_stop = convert_services(&services_to_stop);
+    units_to_stop.extend(convert_services(&masked));
     wait_for_jobs(
         &service_manager,
         &job_monitor,
-        stop_services(&service_manager, convert_services(&services_to_stop)),
+        stop_services(&service_manager, units_to_stop),
         &timeout,
     )
     .map_err(|e| ActivationError::with_partial_result(services.clone(), e))?;
@@ -88,6 +104,25 @@ pub fn activate(
     )
     .map_err(|e| ActivationError::with_partial_result(services.clone(), e))?;
 
+    if !masked.is_empty() {
+        let unit_names: Vec<&str> = masked.keys().map(AsRef::as_ref).collect();
+        service_manager
+            .mask_unit_files(&unit_names, ephemeral)
+            .with_context(|| format!("masking {} unit(s)", masked.len()))
+            .map_err(|e| ActivationError::with_partial_result(services.clone(), e))?;
+
+        log::info!("Reloading systemd daemon after masking...");
+        service_manager
+            .daemon_reload()
+            .map_err(|e| ActivationError::with_partial_result(services.clone(), e))?;
+
+        log::info!(
+            "Masked {} unit(s): {}",
+            masked.len(),
+            masked.keys().cloned().collect::<Vec<_>>().join(", ")
+        );
+    }
+
     log::info!("Done");
     Ok(services)
 }
@@ -95,6 +130,9 @@ pub fn activate(
 fn get_services_to_reload(services: Services, old_services: Services) -> Services {
     let mut services_to_reload = services.intersection(old_services.clone());
     services_to_reload.retain(|name, service| {
+        if service.masked {
+            return false;
+        }
         if let Some(old_service) = old_services.get(name) {
             service.store_path != old_service.store_path
         } else {
@@ -167,15 +205,22 @@ pub fn deactivate(old_services: Services) -> ServiceActivationResult {
     restore_ephemeral_system_dir()
         .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
 
+    // masked units can't be running, skip them
+    let stoppable: Services = old_services
+        .clone()
+        .into_iter()
+        .filter(|(_, cfg)| !cfg.masked)
+        .collect();
+
     let service_manager = systemd::ServiceManager::new_session()
         .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
-    if !old_services.is_empty() {
+    if !stoppable.is_empty() {
         let job_monitor = service_manager
             .monitor_jobs_init()
             .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
         let timeout = Some(Duration::from_secs(30));
 
-        let mut units_to_stop = convert_services(&old_services);
+        let mut units_to_stop = convert_services(&stoppable);
         units_to_stop.push("system-manager.target");
         // We need to do this before we reload the systemd daemon, so that the daemon
         // still knows about these units.
@@ -190,6 +235,27 @@ pub fn deactivate(old_services: Services) -> ServiceActivationResult {
     } else {
         log::info!("No services to deactivate.");
     }
+
+    // Unmask previously masked units via D-Bus, try both persistent and
+    // runtime paths since we don't know which mode was used during activation
+    let masked_names: Vec<&str> = old_services
+        .iter()
+        .filter(|(_, cfg)| cfg.masked)
+        .map(|(name, _)| name.as_str())
+        .collect();
+    if !masked_names.is_empty() {
+        for runtime in [false, true] {
+            if let Err(e) = service_manager.unmask_unit_files(&masked_names, runtime) {
+                log::error!("Error unmasking units (runtime={runtime}): {e}");
+            }
+        }
+        log::info!(
+            "Unmasked {} unit(s): {}",
+            masked_names.len(),
+            masked_names.join(", ")
+        );
+    }
+
     log::info!("Reloading the systemd daemon...");
     service_manager
         .daemon_reload()
