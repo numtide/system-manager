@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 #[serde(rename_all = "camelCase")]
 pub enum FileStatus {
     Managed,
+    ManagedWithBackup,
     Unmanaged,
 }
 
@@ -18,6 +19,7 @@ impl FileStatus {
 
         match (self, other) {
             (Unmanaged, Unmanaged) => Unmanaged,
+            (ManagedWithBackup, _) | (_, ManagedWithBackup) => ManagedWithBackup,
             _ => Managed,
         }
     }
@@ -97,13 +99,29 @@ impl FileTree {
     }
 
     pub fn is_managed(&self, path: &Path) -> bool {
-        *self.get_status(path) == FileStatus::Managed
+        matches!(
+            self.get_status(path),
+            FileStatus::Managed | FileStatus::ManagedWithBackup
+        )
     }
 
     // TODO is recursion OK here?
     // Should we convert to CPS and use a crate like tramp to TCO this?
     pub fn register_managed_entry(self, path: &Path) -> Self {
-        fn go<'a, C>(mut tree: FileTree, mut components: Peekable<C>, path: PathBuf) -> FileTree
+        self.register_entry(path, FileStatus::Managed)
+    }
+
+    pub fn register_backed_up_entry(self, path: &Path) -> Self {
+        self.register_entry(path, FileStatus::ManagedWithBackup)
+    }
+
+    fn register_entry(self, path: &Path, leaf_status: FileStatus) -> Self {
+        fn go<'a, C>(
+            mut tree: FileTree,
+            mut components: Peekable<C>,
+            path: PathBuf,
+            leaf_status: &FileStatus,
+        ) -> FileTree
         where
             C: Iterator<Item = path::Component<'a>>,
         {
@@ -117,25 +135,30 @@ impl FileTree {
                                     maybe_subtree.unwrap_or_else(|| {
                                         FileTree::with_status(
                                             new_path.clone(),
-                                            // We only label as managed the final path entry,
-                                            // to label intermediate nodes as managed, we should
-                                            // call this function for every one of them separately.
-                                            components.peek().map_or(FileStatus::Managed, |_| {
+                                            // We only label with the leaf status the final path
+                                            // entry, to label intermediate nodes as managed, we
+                                            // should call this function for every one of them
+                                            // separately.
+                                            components.peek().map_or(leaf_status.clone(), |_| {
                                                 FileStatus::Unmanaged
                                             }),
                                         )
                                     }),
                                     components,
                                     new_path,
+                                    leaf_status,
                                 ))
                             },
                             name.to_string_lossy().to_string(),
                         );
                         tree
                     }
-                    path::Component::RootDir => {
-                        go(tree, components, path.join(path::MAIN_SEPARATOR_STR))
-                    }
+                    path::Component::RootDir => go(
+                        tree,
+                        components,
+                        path.join(path::MAIN_SEPARATOR_STR),
+                        leaf_status,
+                    ),
                     _ => panic!(
                         "Unsupported path provided! At path component: {:?}",
                         component
@@ -146,7 +169,12 @@ impl FileTree {
             }
         }
 
-        go(self, path.components().peekable(), PathBuf::new())
+        go(
+            self,
+            path.components().peekable(),
+            PathBuf::new(),
+            &leaf_status,
+        )
     }
 
     pub fn deactivate<F>(self, delete_action: &F) -> Option<FileTree>
@@ -166,7 +194,10 @@ impl FileTree {
         // are not responsible for cleaning them up (we don't run the delete_action
         // closure on their paths).
         if new_tree.nested.is_empty() {
-            if let FileStatus::Managed = new_tree.status {
+            if matches!(
+                new_tree.status,
+                FileStatus::Managed | FileStatus::ManagedWithBackup
+            ) {
                 if delete_action(&new_tree.path, &new_tree.status) {
                     None
                 } else {
@@ -223,7 +254,13 @@ impl FileTree {
 
         // If our invariants are properly maintained, then we should never end up
         // here with dangling unmanaged nodes.
-        debug_assert!(!merged.nested.is_empty() || merged.status == FileStatus::Managed);
+        debug_assert!(
+            !merged.nested.is_empty()
+                || matches!(
+                    merged.status,
+                    FileStatus::Managed | FileStatus::ManagedWithBackup
+                )
+        );
 
         Some(merged)
     }
@@ -400,6 +437,108 @@ mod tests {
         assert_eq!(
             tree1.nested.keys().sorted().collect::<Vec<_>>(),
             ["foo", "foo2", "foo3", "foo4", "foo5"]
+        );
+    }
+
+    #[test]
+    fn managed_with_backup_is_managed() {
+        let tree = FileTree::root_node()
+            .register_backed_up_entry(&PathBuf::from("/").join("foo").join("bar"));
+
+        assert!(tree.is_managed(&PathBuf::from("/").join("foo").join("bar")));
+        assert!(!tree.is_managed(&PathBuf::from("/").join("foo")));
+    }
+
+    #[test]
+    fn register_backed_up_entry_sets_status() {
+        let tree = FileTree::root_node()
+            .register_backed_up_entry(&PathBuf::from("/").join("etc").join("nix.conf"));
+
+        assert_eq!(
+            *tree.get_status(&PathBuf::from("/").join("etc").join("nix.conf")),
+            FileStatus::ManagedWithBackup,
+        );
+        assert_eq!(
+            *tree.get_status(&PathBuf::from("/").join("etc")),
+            FileStatus::Unmanaged,
+        );
+    }
+
+    #[test]
+    fn merge_preserves_managed_with_backup() {
+        assert_eq!(
+            FileStatus::ManagedWithBackup.merge(&FileStatus::Unmanaged),
+            FileStatus::ManagedWithBackup,
+        );
+        assert_eq!(
+            FileStatus::ManagedWithBackup.merge(&FileStatus::Managed),
+            FileStatus::ManagedWithBackup,
+        );
+        assert_eq!(
+            FileStatus::Managed.merge(&FileStatus::ManagedWithBackup),
+            FileStatus::ManagedWithBackup,
+        );
+        assert_eq!(
+            FileStatus::Unmanaged.merge(&FileStatus::ManagedWithBackup),
+            FileStatus::ManagedWithBackup,
+        );
+        assert_eq!(
+            FileStatus::ManagedWithBackup.merge(&FileStatus::ManagedWithBackup),
+            FileStatus::ManagedWithBackup,
+        );
+    }
+
+    #[test]
+    fn deactivate_passes_backup_status_to_action() {
+        let tree = FileTree::root_node()
+            .register_backed_up_entry(&PathBuf::from("/").join("etc").join("nix.conf"))
+            .register_managed_entry(&PathBuf::from("/").join("etc").join("other"));
+
+        let statuses = std::cell::RefCell::new(Vec::<(PathBuf, FileStatus)>::new());
+        tree.deactivate(&|path: &Path, status: &FileStatus| {
+            statuses
+                .borrow_mut()
+                .push((path.to_owned(), status.clone()));
+            true
+        });
+
+        let statuses = statuses.into_inner();
+        let backup_entries: Vec<_> = statuses
+            .iter()
+            .filter(|(_, s)| *s == FileStatus::ManagedWithBackup)
+            .collect();
+        assert_eq!(backup_entries.len(), 1);
+        assert_eq!(
+            backup_entries[0].0,
+            PathBuf::from("/").join("etc").join("nix.conf")
+        );
+
+        let managed_entries: Vec<_> = statuses
+            .iter()
+            .filter(|(_, s)| *s == FileStatus::Managed)
+            .collect();
+        assert_eq!(managed_entries.len(), 1);
+        assert_eq!(
+            managed_entries[0].0,
+            PathBuf::from("/").join("etc").join("other")
+        );
+    }
+
+    #[test]
+    fn mixed_managed_and_backed_up() {
+        let tree = FileTree::root_node()
+            .register_managed_entry(&PathBuf::from("/").join("foo").join("bar"))
+            .register_backed_up_entry(&PathBuf::from("/").join("foo").join("baz"));
+
+        assert!(tree.is_managed(&PathBuf::from("/").join("foo").join("bar")));
+        assert!(tree.is_managed(&PathBuf::from("/").join("foo").join("baz")));
+        assert_eq!(
+            *tree.get_status(&PathBuf::from("/").join("foo").join("bar")),
+            FileStatus::Managed,
+        );
+        assert_eq!(
+            *tree.get_status(&PathBuf::from("/").join("foo").join("baz")),
+            FileStatus::ManagedWithBackup,
         );
     }
 

@@ -137,6 +137,7 @@ nav:
         - Use Remote Flakes: how-to/use-remote-flakes.md
         - Use Blueprint: how-to/use-blueprint.md
         - Test Configuration: how-to/test-configuration.md
+        - Manage Existing Files: how-to/manage-existing-files.md
         - Rollback Changes: how-to/rollback.md
     - Reference:
         - Overview: reference/index.md
