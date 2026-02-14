@@ -215,64 +215,34 @@ in
 
     environment.etc =
       let
-        allowCollisions = false;
-
         enabledUnits = lib.filterAttrs (_: unit: unit.enable) cfg.units;
       in
       {
         "systemd/system".source =
-          pkgs.runCommand "system-manager-units"
-            {
-              preferLocalBuild = true;
-              allowSubstitutes = false;
-            }
-            ''
+          let
+            # The default value of the `package` parameter of
+            # `systemd-lib.generateUnits` copies a number of unit files and
+            # `.wants` links out of the package passed as the value of the
+            # `package` parameter (by default, `config.systemd.package`).
+            # This copying is liable to conflict with existing units and
+            # `.wants` links on the target system, and may trigger other
+            # issues, so pass a package that contains nothing.
+            empty = pkgs.runCommand "empty-directory" { } ''
               mkdir -p $out
-
-              for i in ${toString (lib.mapAttrsToList (n: v: v.unit) enabledUnits)}; do
-                fn=$(basename $i/*)
-                if [ -e $out/$fn ]; then
-                  if [ "$(readlink -f $i/$fn)" = /dev/null ]; then
-                    ln -sfn /dev/null $out/$fn
-                  else
-                    ${
-                      if allowCollisions then
-                        ''
-                          mkdir -p $out/$fn.d
-                          ln -s $i/$fn $out/$fn.d/overrides.conf
-                        ''
-                      else
-                        ''
-                          echo "Found multiple derivations configuring $fn!"
-                          exit 1
-                        ''
-                    }
-                  fi
-                else
-                  ln -fs $i/$fn $out/
-                fi
-              done
-
-              ${lib.concatStrings (
-                lib.mapAttrsToList (
-                  name: unit:
-                  lib.concatMapStrings (name2: ''
-                    mkdir -p $out/'${name2}.wants'
-                    ln -sfn '../${name}' $out/'${name2}.wants'/
-                  '') (unit.wantedBy or [ ])
-                ) enabledUnits
-              )}
-
-              ${lib.concatStrings (
-                lib.mapAttrsToList (
-                  name: unit:
-                  lib.concatMapStrings (name2: ''
-                    mkdir -p $out/'${name2}.requires'
-                    ln -sfn '../${name}' $out/'${name2}.requires'/
-                  '') (unit.requiredBy or [ ])
-                ) enabledUnits
-              )}
             '';
+          in
+          systemd-lib.generateUnits {
+            inherit (cfg) packages;
+
+            package = empty;
+            units = enabledUnits;
+            upstreamUnits = [ ];
+            upstreamWants = [ ];
+
+            # Don't link misc. stuff like `default.target`; otherwise act like
+            # `type = "system"`.
+            type = "initrd";
+          };
       };
   };
 }
