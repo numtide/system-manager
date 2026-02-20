@@ -19,7 +19,6 @@ If you're already running NixOS, you don't need System Manager - NixOS provides 
 | **Base system** | Nix all the way down | Your distro (Ubuntu, Debian, etc.) |
 | **Kernel** | Managed by Nix | Managed by distro |
 | **Bootloader** | Managed by Nix | Managed by distro |
-| **Users/Groups** | Managed declaratively | Managed by distro |
 | **Package manager** | Only Nix | Nix + distro's (apt, dnf, etc.) |
 | **Init system** | systemd (required) | systemd (required) |
 | **Rollback** | Full system rollback | Service/package rollback |
@@ -64,7 +63,6 @@ Some NixOS modules don't apply to System Manager:
 
 - `boot.*` - Bootloader configuration
 - `fileSystems.*` - Filesystem mounts
-- `users.users.*` - User management (though this may change)
 - Hardware-specific modules
 
 ## Migration Path
@@ -81,7 +79,7 @@ Some NixOS modules don't apply to System Manager:
 If you later decide to switch to NixOS:
 
 1. Your `.nix` configuration largely transfers over
-2. Add NixOS-specific modules (boot, filesystems, users)
+2. Add NixOS-specific modules (boot, filesystems)
 3. Install NixOS with your existing configuration as a base
 
 ### From NixOS to System Manager
