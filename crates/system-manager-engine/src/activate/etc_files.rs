@@ -2,6 +2,7 @@ mod etc_tree;
 
 use im::HashMap;
 use itertools::Itertools;
+use log::debug;
 use regex;
 use serde::{Deserialize, Serialize};
 use std::fs::{DirBuilder, Permissions};
@@ -99,6 +100,7 @@ pub fn activate(
 
     let initial_state = FileTree::root_node();
 
+    log::debug!("Creating system manager static link");
     let state = create_etc_static_link(
         SYSTEM_MANAGER_STATIC_NAME,
         &config.static_env,
@@ -106,6 +108,7 @@ pub fn activate(
         initial_state,
     )?;
 
+    log::debug!("Creating all other links");
     // Create the rest of the links
     let final_state = create_etc_links(config.entries.values(), &etc_dir, state, &old_state)
         .update_state(old_state, &try_delete_path)
@@ -206,6 +209,7 @@ where
     E: Iterator<Item = &'a EtcFile>,
 {
     entries.fold(state, |state, entry| {
+        debug!("Creating entry for {:?}", entry);
         let new_state = create_etc_entry(entry, etc_dir, state, old_state);
         match new_state {
             Ok(new_state) => new_state,
@@ -345,6 +349,12 @@ where
     ) -> EtcActivationResult {
         let link_path = etc_dir.join(link_target);
         let dir_state = create_dir_recursively(link_path.parent().unwrap(), state)?;
+        log::debug!(
+            "Go, link_target: {}, etc_dir: {:?}, upward_path: {:?}",
+            link_target.display(),
+            etc_dir,
+            upwards_path
+        );
         let target = upwards_path
             .join(SYSTEM_MANAGER_STATIC_NAME)
             .join(link_target);
