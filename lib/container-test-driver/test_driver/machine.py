@@ -467,7 +467,7 @@ class Machine(testinfra.host.Host):
             msg = "No profile specified for activation"
             raise Error(msg)
 
-        activate_cmd = f"{profile}/bin/activate"
+        activate_cmd = f"RUST_LOG=debug {profile}/bin/activate"
         print(f"\n{Fore.CYAN}=== Activating system-manager ==={Style.RESET_ALL}")
         print(f"Profile: {profile}")
 
