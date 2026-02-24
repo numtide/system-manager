@@ -57,24 +57,36 @@
       ++ lib.optionals (!skipTypeCheck) [ hostPkgs.mypy ]
       ++ lib.optionals (!skipLint) [ hostPkgs.python3Packages.pyflakes ];
 
-      passthru = {
-        inherit
-          toplevel
-          testDriver
-          ubuntuRootfs
-          closureInfo
-          ;
-        driver = hostPkgs.writeShellScriptBin "run-container-test" ''
-          exec ${testDriver}/bin/container-test-driver \
-            --ubuntu-rootfs ${ubuntuRootfs} \
-            --container-name ${name} \
-            --profile ${toplevel} \
-            --host-nix-store /nix/store \
-            --closure-info ${closureInfo} \
-            --test-script ${testScriptFile} \
+      passthru =
+        let
+          driverScript = ''
+            exec ${testDriver}/bin/container-test-driver \
+              --ubuntu-rootfs ${ubuntuRootfs} \
+              --container-name ${name} \
+              --profile ${toplevel} \
+              --host-nix-store /nix/store \
+              --closure-info ${closureInfo} \
+              --test-script ${testScriptFile}
+          '';
+        in
+        {
+          inherit
+            toplevel
+            testDriver
+            ubuntuRootfs
+            closureInfo
+            ;
+
+          driverInteractive = hostPkgs.writeShellScriptBin "run-container-test" ''
+            ${driverScript} \
+            --interactive \
             "$@"
-        '';
-      };
+          '';
+          driver = hostPkgs.writeShellScriptBin "run-container-test" ''
+            ${driverScript} \
+            "$@"
+          '';
+        };
 
       testScript = testScript;
 
