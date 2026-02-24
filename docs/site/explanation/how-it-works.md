@@ -64,7 +64,6 @@ System Manager can manage:
 
 System Manager intentionally limits its scope:
 
-- **Users and groups** - Use your distro's tools
 - **Bootloader** - Managed by your distro
 - **Kernel** - Managed by your distro
 - **Files outside `/etc`** - Use environment.etc for `/etc` only
