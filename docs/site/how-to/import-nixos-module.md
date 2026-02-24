@@ -210,6 +210,39 @@ When evaluating whether a module is worth importing, read its source in nixpkgs 
 A module that primarily generates a systemd service and a configuration file is straightforward to adapt.
 A module that deeply integrates with the NixOS activation system or requires multiple other NixOS modules will need proportionally more stubs.
 
+## Troubleshooting
+
+### Option type conflict with built-in modules
+
+If you previously created a stub for an option that system-manager now provides as a built-in module, evaluation will fail with a type conflict error:
+
+```
+error: The option `networking.firewall' in module `/nix/store/...-source/modules/nebula/config.nix'
+  would be a parent of the following options, but its type `attribute set of anything'
+  does not support nested options.
+    - option(s) with prefix `networking.firewall.allowedTCPPorts' in module `...firewall.nix'
+    - option(s) with prefix `networking.firewall.enable' in module `...firewall.nix'
+    ...
+```
+
+This happens when a catch-all stub like
+
+```nix
+options.networking.firewall = lib.mkOption {
+  type = with lib.types; lazyAttrsOf raw;
+};
+```
+
+conflicts with system-manager's structured option declarations for the same path.
+The Nix module system cannot reconcile a flat `lazyAttrsOf raw` type with nested typed options defined by another module.
+
+The fix is to remove your stub.
+System-manager's built-in module already defines the options with proper types and defaults, so the stub is no longer needed.
+If your imported NixOS module sets firewall options like `networking.firewall.allowedTCPPorts`, system-manager will accept them and emit a warning listing the configured ports, since it does not manage firewall rules on the host.
+
+This pattern applies to any option path where your configuration declares a broad type (`raw`, `lazyAttrsOf raw`) and a system-manager module later introduces structured options under the same path.
+When you see this class of error, check whether system-manager now ships a module covering those options and remove the redundant stub.
+
 ## See also
 
 - [Module options reference](../reference/modules.md) for options already available in system-manager
