@@ -66,8 +66,7 @@
               --profile ${toplevel} \
               --host-nix-store /nix/store \
               --closure-info ${closureInfo} \
-              --test-script ${testScriptFile}
-          '';
+              --test-script ${testScriptFile}'';
         in
         {
           inherit
@@ -83,6 +82,7 @@
             "$@"
           '';
           driver = hostPkgs.writeShellScriptBin "run-container-test" ''
+            if [[
             ${driverScript} \
             "$@"
           '';
