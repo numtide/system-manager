@@ -409,6 +409,12 @@ where
                                     link_path.display()),
                 ))
             }
+        } else if !link_path.exists() && link_path.is_dir() {
+            log::debug!("NEW PATH!!!");
+            match fs::create_dir(&link_path) {
+                Ok(_) => Ok(dir_state.register_managed_entry(&link_path)),
+                Err(e) => Err(ActivationError::with_partial_result(dir_state.clone(), e)),
+            }
         } else {
             log::debug!("5");
             let result = if link_path.exists() || link_path.is_symlink() {
