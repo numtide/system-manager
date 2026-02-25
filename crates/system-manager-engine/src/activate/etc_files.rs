@@ -445,7 +445,9 @@ fn create_etc_entry(
     old_state: &FileTree,
 ) -> EtcActivationResult {
     if entry.mode == "symlink" {
+        // Components()????
         if let Some(path::Component::Normal(link_target)) = entry.target.components().next() {
+            debug!("SUS COMPONENTS: {:?}", entry.target.components());
             create_etc_link(
                 &link_target,
                 etc_dir,
