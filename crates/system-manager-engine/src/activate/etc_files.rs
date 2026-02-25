@@ -359,10 +359,12 @@ where
             .join(SYSTEM_MANAGER_STATIC_NAME)
             .join(link_target);
         let absolute_target = etc_dir.join(SYSTEM_MANAGER_STATIC_NAME).join(link_target);
-
+        log::debug!("Absolute target: {:?}", &absolute_target);
+        log::debug!("Link path: {:?}", &link_path);
         if (link_path.exists() && link_path.is_dir() && !old_state.is_managed(&link_path))
             || is_systemd_dependency_dir(&absolute_target)
         {
+            log::debug!("1");
             if absolute_target.is_dir() {
                 // Auto-replace inside .wants/.requires directories
                 let effective_replace =
@@ -377,8 +379,10 @@ where
                     effective_replace,
                 )
             } else if replace_existing || is_inside_systemd_dependency_dir(&link_path) {
+                log::debug!("2");
                 backup_and_link(&target, &link_path, dir_state)
             } else {
+                log::debug!("3");
                 Err(ActivationError::with_partial_result(
                     dir_state,
                     anyhow::anyhow!(
@@ -395,6 +399,7 @@ where
         } else if (link_path.exists() || link_path.is_symlink())
             && !old_state.is_managed(&link_path)
         {
+            log::debug!("4");
             if replace_existing || is_inside_systemd_dependency_dir(&link_path) {
                 backup_and_link(&target, &link_path, dir_state)
             } else {
@@ -405,13 +410,14 @@ where
                 ))
             }
         } else {
+            log::debug!("5");
             let result = if link_path.exists() || link_path.is_symlink() {
                 fs::remove_file(&link_path)
                     .map_err(|e| ActivationError::with_partial_result(dir_state.clone(), e))
             } else {
                 Ok(())
             };
-
+            log::debug!("6");
             match result.and_then(|_| {
                 create_link(&target, &link_path)
                     .map_err(|e| ActivationError::with_partial_result(dir_state.clone(), e))
