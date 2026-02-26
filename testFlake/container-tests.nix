@@ -58,10 +58,14 @@ in
 
         # Wait for Ubuntu systemd to be ready
         machine.wait_for_unit("multi-user.target")
+        # System manager is trying to configure nix. Activation will get a partial error if we do not delete it.
+        machine.execute("rm -rf /etc/nix")
 
         # Nix is installed and profile is copied by the driver automatically
         # Activate system-manager
-        machine.activate()
+        activation_logs = machine.activate()
+        for line in activation_logs.split("\n"):
+           assert not "ERROR" in line, line
         machine.wait_for_unit("system-manager.target")
 
         with subtest("Verify services are running"):
