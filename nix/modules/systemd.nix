@@ -225,9 +225,19 @@ in
             {
               preferLocalBuild = true;
               allowSubstitutes = false;
+              packages = cfg.packages;
             }
             ''
+              set -e
               mkdir -p $out
+
+              for package in $packages
+              do
+                for hook in $package/lib/systemd/system/*
+                do
+                  ln -s $hook $out/
+                done
+              done
 
               for i in ${toString (lib.mapAttrsToList (n: v: v.unit) enabledUnits)}; do
                 fn=$(basename $i/*)
