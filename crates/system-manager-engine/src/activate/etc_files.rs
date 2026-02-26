@@ -1,5 +1,6 @@
 mod etc_tree;
 
+use anyhow::anyhow;
 use im::HashMap;
 use itertools::Itertools;
 use regex;
@@ -349,7 +350,22 @@ where
             .join(SYSTEM_MANAGER_STATIC_NAME)
             .join(link_target);
         let absolute_target = etc_dir.join(SYSTEM_MANAGER_STATIC_NAME).join(link_target);
-
+        // The target is a directory. Let's create the directory to /etc.
+        // Note: if we were not doing that, we'd end up linking the whole directory to SYSTEM_MANAGER_STATIC_NAME (itself linked in the nix-store) and we'd end up trying creating the children on themselves via the symlink indirection.
+        if !link_path.exists() && absolute_target.is_dir() {
+            log::error!("We're in the dir for {} !!!!!", &link_path.display());
+            if let Err(err) = fs::create_dir(&link_path) {
+                return Err(ActivationError::with_partial_result(
+                    dir_state,
+                    anyhow!(
+                        "Cannot create dir {}: {}, ignoring...",
+                        link_path.display(),
+                        err
+                    ),
+                ));
+            }
+        }
+        // The link is a directory and is not currently managed by system-manager. Recurse into it and link its content.
         if (link_path.exists() && link_path.is_dir() && !old_state.is_managed(&link_path))
             || is_systemd_dependency_dir(&absolute_target)
         {
@@ -377,11 +393,14 @@ where
                     ),
                 ))
             }
+        // The link is a symlink and is up to date. No-op.
         } else if link_path.is_symlink()
             && link_path.read_link().expect("Error reading link.") == target
         {
             log::debug!("Link {} up to date.", link_path.display());
             Ok(dir_state.register_managed_entry(&link_path))
+        // The link exists but is not currently managed by system-manager.
+        // Override it if it's a systemd dependency or if we're in a replace mode.
         } else if (link_path.exists() || link_path.is_symlink())
             && !old_state.is_managed(&link_path)
         {
@@ -394,6 +413,7 @@ where
                                     link_path.display()),
                 ))
             }
+        // The link exists and we're managing it. Let's update it.
         } else {
             let result = if link_path.exists() || link_path.is_symlink() {
                 fs::remove_file(&link_path)
