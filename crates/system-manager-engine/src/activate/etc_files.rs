@@ -350,10 +350,15 @@ where
             .join(SYSTEM_MANAGER_STATIC_NAME)
             .join(link_target);
         let absolute_target = etc_dir.join(SYSTEM_MANAGER_STATIC_NAME).join(link_target);
+        log::info!(
+            "GO iteration on entry {} from {}",
+            link_path.display(),
+            absolute_target.display()
+        );
         // The target is a directory. Let's create the directory to /etc.
         // Note: if we were not doing that, we'd end up linking the whole directory to SYSTEM_MANAGER_STATIC_NAME (itself linked in the nix-store) and we'd end up trying creating the children on themselves via the symlink indirection.
         if !link_path.exists() && absolute_target.is_dir() {
-            log::error!("We're in the dir for {} !!!!!", &link_path.display());
+            log::info!("prelude");
             if let Err(err) = fs::create_dir(&link_path) {
                 return Err(ActivationError::with_partial_result(
                     dir_state,
@@ -364,11 +369,13 @@ where
                     ),
                 ));
             }
-        }
+            dir_state.register_managed_entry(&link_path);
+        };
         // The link is a directory and is not currently managed by system-manager. Recurse into it and link its content.
         if (link_path.exists() && link_path.is_dir() && !old_state.is_managed(&link_path))
             || is_systemd_dependency_dir(&absolute_target)
         {
+            log::info!("a");
             if absolute_target.is_dir() {
                 // Auto-replace inside .wants/.requires directories
                 let effective_replace =
@@ -397,6 +404,7 @@ where
         } else if link_path.is_symlink()
             && link_path.read_link().expect("Error reading link.") == target
         {
+            log::info!("b");
             log::debug!("Link {} up to date.", link_path.display());
             Ok(dir_state.register_managed_entry(&link_path))
         // The link exists but is not currently managed by system-manager.
@@ -404,6 +412,7 @@ where
         } else if (link_path.exists() || link_path.is_symlink())
             && !old_state.is_managed(&link_path)
         {
+            log::info!("c");
             if replace_existing || is_inside_systemd_dependency_dir(&link_path) {
                 backup_and_link(&target, &link_path, dir_state)
             } else {
@@ -413,8 +422,9 @@ where
                                     link_path.display()),
                 ))
             }
-        // The link exists and we're managing it. Let's update it.
+        // There's no directory to create or recurse on. Let's try to create the symlink and potentially remove the old one.
         } else {
+            log::info!("d: oh no!");
             let result = if link_path.exists() || link_path.is_symlink() {
                 fs::remove_file(&link_path)
                     .map_err(|e| ActivationError::with_partial_result(dir_state.clone(), e))
@@ -488,7 +498,7 @@ fn create_etc_entry(
 fn create_dir_recursively(dir: &Path, state: FileTree) -> EtcActivationResult {
     use itertools::FoldWhile::{Continue, Done};
     use path::Component;
-
+    log::debug!("create_dir_recursively: {}", dir.display());
     let dirbuilder = DirBuilder::new();
     let (new_state, _) = dir
         .components()
