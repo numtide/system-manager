@@ -175,7 +175,9 @@ class Machine(testinfra.host.Host):
                     "systemctl list-jobs --no-pager 2>/dev/null | head -10", timeout=10
                 )
                 if jobs_result.returncode == 0 and jobs_result.stdout.strip():
-                    print(f"[{elapsed:.1f}s] Pending jobs:\n{jobs_result.stdout.strip()}")
+                    print(
+                        f"[{elapsed:.1f}s] Pending jobs:\n{jobs_result.stdout.strip()}"
+                    )
                 last_jobs_print = elapsed
             time.sleep(1)
 
@@ -204,7 +206,9 @@ class Machine(testinfra.host.Host):
                 if len(children) == 1:
                     print(f"[{elapsed:.1f}s] Found container PID: {children[0]}")
                     return int(children[0])
-                print(f"[{elapsed:.1f}s] Waiting for container init (children: {children})")
+                print(
+                    f"[{elapsed:.1f}s] Waiting for container init (children: {children})"
+                )
             except FileNotFoundError as e:
                 print(f"[{elapsed:.1f}s] Waiting for container init: {e}")
             except ValueError as e:
@@ -454,7 +458,7 @@ class Machine(testinfra.host.Host):
                 raise RuntimeError(msg)
             return res.stdout
 
-    def activate(self, profile: str | None = None) -> None:
+    def activate(self, profile: str | None = None) -> str:
         """Activate system-manager profile and display the output.
 
         Args:
@@ -483,6 +487,7 @@ class Machine(testinfra.host.Host):
             raise Error(msg)
 
         print(f"{Fore.GREEN}Activation complete{Style.RESET_ALL}")
+        return res.stdout.strip()
 
     def fail(self, command: str, timeout: int | None = None) -> str:
         """Execute a command that must fail, returning stdout."""
