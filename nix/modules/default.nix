@@ -297,8 +297,16 @@
           addToStore =
             name: file:
             pkgs.runCommandLocal "${name}-etc-link" { } ''
-              mkdir -p "$out/$(dirname "${file.target}")"
-              ln -s "${file.source}" "$out/${file.target}"
+              if [[ "${file.source}" = *'*'* ]]; then
+                # If the target name contains '*', perform globbing.
+                mkdir -p "$out/${file.target}"
+                for fn in ${file.source}; do
+                    ln -s "$fn" "$out/${file.target}/"
+                done
+              else
+                mkdir -p "$out/$(dirname "${file.target}")"
+                ln -s "${file.source}" "$out/${file.target}"
+              fi
             '';
 
           filteredEntries = lib.filterAttrs (_name: etcFile: etcFile.enable) config.environment.etc;
