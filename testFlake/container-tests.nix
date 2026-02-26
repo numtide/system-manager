@@ -163,6 +163,7 @@ in
         }
       )
     ];
+
     testScriptFunction =
       { toplevel, hostPkgs, ... }:
       ''
@@ -177,6 +178,32 @@ in
 
         with subtest("File from glob is present"):
             machine.succeed("test -f /etc/fail2ban/action.d/dummy.conf")
+      '';
+  };
+
+  container-systemd-packages = makeContainerTestFor "systemd-packages" {
+    modules = [
+      (
+        { pkgs, ... }:
+        {
+          systemd.packages = [ pkgs.fail2ban ];
+        }
+      )
+    ];
+    testScriptFunction =
+      { toplevel, hostPkgs, ... }:
+      ''
+        start_all()
+
+        machine.wait_for_unit("multi-user.target")
+
+        machine.activate()
+        machine.wait_for_unit("system-manager.target")
+
+        with subtest("Unit file from systemd.packages is present"):
+            unit = machine.file("/etc/systemd/system/fail2ban.service")
+            assert unit.exists, "fail2ban.service unit file should exist"
+            assert unit.is_symlink or unit.is_file, "fail2ban.service should be a file or symlink"
       '';
   };
 }
