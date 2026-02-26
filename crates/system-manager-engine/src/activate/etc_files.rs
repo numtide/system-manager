@@ -369,12 +369,11 @@ where
                         ),
                     ));
                 }
-           }
+            }
             dir_state = dir_state.register_managed_entry(&link_path);
         };
-        // The link is a directory and is not currently managed by system-manager. Recurse into it and link its content.
-        if (link_path.exists() && link_path.is_dir() && !old_state.is_managed(&link_path))
-            || is_systemd_dependency_dir(&absolute_target)
+        // The link is a directory or a systemd dependency. Recurse into it and link its content.
+        if (link_path.exists() && link_path.is_dir()) || is_systemd_dependency_dir(&absolute_target)
         {
             if absolute_target.is_dir() {
                 // Auto-replace inside .wants/.requires directories
