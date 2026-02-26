@@ -93,6 +93,13 @@ def main() -> None:
         closure_info=args.closure_info,
     )
 
+    # Prevent from running if stdin is a tty.
+    if sys.stdin.isatty() and not args.interactive:
+        print("It seems like you're using the test driver interactively without the --interactive flag.")
+        print("The non interactive test driver will mount something on /run and freeze your system.")
+        print("Let's play it safe: exiting")
+        sys.exit(1)
+
     # Check if running as root (required for systemd-nspawn)
     if os.geteuid() != 0:
         print(f"{Fore.RED}Error: This command must be run as root.{Style.RESET_ALL}")
