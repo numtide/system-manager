@@ -345,7 +345,7 @@ where
         replace_existing: bool,
     ) -> EtcActivationResult {
         let link_path = etc_dir.join(link_target);
-        let dir_state = create_dir_recursively(link_path.parent().unwrap(), state)?;
+        let mut dir_state = create_dir_recursively(link_path.parent().unwrap(), state)?;
         let target = upwards_path
             .join(SYSTEM_MANAGER_STATIC_NAME)
             .join(link_target);
@@ -369,7 +369,7 @@ where
                     ),
                 ));
             }
-            dir_state.register_managed_entry(&link_path);
+            dir_state = dir_state.register_managed_entry(&link_path);
         };
         // The link is a directory and is not currently managed by system-manager. Recurse into it and link its content.
         if (link_path.exists() && link_path.is_dir() && !old_state.is_managed(&link_path))
