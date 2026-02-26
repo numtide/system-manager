@@ -305,11 +305,16 @@
 
           srcDrvs = lib.mapAttrs addToStore filteredEntries;
 
+          staticDrvs = lib.mapAttrs addToStore (
+            lib.filterAttrs (name: etcFile: etcFile.mode == "symlink") filteredEntries
+          );
+
           entries = lib.mapAttrs (name: file: file // { source = "${srcDrvs.${name}}"; }) filteredEntries;
 
           staticEnv = pkgs.buildEnv {
             name = "etc-static-env";
-            paths = lib.attrValues srcDrvs;
+            # We only want symlinks there. Not files created with a mode.
+            paths = lib.attrValues staticDrvs;
           };
         in
         {

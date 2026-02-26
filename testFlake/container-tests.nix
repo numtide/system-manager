@@ -63,9 +63,12 @@ in
 
         # Nix is installed and profile is copied by the driver automatically
         # Activate system-manager
-        activation_logs = machine.activate()
-        for line in activation_logs.split("\n"):
-           assert not "ERROR" in line, line
+        def activate_and_check():
+          activation_logs = machine.activate()
+          for line in activation_logs.split("\n"):
+            assert not "ERROR" in line, line
+
+        activate_and_check()
         machine.wait_for_unit("system-manager.target")
 
         with subtest("Verify services are running"):
@@ -111,6 +114,8 @@ in
         with subtest("Verify tmpfiles.d configurations"):
             assert machine.file("/etc/tmpfiles.d/sample.conf").is_file, "sample.conf should exist"
             assert machine.file("/etc/tmpfiles.d/00-system-manager.conf").is_file, "00-system-manager.conf should exist"
+
+        activate_and_check()
       '';
   };
 
