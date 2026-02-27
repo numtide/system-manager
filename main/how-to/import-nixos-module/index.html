@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://system-manager.net/main/how-to/use-blueprint/">
+        <link rel="canonical" href="https://system-manager.net/main/how-to/import-nixos-module/">
       
       
-        <link rel="prev" href="../use-remote-flakes/">
+        <link rel="prev" href="../use-blueprint/">
       
       
-        <link rel="next" href="../import-nixos-module/">
+        <link rel="next" href="../test-configuration/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Use Blueprint - System Manager</title>
+        <title>Import a NixOS Module - System Manager</title>
       
     
     
@@ -133,7 +133,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#blueprint" class="md-skip">
+        <a href="#import-an-upstream-nixos-module" class="md-skip">
           Skip to content
         </a>
       
@@ -170,7 +170,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Use Blueprint
+              Import a NixOS Module
             
           </span>
         </div>
@@ -827,6 +827,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../use-blueprint/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Use Blueprint
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -846,7 +874,7 @@
   <span class="md-ellipsis">
     
   
-    Use Blueprint
+    Import a NixOS Module
   
 
     
@@ -864,7 +892,7 @@
   <span class="md-ellipsis">
     
   
-    Use Blueprint
+    Import a NixOS Module
   
 
     
@@ -890,10 +918,154 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#using-multiple-configuration-files-with-blueprint" class="md-nav__link">
+  <a href="#how-nixos-modules-are-loaded" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Using multiple configuration files with Blueprint
+        How NixOS modules are loaded
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#creating-stub-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Creating stub options
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adapting-service-targets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adapting service targets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-by-step-walkthrough" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step-by-step walkthrough
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step-by-step walkthrough">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-try-to-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Try to build
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-when-stubs-are-needed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. When stubs are needed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-configure-the-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Configure the service
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-verify" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Verify
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#real-world-example-sops-nix-stubs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real-world example: sops-nix stubs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tips" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tips
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-type-conflict-with-built-in-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option type conflict with built-in modules
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
       
     </span>
   </a>
@@ -904,34 +1076,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../import-nixos-module/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Import a NixOS Module
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -1741,10 +1885,154 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#using-multiple-configuration-files-with-blueprint" class="md-nav__link">
+  <a href="#how-nixos-modules-are-loaded" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Using multiple configuration files with Blueprint
+        How NixOS modules are loaded
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#creating-stub-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Creating stub options
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adapting-service-targets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adapting service targets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-by-step-walkthrough" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step-by-step walkthrough
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step-by-step walkthrough">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-try-to-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Try to build
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-when-stubs-are-needed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. When stubs are needed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-configure-the-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Configure the service
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-verify" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Verify
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#real-world-example-sops-nix-stubs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real-world example: sops-nix stubs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tips" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tips
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-type-conflict-with-built-in-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option type conflict with built-in modules
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
       
     </span>
   </a>
@@ -1819,217 +2107,270 @@
   
 
 
-<h1 id="blueprint">Blueprint<a class="headerlink" href="#blueprint" title="Permanent link">&para;</a></h1>
-<p>Blueprint is an opinionated library that maps a standard folder structure to flake outputs, allowing you to divide up your flake into individual files across these folders. This allows you to modularize and isolate these files so that they can be maintained individually and even shared across multiple projects.</p>
-<p>Blueprint has built-in support for System Manager, which means:</p>
-<ul>
-<li>You do not need to call <code>system-manager.lib.makeSystemConfig</code>; Blueprint calls this for you</li>
-<li>You must follow Blueprint's folder structure by placing your files under the <code>hosts</code> folder, and you must name your files <code>system-configuration.nix</code>.</li>
-<li>You can have multiple folders under the <code>hosts</code> folder (but one level deep), and you can access these using the standard nix specifier, e.g. <code>.#folder-name</code>.</li>
-</ul>
-<p>In this section we show you how to use Blueprint with System Manager.</p>
-<p>Blueprint provides its own initialization that you can start with if you don't already have a <code>flake.nix</code> file using Blueprint. The command to type is:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a>nix<span class="w"> </span>flake<span class="w"> </span>init<span class="w"> </span>-t<span class="w"> </span>github:numtide/blueprint
+<h1 id="import-an-upstream-nixos-module">Import an upstream NixOS module<a class="headerlink" href="#import-an-upstream-nixos-module" title="Permanent link">&para;</a></h1>
+<p>System Manager ships with a curated set of NixOS modules (nginx, ACME, userborn, nix settings), but the NixOS module library contains hundreds more.
+You can import additional NixOS modules into your system-manager configuration by referencing them through the <code>nixosModulesPath</code> special argument and providing stubs for any options the module expects but that system-manager does not define.</p>
+<p>This guide walks through the technique using real patterns from the system-manager codebase.</p>
+<h2 id="how-nixos-modules-are-loaded">How NixOS modules are loaded<a class="headerlink" href="#how-nixos-modules-are-loaded" title="Permanent link">&para;</a></h2>
+<p>When you call <code>makeSystemConfig</code>, system-manager passes <code>nixosModulesPath</code> as a special argument available to all modules.
+This path points to the NixOS modules directory inside nixpkgs (<code>&lt;nixpkgs&gt;/nixos/modules</code>), giving you access to the entire NixOS module library.</p>
+<p>An upstream NixOS module is imported by mapping its path relative to that directory:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span>
+<span class="normal"><a href="#__codelineno-0-2">2</a></span>
+<span class="normal"><a href="#__codelineno-0-3">3</a></span>
+<span class="normal"><a href="#__codelineno-0-4">4</a></span>
+<span class="normal"><a href="#__codelineno-0-5">5</a></span>
+<span class="normal"><a href="#__codelineno-0-6">6</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="p">{</span> nixosModulesPath<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2"></a><span class="p">{</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3"></a>  <span class="ss">imports</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4"></a>    <span class="p">(</span>nixosModulesPath <span class="o">+</span> <span class="s2">&quot;/services/monitoring/prometheus/exporters.nix&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5"></a>  <span class="p">];</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6"></a><span class="p">}</span>
 </code></pre></div></td></tr></table></div>
-<p>This results in the following flake:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1"> 1</a></span>
-<span class="normal"><a href="#__codelineno-1-2"> 2</a></span>
-<span class="normal"><a href="#__codelineno-1-3"> 3</a></span>
-<span class="normal"><a href="#__codelineno-1-4"> 4</a></span>
-<span class="normal"><a href="#__codelineno-1-5"> 5</a></span>
-<span class="normal"><a href="#__codelineno-1-6"> 6</a></span>
-<span class="normal"><a href="#__codelineno-1-7"> 7</a></span>
-<span class="normal"><a href="#__codelineno-1-8"> 8</a></span>
-<span class="normal"><a href="#__codelineno-1-9"> 9</a></span>
-<span class="normal"><a href="#__codelineno-1-10">10</a></span>
-<span class="normal"><a href="#__codelineno-1-11">11</a></span>
-<span class="normal"><a href="#__codelineno-1-12">12</a></span>
-<span class="normal"><a href="#__codelineno-1-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="p">{</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2"></a>  <span class="ss">description</span> <span class="o">=</span> <span class="s2">&quot;Simple flake with a devshell&quot;</span><span class="p">;</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3"></a>
-<a id="__codelineno-1-4" name="__codelineno-1-4"></a>  <span class="c1"># Add all your dependencies here</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5"></a>  <span class="ss">inputs</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6"></a>    nixpkgs<span class="o">.</span><span class="ss">url</span> <span class="o">=</span> <span class="s2">&quot;github:NixOS/nixpkgs?ref=nixos-unstable&quot;</span><span class="p">;</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7"></a>    blueprint<span class="o">.</span><span class="ss">url</span> <span class="o">=</span> <span class="s2">&quot;github:numtide/blueprint&quot;</span><span class="p">;</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8"></a>    blueprint<span class="o">.</span>inputs<span class="o">.</span>nixpkgs<span class="o">.</span><span class="ss">follows</span> <span class="o">=</span> <span class="s2">&quot;nixpkgs&quot;</span><span class="p">;</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9"></a>  <span class="p">};</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10"></a>
-<a id="__codelineno-1-11" name="__codelineno-1-11"></a>  <span class="c1"># Load the blueprint</span>
-<a id="__codelineno-1-12" name="__codelineno-1-12"></a>  <span class="ss">outputs</span> <span class="o">=</span> inputs<span class="p">:</span> inputs<span class="o">.</span>blueprint <span class="p">{</span> <span class="k">inherit</span> inputs<span class="p">;</span> <span class="p">};</span>
-<a id="__codelineno-1-13" name="__codelineno-1-13"></a><span class="p">}</span>
+<p>In practice, most NixOS modules reference options defined by other NixOS modules that system-manager does not include.
+When the module system encounters an undefined option, evaluation fails with an error like:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a>error: The option `boot.kernel.sysctl&#39; does not exist.
 </code></pre></div></td></tr></table></div>
-<p>Now add System Manager to its inputs section:</p>
+<p>The solution is to declare <em>stub options</em> that satisfy the module's references without implementing the underlying functionality.</p>
+<h2 id="creating-stub-options">Creating stub options<a class="headerlink" href="#creating-stub-options" title="Permanent link">&para;</a></h2>
+<p>A stub option declares an option name with a type and default value so that module evaluation succeeds.
+The simplest form uses <code>lib.types.raw</code>, which accepts any value without validation:</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span>
 <span class="normal"><a href="#__codelineno-2-2">2</a></span>
 <span class="normal"><a href="#__codelineno-2-3">3</a></span>
-<span class="normal"><a href="#__codelineno-2-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1"></a>    <span class="ss">system-manager</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2"></a>        <span class="ss">url</span> <span class="o">=</span> <span class="s2">&quot;github:numtide/system-manager&quot;</span><span class="p">;</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3"></a>        inputs<span class="o">.</span>nixpkgs<span class="o">.</span><span class="ss">follows</span> <span class="o">=</span> <span class="s2">&quot;nixpkgs&quot;</span><span class="p">;</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4"></a>    <span class="p">};</span>
+<span class="normal"><a href="#__codelineno-2-4">4</a></span>
+<span class="normal"><a href="#__codelineno-2-5">5</a></span>
+<span class="normal"><a href="#__codelineno-2-6">6</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="p">{</span> lib<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="p">{</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3"></a>  options<span class="o">.</span><span class="ss">boot</span> <span class="o">=</span> lib<span class="o">.</span>mkOption <span class="p">{</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4"></a>    <span class="ss">type</span> <span class="o">=</span> lib<span class="o">.</span>types<span class="o">.</span>raw<span class="p">;</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5"></a>  <span class="p">};</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6"></a><span class="p">}</span>
 </code></pre></div></td></tr></table></div>
-<p>Next, create a folder called <code>hosts</code>, and under that a folder called <code>default</code>:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span>
-<span class="normal"><a href="#__codelineno-3-2">2</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1"></a>mkdir<span class="w"> </span>-p<span class="w"> </span>hosts/default
-<a id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="nb">cd</span><span class="w"> </span>hosts/default
+<p>This is the pattern system-manager uses internally for <code>boot.*</code>, which many NixOS modules reference but which has no meaning outside NixOS.</p>
+<p>When you need the stub to carry a specific default value (for example, an empty list or <code>false</code>), use a concrete type:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-3-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-3-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-3-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-3-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-3-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-3-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-3-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-3-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-3-10">10</a></span>
+<span class="normal"><a href="#__codelineno-3-11">11</a></span>
+<span class="normal"><a href="#__codelineno-3-12">12</a></span>
+<span class="normal"><a href="#__codelineno-3-13">13</a></span>
+<span class="normal"><a href="#__codelineno-3-14">14</a></span>
+<span class="normal"><a href="#__codelineno-3-15">15</a></span>
+<span class="normal"><a href="#__codelineno-3-16">16</a></span>
+<span class="normal"><a href="#__codelineno-3-17">17</a></span>
+<span class="normal"><a href="#__codelineno-3-18">18</a></span>
+<span class="normal"><a href="#__codelineno-3-19">19</a></span>
+<span class="normal"><a href="#__codelineno-3-20">20</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="p">{</span> lib<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="p">{</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3"></a>  options<span class="o">.</span>services<span class="o">.</span><span class="ss">openssh</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4"></a>    <span class="ss">enable</span> <span class="o">=</span> lib<span class="o">.</span>mkOption <span class="p">{</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5"></a>      <span class="ss">type</span> <span class="o">=</span> lib<span class="o">.</span>types<span class="o">.</span>bool<span class="p">;</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6"></a>      <span class="ss">default</span> <span class="o">=</span> <span class="no">false</span><span class="p">;</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7"></a>    <span class="p">};</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8"></a>    <span class="ss">hostKeys</span> <span class="o">=</span> lib<span class="o">.</span>mkOption <span class="p">{</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9"></a>      <span class="ss">type</span> <span class="o">=</span> lib<span class="o">.</span>types<span class="o">.</span>listOf <span class="p">(</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10"></a>        lib<span class="o">.</span>types<span class="o">.</span>submodule <span class="p">{</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11"></a>          <span class="ss">options</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12"></a>            <span class="ss">path</span> <span class="o">=</span> lib<span class="o">.</span>mkOption <span class="p">{</span> <span class="ss">type</span> <span class="o">=</span> lib<span class="o">.</span>types<span class="o">.</span>path<span class="p">;</span> <span class="p">};</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13"></a>            <span class="ss">type</span> <span class="o">=</span> lib<span class="o">.</span>mkOption <span class="p">{</span> <span class="ss">type</span> <span class="o">=</span> lib<span class="o">.</span>types<span class="o">.</span>str<span class="p">;</span> <span class="p">};</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14"></a>          <span class="p">};</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15"></a>        <span class="p">}</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16"></a>      <span class="p">);</span>
+<a id="__codelineno-3-17" name="__codelineno-3-17"></a>      <span class="ss">default</span> <span class="o">=</span> <span class="p">[</span> <span class="p">];</span>
+<a id="__codelineno-3-18" name="__codelineno-3-18"></a>    <span class="p">};</span>
+<a id="__codelineno-3-19" name="__codelineno-3-19"></a>  <span class="p">};</span>
+<a id="__codelineno-3-20" name="__codelineno-3-20"></a><span class="p">}</span>
 </code></pre></div></td></tr></table></div>
-<p>Inside <code>default</code> is where you'll put your configuration file.</p>
-<p><strong>This configuration file must be named <code>system-configuration.nix</code>.</strong></p>
-<p>For example, here's a configuration file that installs <code>bat</code>:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1"> 1</a></span>
-<span class="normal"><a href="#__codelineno-4-2"> 2</a></span>
-<span class="normal"><a href="#__codelineno-4-3"> 3</a></span>
-<span class="normal"><a href="#__codelineno-4-4"> 4</a></span>
-<span class="normal"><a href="#__codelineno-4-5"> 5</a></span>
-<span class="normal"><a href="#__codelineno-4-6"> 6</a></span>
-<span class="normal"><a href="#__codelineno-4-7"> 7</a></span>
-<span class="normal"><a href="#__codelineno-4-8"> 8</a></span>
-<span class="normal"><a href="#__codelineno-4-9"> 9</a></span>
-<span class="normal"><a href="#__codelineno-4-10">10</a></span>
-<span class="normal"><a href="#__codelineno-4-11">11</a></span>
-<span class="normal"><a href="#__codelineno-4-12">12</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="p">{</span> lib<span class="p">,</span> pkgs<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+<p>This is the actual stub that system-manager uses to allow sops-nix to evaluate.
+The sops-nix module reads <code>services.openssh.hostKeys</code> to auto-detect SSH keys for age decryption; the empty default means no keys are auto-detected, and users set <code>sops.age.sshKeyPaths</code> explicitly instead.</p>
+<h2 id="adapting-service-targets">Adapting service targets<a class="headerlink" href="#adapting-service-targets" title="Permanent link">&para;</a></h2>
+<p>NixOS services typically declare <code>wantedBy = [ "multi-user.target" ]</code>.
+In system-manager, services must be wanted by <code>system-manager.target</code> to start during activation.
+Override this with <code>lib.mkForce</code>:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span>
+<span class="normal"><a href="#__codelineno-4-2">2</a></span>
+<span class="normal"><a href="#__codelineno-4-3">3</a></span>
+<span class="normal"><a href="#__codelineno-4-4">4</a></span>
+<span class="normal"><a href="#__codelineno-4-5">5</a></span>
+<span class="normal"><a href="#__codelineno-4-6">6</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="p">{</span> config<span class="p">,</span> lib<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2"></a><span class="p">{</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3"></a>  <span class="ss">config</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4"></a>    nixpkgs<span class="o">.</span><span class="ss">hostPlatform</span> <span class="o">=</span> <span class="s2">&quot;x86_64-linux&quot;</span><span class="p">;</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5"></a>    <span class="ss">environment</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6"></a>      <span class="c1"># Packages that should be installed on a system</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7"></a>      <span class="ss">systemPackages</span> <span class="o">=</span> <span class="p">[</span>
-<a id="__codelineno-4-8" name="__codelineno-4-8"></a>        pkgs<span class="o">.</span>bat
-<a id="__codelineno-4-9" name="__codelineno-4-9"></a>      <span class="p">];</span>
-<a id="__codelineno-4-10" name="__codelineno-4-10"></a>    <span class="p">};</span>
-<a id="__codelineno-4-11" name="__codelineno-4-11"></a>  <span class="p">};</span>
-<a id="__codelineno-4-12" name="__codelineno-4-12"></a><span class="p">}</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3"></a>  systemd<span class="o">.</span>services<span class="o">.</span><span class="ss">myservice</span> <span class="o">=</span> lib<span class="o">.</span>mkIf config<span class="o">.</span>services<span class="o">.</span>myservice<span class="o">.</span>enable <span class="p">{</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4"></a>    <span class="ss">wantedBy</span> <span class="o">=</span> lib<span class="o">.</span>mkForce <span class="p">[</span> <span class="s2">&quot;system-manager.target&quot;</span> <span class="p">];</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5"></a>  <span class="p">};</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6"></a><span class="p">}</span>
 </code></pre></div></td></tr></table></div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-</div>
-<p>Notice that we need to include <code>nixpkgs.hostPlatform</code> in this file, as there's no place to include it in the parent <code>flake.nix</code> file.</p>
-<p>Now return to the folder two levels up (the one containing <code>flake.nix</code>) and you can run System Manager:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1"></a>nix<span class="w"> </span>run<span class="w"> </span><span class="s1">&#39;github:numtide/system-manager&#39;</span><span class="w"> </span>--<span class="w"> </span>switch<span class="w"> </span>--flake<span class="w"> </span>.<span class="w"> </span>--sudo
+<p>This is exactly how the built-in nginx adapter works: it imports the upstream NixOS nginx module, then overrides the target in a local wrapper.</p>
+<h2 id="step-by-step-walkthrough">Step-by-step walkthrough<a class="headerlink" href="#step-by-step-walkthrough" title="Permanent link">&para;</a></h2>
+<p>This walkthrough imports the saslauthd module (Cyrus SASL authentication daemon) from nixpkgs.
+It is a self-contained 58-line module that defines a single systemd service with no external NixOS module dependencies, making it a straightforward candidate.</p>
+<h3 id="1-try-to-build">1. Try to build<a class="headerlink" href="#1-try-to-build" title="Permanent link">&para;</a></h3>
+<p>Create a module that imports saslauthd and adapts its service target:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-5-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-5-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-5-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-5-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-5-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-5-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-5-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-5-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-5-10">10</a></span>
+<span class="normal"><a href="#__codelineno-5-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="c1"># saslauthd.nix</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2"></a><span class="p">{</span> nixosModulesPath<span class="p">,</span> config<span class="p">,</span> lib<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3"></a><span class="p">{</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4"></a>  <span class="ss">imports</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5"></a>    <span class="p">(</span>nixosModulesPath <span class="o">+</span> <span class="s2">&quot;/services/system/saslauthd.nix&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6"></a>  <span class="p">];</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7"></a>
+<a id="__codelineno-5-8" name="__codelineno-5-8"></a>  systemd<span class="o">.</span>services<span class="o">.</span><span class="ss">saslauthd</span> <span class="o">=</span> lib<span class="o">.</span>mkIf config<span class="o">.</span>services<span class="o">.</span>saslauthd<span class="o">.</span>enable <span class="p">{</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9"></a>    <span class="ss">wantedBy</span> <span class="o">=</span> lib<span class="o">.</span>mkForce <span class="p">[</span> <span class="s2">&quot;system-manager.target&quot;</span> <span class="p">];</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10"></a>  <span class="p">};</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11"></a><span class="p">}</span>
 </code></pre></div></td></tr></table></div>
-<div class="admonition remember">
-<p class="admonition-title">Remember</p>
-<p>As mentioned elsewhere, if this is the first time running System Manager on this computer, you'll need to log out and log back in to pick up the new path.</p>
-</div>
-<p>Then you should find <code>bat</code> on your path:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1">1</a></span>
-<span class="normal"><a href="#__codelineno-6-2">2</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="gp">$ </span>which<span class="w"> </span>bat
-<a id="__codelineno-6-2" name="__codelineno-6-2"></a><span class="go">/run/system-manager/sw/bin//bat</span>
+<p>Add it to your <code>makeSystemConfig</code> modules list:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-6-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-6-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-6-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-6-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-6-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-6-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-6-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-6-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-6-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="c1"># flake.nix (relevant excerpt)</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2"></a>systemConfigs<span class="o">.</span><span class="ss">default</span> <span class="o">=</span> system-manager<span class="o">.</span>lib<span class="o">.</span>makeSystemConfig <span class="p">{</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3"></a>  <span class="ss">modules</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4"></a>    <span class="l">./saslauthd.nix</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5"></a>    <span class="p">{</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6"></a>      nixpkgs<span class="o">.</span><span class="ss">hostPlatform</span> <span class="o">=</span> <span class="s2">&quot;x86_64-linux&quot;</span><span class="p">;</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7"></a>      services<span class="o">.</span>saslauthd<span class="o">.</span><span class="ss">enable</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8"></a>    <span class="p">}</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9"></a>  <span class="p">];</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10"></a><span class="p">};</span>
 </code></pre></div></td></tr></table></div>
-<p>The default folder is called <code>default</code>; you can also refer to folders by name as mentioned earlier.</p>
-<p>If, for example, under the <code>hosts</code> folder you have a folder called <code>tree</code>, and inside <code>tree</code> you create a file called <code>system-configuration.nix</code> with the following contents:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1"> 1</a></span>
-<span class="normal"><a href="#__codelineno-7-2"> 2</a></span>
-<span class="normal"><a href="#__codelineno-7-3"> 3</a></span>
-<span class="normal"><a href="#__codelineno-7-4"> 4</a></span>
-<span class="normal"><a href="#__codelineno-7-5"> 5</a></span>
-<span class="normal"><a href="#__codelineno-7-6"> 6</a></span>
-<span class="normal"><a href="#__codelineno-7-7"> 7</a></span>
-<span class="normal"><a href="#__codelineno-7-8"> 8</a></span>
-<span class="normal"><a href="#__codelineno-7-9"> 9</a></span>
-<span class="normal"><a href="#__codelineno-7-10">10</a></span>
-<span class="normal"><a href="#__codelineno-7-11">11</a></span>
-<span class="normal"><a href="#__codelineno-7-12">12</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="p">{</span> lib<span class="p">,</span> pkgs<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2"></a><span class="p">{</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3"></a>  <span class="ss">config</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4"></a>    nixpkgs<span class="o">.</span><span class="ss">hostPlatform</span> <span class="o">=</span> <span class="s2">&quot;x86_64-linux&quot;</span><span class="p">;</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5"></a>    <span class="ss">environment</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6"></a>      <span class="c1"># Packages that should be installed on a system</span>
-<a id="__codelineno-7-7" name="__codelineno-7-7"></a>      <span class="ss">systemPackages</span> <span class="o">=</span> <span class="p">[</span>
-<a id="__codelineno-7-8" name="__codelineno-7-8"></a>        pkgs<span class="o">.</span>tree
-<a id="__codelineno-7-9" name="__codelineno-7-9"></a>      <span class="p">];</span>
-<a id="__codelineno-7-10" name="__codelineno-7-10"></a>    <span class="p">};</span>
-<a id="__codelineno-7-11" name="__codelineno-7-11"></a>  <span class="p">};</span>
-<a id="__codelineno-7-12" name="__codelineno-7-12"></a><span class="p">}</span>
+<p>Then build:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1"></a>nix<span class="w"> </span>build<span class="w"> </span>.#systemConfigs.default
 </code></pre></div></td></tr></table></div>
-<p>Then you can choose to install <code>tree</code> by specifying the <code>tree</code> folder like so:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1"></a>nix<span class="w"> </span>run<span class="w"> </span><span class="s1">&#39;github:numtide/system-manager&#39;</span><span class="w"> </span>--<span class="w"> </span>switch<span class="w"> </span>--flake<span class="w"> </span><span class="s1">&#39;.#tree&#39;</span><span class="w"> </span>--sudo
+<p>Because this module only uses <code>systemd.services</code>, which system-manager already provides, no stubs are needed and the build succeeds.</p>
+<h3 id="2-when-stubs-are-needed">2. When stubs are needed<a class="headerlink" href="#2-when-stubs-are-needed" title="Permanent link">&para;</a></h3>
+<p>If the build had failed with an error like:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1"></a>error: The option `some.nixos.option&#39; does not exist.
 </code></pre></div></td></tr></table></div>
-<h2 id="using-multiple-configuration-files-with-blueprint">Using multiple configuration files with Blueprint<a class="headerlink" href="#using-multiple-configuration-files-with-blueprint" title="Permanent link">&para;</a></h2>
-<p>If you want to load multiple configuration files at once, you can create a special <code>system-configuration.nix</code> file that loads multiple files from a <code>modules</code> folder (or any name you choose). To accomplish this, create a folder under <code>hosts</code>; for example, you might name it <code>cli-tools</code>. Starting in the folder with <code>flake.nix</code>:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1"></a>mkdir<span class="w"> </span>-p<span class="w"> </span>hosts/cli-tools/modules
+<p>you would add stub options to the same module (or a separate file) to satisfy the reference, as described in <a href="#creating-stub-options">creating stub options</a> above.</p>
+<h3 id="3-configure-the-service">3. Configure the service<a class="headerlink" href="#3-configure-the-service" title="Permanent link">&para;</a></h3>
+<p>The upstream module options are now available in your configuration:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1">1</a></span>
+<span class="normal"><a href="#__codelineno-9-2">2</a></span>
+<span class="normal"><a href="#__codelineno-9-3">3</a></span>
+<span class="normal"><a href="#__codelineno-9-4">4</a></span>
+<span class="normal"><a href="#__codelineno-9-5">5</a></span>
+<span class="normal"><a href="#__codelineno-9-6">6</a></span>
+<span class="normal"><a href="#__codelineno-9-7">7</a></span>
+<span class="normal"><a href="#__codelineno-9-8">8</a></span>
+<span class="normal"><a href="#__codelineno-9-9">9</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="p">{</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2"></a>  services<span class="o">.</span><span class="ss">saslauthd</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3"></a>    <span class="ss">enable</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4"></a>    <span class="ss">mechanism</span> <span class="o">=</span> <span class="s2">&quot;pam&quot;</span><span class="p">;</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5"></a>    <span class="ss">config</span> <span class="o">=</span> <span class="s s-Multiline">&#39;&#39;</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6"></a><span class="s s-Multiline">      # saslauthd configuration</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7"></a><span class="s s-Multiline">    &#39;&#39;</span><span class="p">;</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8"></a>  <span class="p">};</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9"></a><span class="p">}</span>
 </code></pre></div></td></tr></table></div>
-<p>Then, inside the <code>cli-tools</code> folder, create a <code>system-configuration.nix</code> file with the following:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1"> 1</a></span>
-<span class="normal"><a href="#__codelineno-10-2"> 2</a></span>
-<span class="normal"><a href="#__codelineno-10-3"> 3</a></span>
-<span class="normal"><a href="#__codelineno-10-4"> 4</a></span>
-<span class="normal"><a href="#__codelineno-10-5"> 5</a></span>
-<span class="normal"><a href="#__codelineno-10-6"> 6</a></span>
-<span class="normal"><a href="#__codelineno-10-7"> 7</a></span>
-<span class="normal"><a href="#__codelineno-10-8"> 8</a></span>
-<span class="normal"><a href="#__codelineno-10-9"> 9</a></span>
-<span class="normal"><a href="#__codelineno-10-10">10</a></span>
-<span class="normal"><a href="#__codelineno-10-11">11</a></span>
-<span class="normal"><a href="#__codelineno-10-12">12</a></span>
-<span class="normal"><a href="#__codelineno-10-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="p">{</span> config<span class="p">,</span> lib<span class="p">,</span> pkgs<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2"></a><span class="p">{</span>
-<a id="__codelineno-10-3" name="__codelineno-10-3"></a>  <span class="c1"># Import all your modular configs - they auto-merge!</span>
-<a id="__codelineno-10-4" name="__codelineno-10-4"></a>  <span class="ss">imports</span> <span class="o">=</span> <span class="p">[</span>
-<a id="__codelineno-10-5" name="__codelineno-10-5"></a>    <span class="l">./modules/tldr.nix</span>
-<a id="__codelineno-10-6" name="__codelineno-10-6"></a>    <span class="l">./modules/cowsay.nix</span>
-<a id="__codelineno-10-7" name="__codelineno-10-7"></a>  <span class="p">];</span>
-<a id="__codelineno-10-8" name="__codelineno-10-8"></a>
-<a id="__codelineno-10-9" name="__codelineno-10-9"></a>  <span class="c1"># Base configuration that applies to everything</span>
-<a id="__codelineno-10-10" name="__codelineno-10-10"></a>  <span class="ss">config</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-10-11" name="__codelineno-10-11"></a>    nixpkgs<span class="o">.</span><span class="ss">hostPlatform</span> <span class="o">=</span> <span class="s2">&quot;x86_64-linux&quot;</span><span class="p">;</span>
-<a id="__codelineno-10-12" name="__codelineno-10-12"></a>  <span class="p">};</span>
-<a id="__codelineno-10-13" name="__codelineno-10-13"></a><span class="p">}</span>
+<h3 id="4-verify">4. Verify<a class="headerlink" href="#4-verify" title="Permanent link">&para;</a></h3>
+<p>Build the configuration to confirm it evaluates without errors:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1"></a>nix<span class="w"> </span>build<span class="w"> </span>.#systemConfigs.default
 </code></pre></div></td></tr></table></div>
-<p>(Notice this time we can put the <code>nixpkgs.hostPlatform</code> in a single place. As such we won't need it in the configuration files.)</p>
-<p>Now move into the <code>modules</code> folder:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-11-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="nb">cd</span><span class="w"> </span>modules
+<h2 id="real-world-example-sops-nix-stubs">Real-world example: sops-nix stubs<a class="headerlink" href="#real-world-example-sops-nix-stubs" title="Permanent link">&para;</a></h2>
+<p>The system-manager codebase provides a concrete reference for this technique.
+The sops-nix module uses NixOS activation scripts, which system-manager does not support.
+To allow the module to evaluate, system-manager declares stub options in <code>nix/modules/upstream/sops-nix.nix</code>:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-11-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-11-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-11-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-11-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-11-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-11-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-11-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-11-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-11-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-11-10">10</a></span>
+<span class="normal"><a href="#__codelineno-11-11">11</a></span>
+<span class="normal"><a href="#__codelineno-11-12">12</a></span>
+<span class="normal"><a href="#__codelineno-11-13">13</a></span>
+<span class="normal"><a href="#__codelineno-11-14">14</a></span>
+<span class="normal"><a href="#__codelineno-11-15">15</a></span>
+<span class="normal"><a href="#__codelineno-11-16">16</a></span>
+<span class="normal"><a href="#__codelineno-11-17">17</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="p">{</span> lib<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2"></a><span class="p">{</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3"></a>  options<span class="o">.</span>system<span class="o">.</span><span class="ss">activationScripts</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4"></a>    <span class="ss">generate-age-key</span> <span class="o">=</span> lib<span class="o">.</span>mkOption <span class="p">{</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5"></a>      <span class="ss">type</span> <span class="o">=</span> lib<span class="o">.</span>types<span class="o">.</span>raw<span class="p">;</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6"></a>      <span class="ss">default</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">;</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7"></a>    <span class="p">};</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8"></a>    <span class="ss">setupSecrets</span> <span class="o">=</span> lib<span class="o">.</span>mkOption <span class="p">{</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9"></a>      <span class="ss">type</span> <span class="o">=</span> lib<span class="o">.</span>types<span class="o">.</span>raw<span class="p">;</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10"></a>      <span class="ss">default</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">;</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11"></a>    <span class="p">};</span>
+<a id="__codelineno-11-12" name="__codelineno-11-12"></a>    <span class="ss">setupSecretsForUsers</span> <span class="o">=</span> lib<span class="o">.</span>mkOption <span class="p">{</span>
+<a id="__codelineno-11-13" name="__codelineno-11-13"></a>      <span class="ss">type</span> <span class="o">=</span> lib<span class="o">.</span>types<span class="o">.</span>raw<span class="p">;</span>
+<a id="__codelineno-11-14" name="__codelineno-11-14"></a>      <span class="ss">default</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">;</span>
+<a id="__codelineno-11-15" name="__codelineno-11-15"></a>    <span class="p">};</span>
+<a id="__codelineno-11-16" name="__codelineno-11-16"></a>  <span class="p">};</span>
+<a id="__codelineno-11-17" name="__codelineno-11-17"></a><span class="p">}</span>
 </code></pre></div></td></tr></table></div>
-<p>And create two files here:</p>
-<p>tldr.nix:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-12-1"> 1</a></span>
-<span class="normal"><a href="#__codelineno-12-2"> 2</a></span>
-<span class="normal"><a href="#__codelineno-12-3"> 3</a></span>
-<span class="normal"><a href="#__codelineno-12-4"> 4</a></span>
-<span class="normal"><a href="#__codelineno-12-5"> 5</a></span>
-<span class="normal"><a href="#__codelineno-12-6"> 6</a></span>
-<span class="normal"><a href="#__codelineno-12-7"> 7</a></span>
-<span class="normal"><a href="#__codelineno-12-8"> 8</a></span>
-<span class="normal"><a href="#__codelineno-12-9"> 9</a></span>
-<span class="normal"><a href="#__codelineno-12-10">10</a></span>
-<span class="normal"><a href="#__codelineno-12-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="p">{</span> lib<span class="p">,</span> pkgs<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
-<a id="__codelineno-12-2" name="__codelineno-12-2"></a><span class="p">{</span>
-<a id="__codelineno-12-3" name="__codelineno-12-3"></a>  <span class="ss">config</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-12-4" name="__codelineno-12-4"></a>    <span class="ss">environment</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-12-5" name="__codelineno-12-5"></a>      <span class="c1"># Packages that should be installed on a system</span>
-<a id="__codelineno-12-6" name="__codelineno-12-6"></a>      <span class="ss">systemPackages</span> <span class="o">=</span> <span class="p">[</span>
-<a id="__codelineno-12-7" name="__codelineno-12-7"></a>        pkgs<span class="o">.</span>tldr
-<a id="__codelineno-12-8" name="__codelineno-12-8"></a>      <span class="p">];</span>
-<a id="__codelineno-12-9" name="__codelineno-12-9"></a>    <span class="p">};</span>
-<a id="__codelineno-12-10" name="__codelineno-12-10"></a>  <span class="p">};</span>
-<a id="__codelineno-12-11" name="__codelineno-12-11"></a><span class="p">}</span>
+<p>These stubs absorb the values that sops-nix writes to activation scripts without executing them.
+The actual secret decryption is handled differently in system-manager through a systemd service.</p>
+<h2 id="tips">Tips<a class="headerlink" href="#tips" title="Permanent link">&para;</a></h2>
+<p>Not every NixOS module can work with system-manager.
+Modules that depend on kernel features (<code>boot.*</code>), the NixOS activation system, or NixOS-specific infrastructure like the NixOS module evaluator may require more extensive stubs or may not be practical to port.
+Services that only need systemd units, <code>/etc</code> files, and packages are the best candidates.</p>
+<p>When evaluating whether a module is worth importing, read its source in nixpkgs to understand its dependencies.
+A module that primarily generates a systemd service and a configuration file is straightforward to adapt.
+A module that deeply integrates with the NixOS activation system or requires multiple other NixOS modules will need proportionally more stubs.</p>
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<h3 id="option-type-conflict-with-built-in-modules">Option type conflict with built-in modules<a class="headerlink" href="#option-type-conflict-with-built-in-modules" title="Permanent link">&para;</a></h3>
+<p>If you previously created a stub for an option that system-manager now provides as a built-in module, evaluation will fail with a type conflict error:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-12-1">1</a></span>
+<span class="normal"><a href="#__codelineno-12-2">2</a></span>
+<span class="normal"><a href="#__codelineno-12-3">3</a></span>
+<span class="normal"><a href="#__codelineno-12-4">4</a></span>
+<span class="normal"><a href="#__codelineno-12-5">5</a></span>
+<span class="normal"><a href="#__codelineno-12-6">6</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1"></a>error: The option `networking.firewall&#39; in module `/nix/store/...-source/modules/nebula/config.nix&#39;
+<a id="__codelineno-12-2" name="__codelineno-12-2"></a>  would be a parent of the following options, but its type `attribute set of anything&#39;
+<a id="__codelineno-12-3" name="__codelineno-12-3"></a>  does not support nested options.
+<a id="__codelineno-12-4" name="__codelineno-12-4"></a>    - option(s) with prefix `networking.firewall.allowedTCPPorts&#39; in module `...firewall.nix&#39;
+<a id="__codelineno-12-5" name="__codelineno-12-5"></a>    - option(s) with prefix `networking.firewall.enable&#39; in module `...firewall.nix&#39;
+<a id="__codelineno-12-6" name="__codelineno-12-6"></a>    ...
 </code></pre></div></td></tr></table></div>
-<p>cowsay.nix:
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-13-1"> 1</a></span>
-<span class="normal"><a href="#__codelineno-13-2"> 2</a></span>
-<span class="normal"><a href="#__codelineno-13-3"> 3</a></span>
-<span class="normal"><a href="#__codelineno-13-4"> 4</a></span>
-<span class="normal"><a href="#__codelineno-13-5"> 5</a></span>
-<span class="normal"><a href="#__codelineno-13-6"> 6</a></span>
-<span class="normal"><a href="#__codelineno-13-7"> 7</a></span>
-<span class="normal"><a href="#__codelineno-13-8"> 8</a></span>
-<span class="normal"><a href="#__codelineno-13-9"> 9</a></span>
-<span class="normal"><a href="#__codelineno-13-10">10</a></span>
-<span class="normal"><a href="#__codelineno-13-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1"></a><span class="p">{</span> lib<span class="p">,</span> pkgs<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
-<a id="__codelineno-13-2" name="__codelineno-13-2"></a><span class="p">{</span>
-<a id="__codelineno-13-3" name="__codelineno-13-3"></a>  <span class="ss">config</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-13-4" name="__codelineno-13-4"></a>    <span class="ss">environment</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-13-5" name="__codelineno-13-5"></a>      <span class="c1"># Packages that should be installed on a system</span>
-<a id="__codelineno-13-6" name="__codelineno-13-6"></a>      <span class="ss">systemPackages</span> <span class="o">=</span> <span class="p">[</span>
-<a id="__codelineno-13-7" name="__codelineno-13-7"></a>        pkgs<span class="o">.</span>cowsay
-<a id="__codelineno-13-8" name="__codelineno-13-8"></a>      <span class="p">];</span>
-<a id="__codelineno-13-9" name="__codelineno-13-9"></a>    <span class="p">};</span>
-<a id="__codelineno-13-10" name="__codelineno-13-10"></a>  <span class="p">};</span>
-<a id="__codelineno-13-11" name="__codelineno-13-11"></a><span class="p">}</span>
-</code></pre></div></td></tr></table></div></p>
-<p>Now you can return to the top level where your <code>flake.nix</code> file is and run these two configuration files:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-14-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1"></a>nix<span class="w"> </span>run<span class="w"> </span><span class="s1">&#39;github:numtide/system-manager&#39;</span><span class="w"> </span>--<span class="w"> </span>switch<span class="w"> </span>--flake<span class="w"> </span><span class="s1">&#39;.#cli-tools&#39;</span><span class="w"> </span>--sudo
+<p>This happens when a catch-all stub like</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-13-1">1</a></span>
+<span class="normal"><a href="#__codelineno-13-2">2</a></span>
+<span class="normal"><a href="#__codelineno-13-3">3</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1"></a>options<span class="o">.</span>networking<span class="o">.</span><span class="ss">firewall</span> <span class="o">=</span> lib<span class="o">.</span>mkOption <span class="p">{</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2"></a>  <span class="ss">type</span> <span class="o">=</span> <span class="k">with</span> lib<span class="o">.</span>types<span class="p">;</span> lazyAttrsOf raw<span class="p">;</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3"></a><span class="p">};</span>
 </code></pre></div></td></tr></table></div>
-<p>This means if you want to include various recipes, you can easily do so.</p>
+<p>conflicts with system-manager's structured option declarations for the same path.
+The Nix module system cannot reconcile a flat <code>lazyAttrsOf raw</code> type with nested typed options defined by another module.</p>
+<p>The fix is to remove your stub.
+System-manager's built-in module already defines the options with proper types and defaults, so the stub is no longer needed.
+If your imported NixOS module sets firewall options like <code>networking.firewall.allowedTCPPorts</code>, system-manager will accept them and emit a warning listing the configured ports, since it does not manage firewall rules on the host.</p>
+<p>This pattern applies to any option path where your configuration declares a broad type (<code>raw</code>, <code>lazyAttrsOf raw</code>) and a system-manager module later introduces structured options under the same path.
+When you see this class of error, check whether system-manager now ships a module covering those options and remove the redundant stub.</p>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../../reference/modules/">Module options reference</a> for options already available in system-manager</li>
+<li><a href="../../explanation/nixos-comparison/">NixOS comparison</a> for differences between NixOS and system-manager</li>
+<li><a href="../test-configuration/">Test configuration</a> for validating your configuration with container tests</li>
+</ul>
 
 
 
@@ -2052,7 +2393,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="January 10, 2026 12:40:24 UTC">January 10, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="February 24, 2026 14:35:25 UTC">February 24, 2026</span>
   </span>
 
     
@@ -2062,7 +2403,7 @@
     <span class="md-icon" title="Created">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="January 6, 2026 13:05:24 UTC">January 6, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="February 6, 2026 15:40:09 UTC">February 6, 2026</span>
   </span>
 
     
@@ -2093,7 +2434,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../use-remote-flakes/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Use Remote Flakes">
+          <a href="../use-blueprint/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Use Blueprint">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -2103,20 +2444,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Use Remote Flakes
+                Use Blueprint
               </div>
             </div>
           </a>
         
         
           
-          <a href="../import-nixos-module/" class="md-footer__link md-footer__link--next" aria-label="Next: Import a NixOS Module">
+          <a href="../test-configuration/" class="md-footer__link md-footer__link--next" aria-label="Next: Test Configuration">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Import a NixOS Module
+                Test Configuration
               </div>
             </div>
             <div class="md-footer__button md-icon">
