@@ -35,6 +35,16 @@
           group = "root";
         };
 
+        "a/a" = {
+          text = "hello";
+          mode = "symlink";
+        };
+
+        "a/b" = {
+          text = "helllo";
+          mode = "symlink";
+        };
+
         "a/nested/example/foo3" = {
           text = "boo!";
           mode = "0764";
