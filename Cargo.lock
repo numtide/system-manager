@@ -373,6 +373,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "lazy_errors"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "38563710a0241a6df6b8bdd2319094df44181e93133e78c669c57f3052845baf"
+
+[[package]]
 name = "leb128fmt"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -687,6 +693,7 @@ dependencies = [
  "glob",
  "im",
  "itertools",
+ "lazy_errors",
  "log",
  "nix",
  "regex",

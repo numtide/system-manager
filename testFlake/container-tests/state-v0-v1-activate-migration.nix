@@ -72,9 +72,7 @@ forEachDistro "state-v0-v1-migration-activate" (
             assert file.contains(content), f"{path} should contain {content}"
 
         # Let's activate the profile with a v0 state file (using an old system-manager checkout)
-        activation_logs = machine.succeed("${v0TopLevel}/bin/activate")
-        for line in activation_logs.split("\n"):
-              assert not "ERROR" in line, line
+        machine.succeed("${v0TopLevel}/bin/activate")
         machine.wait_for_unit("system-manager.target")
 
         with subtest("Verify correct files are created"):
@@ -84,9 +82,7 @@ forEachDistro "state-v0-v1-migration-activate" (
             check_file("/etc/b/link", "link")
 
         # Let's try to deactivate the machine with the new binary, making sure the state migration works.
-        activation_logs = machine.succeed("${toplevel}/bin/activate")
-        for line in activation_logs.split("\n"):
-              assert ((not "ERROR" in line) and (not "WARN" in line)), line
+        machine.succeed("${toplevel}/bin/activate")
 
         # Check the state backup works
         backup = machine.file("/var/lib/system-manager/state/system-manager-state.json.v0back")

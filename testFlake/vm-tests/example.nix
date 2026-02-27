@@ -28,8 +28,8 @@ forEachUbuntuImage "example" {
       nobody_shell_before = vm.succeed("getent passwd nobody").strip().split(":")[-1]
 
       vm.succeed("touch /etc/foo_test")
-      vm.succeed("${toplevel}/bin/activate 2>&1 | tee /tmp/output.log")
-      vm.succeed("grep -F 'Error while creating file in /etc: Unmanaged path already exists in filesystem, please remove it and run system-manager again: /etc/foo_test' /tmp/output.log")
+      output = vm.fail("${toplevel}/bin/activate 2>&1")
+      assert "Unmanaged path already exists" in output, f"Expected unmanaged path error, got: {output}"
       vm.succeed("rm /etc/foo_test")
 
       ${system-manager.lib.activateProfileSnippet {
@@ -79,7 +79,6 @@ forEachUbuntuImage "example" {
         node = "vm";
         profile = newConfig;
       }}
-      print(vm.succeed("cat /tmp/output.log"))
 
       print(vm.succeed("cat /run/secrets/test"))
 
