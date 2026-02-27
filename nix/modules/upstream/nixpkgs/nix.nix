@@ -1,4 +1,9 @@
-{ lib, pkgs, ... }:
+{
+  lib,
+  pkgs,
+  config,
+  ...
+}:
 {
   options = {
     # options coming from modules/services/system/nix-daemon.nix that we cannot import just yet because it
@@ -6,7 +11,7 @@
     nix = {
       enable = lib.mkOption {
         type = lib.types.bool;
-        default = true;
+        default = false;
         description = ''
           Whether to enable Nix.
           Disabling Nix makes the system hard to modify and the Nix programs and configuration will not be made available by NixOS itself.
@@ -23,7 +28,9 @@
     };
   };
 
-  config = {
+  config = lib.mkIf config.nix.enable {
+
+    environment.etc."nix/nix.conf".replaceExisting = true;
     nix.settings.experimental-features = lib.mkDefault [
       "nix-command"
       "flakes"
