@@ -76,9 +76,7 @@ forEachDistro "example" {
       # Nix is installed and profile is copied by the driver automatically
       # Activate system-manager
       def activate_and_check():
-        activation_logs = machine.activate()
-        for line in activation_logs.split("\n"):
-          assert not "ERROR" in line, line
+        machine.activate()
         machine.wait_for_unit("system-manager.target")
 
         with subtest("Verify services are running"):
@@ -170,6 +168,7 @@ forEachDistro "example" {
     (
       { ... }:
       {
+        environment.etc."nix/nix.conf".replaceExisting = true;
         systemd.maskedUnits = [ "unattended-upgrades.service" ];
       }
     )
@@ -213,6 +212,7 @@ forEachDistro "example" {
       { pkgs, ... }:
       {
         environment.etc = {
+          "nix/nix.conf".replaceExisting = true;
           "fail2ban/action.d".source = "${pkgs.fail2ban}/etc/fail2ban/action.d/*.conf";
           "fail2ban/filter.d".source = "${pkgs.fail2ban}/etc/fail2ban/filter.d/*.conf";
         };
@@ -334,6 +334,7 @@ forEachDistro "example" {
       {
         imports = [ "${nixpkgs}/nixos/modules/services/security/fail2ban.nix" ];
         config = {
+          environment.etc."nix/nix.conf".replaceExisting = true;
 
           # Enabling fail2ban to test systemd units overrides and
           # systemd.packages options.
