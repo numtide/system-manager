@@ -49,7 +49,7 @@
       containerChecks =
         system:
         import ./container-tests.nix {
-          inherit system;
+          inherit nixpkgs system;
           inherit (nixpkgs) lib;
           hostPkgs = nixpkgs.legacyPackages.${system};
           inherit system-manager;

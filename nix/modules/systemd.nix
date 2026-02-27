@@ -215,8 +215,6 @@ in
 
     environment.etc =
       let
-        allowCollisions = false;
-
         enabledUnits = lib.filterAttrs (_: unit: unit.enable) cfg.units;
       in
       {
@@ -245,18 +243,8 @@ in
                   if [ "$(readlink -f $i/$fn)" = /dev/null ]; then
                     ln -sfn /dev/null $out/$fn
                   else
-                    ${
-                      if allowCollisions then
-                        ''
-                          mkdir -p $out/$fn.d
-                          ln -s $i/$fn $out/$fn.d/overrides.conf
-                        ''
-                      else
-                        ''
-                          echo "Found multiple derivations configuring $fn!"
-                          exit 1
-                        ''
-                    }
+                    mkdir -p $out/$fn.d
+                    ln -s $i/$fn $out/$fn.d/overrides.conf
                   fi
                 else
                   ln -fs $i/$fn $out/
