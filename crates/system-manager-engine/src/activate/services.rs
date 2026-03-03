@@ -77,7 +77,7 @@ pub fn activate(
 
     let service_manager = systemd::ServiceManager::new_session()
         .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
-    let job_monitor = service_manager
+    let mut job_monitor = service_manager
         .monitor_jobs_init()
         .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
     let timeout = Some(Duration::from_secs(30));
@@ -89,7 +89,7 @@ pub fn activate(
     units_to_stop.extend(convert_services(&masked));
     wait_for_jobs(
         &service_manager,
-        &job_monitor,
+        &mut job_monitor,
         stop_services(&service_manager, units_to_stop),
         &timeout,
     )
@@ -97,7 +97,7 @@ pub fn activate(
 
     wait_for_jobs(
         &service_manager,
-        &job_monitor,
+        &mut job_monitor,
         reload_or_restart_units(&service_manager, convert_services(&services_to_reload))
             + start_units(&service_manager, ["system-manager.target"]),
         &timeout,
@@ -215,7 +215,7 @@ pub fn deactivate(old_services: Services) -> ServiceActivationResult {
     let service_manager = systemd::ServiceManager::new_session()
         .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
     if !stoppable.is_empty() {
-        let job_monitor = service_manager
+        let mut job_monitor = service_manager
             .monitor_jobs_init()
             .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
         let timeout = Some(Duration::from_secs(30));
@@ -226,7 +226,7 @@ pub fn deactivate(old_services: Services) -> ServiceActivationResult {
         // still knows about these units.
         wait_for_jobs(
             &service_manager,
-            &job_monitor,
+            &mut job_monitor,
             stop_services(&service_manager, units_to_stop),
             &timeout,
         )
@@ -347,7 +347,7 @@ where
 
 fn wait_for_jobs(
     service_manager: &systemd::ServiceManager,
-    job_monitor: &systemd::JobMonitor,
+    job_monitor: &mut systemd::JobMonitor,
     jobs: HashSet<JobId>,
     timeout: &Option<Duration>,
 ) -> anyhow::Result<()> {
@@ -370,7 +370,7 @@ impl From<JobId> for String {
 
 pub fn restart_sysinit_reactivation_target() -> anyhow::Result<()> {
     let service_manager = systemd::ServiceManager::new_session()?;
-    let job_monitor = service_manager.monitor_jobs_init()?;
+    let mut job_monitor = service_manager.monitor_jobs_init()?;
     let timeout = Some(Duration::from_secs(30));
 
     log::info!("Reloading the systemd daemon...");
@@ -382,7 +382,7 @@ pub fn restart_sysinit_reactivation_target() -> anyhow::Result<()> {
         "restarting",
     );
 
-    wait_for_jobs(&service_manager, &job_monitor, jobs, &timeout)?;
+    wait_for_jobs(&service_manager, &mut job_monitor, jobs, &timeout)?;
     Ok(())
 }
 
@@ -401,7 +401,7 @@ pub fn restart_userborn_if_exists() -> anyhow::Result<()> {
     }
 
     log::info!("Restarting userborn.service to create users before tmpfiles...");
-    let job_monitor = service_manager.monitor_jobs_init()?;
+    let mut job_monitor = service_manager.monitor_jobs_init()?;
     let timeout = Some(Duration::from_secs(30));
 
     // We use restart rather than start because userborn is a oneshot service
@@ -412,7 +412,7 @@ pub fn restart_userborn_if_exists() -> anyhow::Result<()> {
         "restarting",
     );
 
-    wait_for_jobs(&service_manager, &job_monitor, jobs, &timeout)?;
+    wait_for_jobs(&service_manager, &mut job_monitor, jobs, &timeout)?;
     log::info!("userborn.service completed");
     Ok(())
 }
