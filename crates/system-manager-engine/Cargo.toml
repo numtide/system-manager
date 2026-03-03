@@ -17,7 +17,7 @@ path = "src/main.rs"
 [dependencies]
 anyhow.workspace = true
 clap.workspace = true
-dbus.workspace = true
+zbus.workspace = true
 env_logger.workspace = true
 im.workspace = true
 itertools.workspace = true
