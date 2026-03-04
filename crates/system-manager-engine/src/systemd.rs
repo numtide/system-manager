@@ -106,7 +106,7 @@ impl ServiceManager {
         let proxy = Proxy::new(
             SD_DESTINATION,
             SD_PATH,
-            Duration::from_secs(2),
+            Duration::from_secs(10),
             Box::new(conn),
         );
 
@@ -138,7 +138,7 @@ impl ServiceManager {
         OrgFreedesktopSystemd1Manager::reload(&self.proxy)?;
 
         while !ready.load(Ordering::Relaxed) {
-            self.proxy.connection.process(Duration::from_secs(2))?;
+            self.proxy.connection.process(Duration::from_secs(10))?;
         }
 
         Ok(())
