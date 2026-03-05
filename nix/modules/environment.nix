@@ -16,6 +16,12 @@
       type = lib.types.listOf lib.types.str;
       default = [ ];
     };
+
+    extraInit = lib.mkOption {
+      type = lib.types.lines;
+      default = "";
+      description = "Shell script code which should be called before any shell session through the host /etc/profile.";
+    };
   };
 
   config =
@@ -31,6 +37,7 @@
         etc = {
           "profile.d/system-manager-path.sh".source = pkgs.writeText "system-manager-path.sh" ''
             export PATH=${pathDir}/bin/:''${PATH}
+            ${config.environment.extraInit}
           '';
 
           # TODO: figure out how to properly add fish support. We could start by
