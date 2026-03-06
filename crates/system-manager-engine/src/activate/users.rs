@@ -60,21 +60,28 @@ pub fn lock_managed_users() -> Result<()> {
 }
 
 /// Resolves a base shell path (after prefix stripping) to an existing FHS location.
-fn resolve_shell(base: &str) -> &str {
+fn resolve_shell(base: &str) -> Result<&str> {
     if Path::new(base).exists() {
-        return base;
+        return Ok(base);
     }
 
     match base {
         "/bin/nologin" | "/sbin/nologin" => {
-            for fallback in ["/usr/sbin/nologin", "/usr/bin/nologin"] {
+            for fallback in ["/usr/sbin/nologin", "/usr/bin/nologin", "/bin/nologin"] {
                 if Path::new(fallback).exists() {
-                    return fallback;
+                    return Ok(fallback);
                 }
             }
-            base
+            anyhow::bail!("No valid nologin shell found for base path '{}'", base);
         }
-        _ => "/bin/sh",
+        _ => {
+            for fallback in ["/bin/sh", "/usr/bin/sh"] {
+                if Path::new(fallback).exists() {
+                    return Ok(fallback);
+                }
+            }
+            anyhow::bail!("No valid shell found for base path '{}'", base);
+        }
     }
 }
 
@@ -105,7 +112,11 @@ pub fn restore_original_shells() -> Result<()> {
             continue;
         };
 
-        let resolved = resolve_shell(base);
+        let resolved = resolve_shell(base).context(format!(
+            "Failed to resolve shell for user '{}': base path '{}'",
+            username, base
+        ))?;
+
         log::info!(
             "Restoring shell for user '{}': {} -> {}",
             username,
