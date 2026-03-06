@@ -5,12 +5,12 @@ pub(crate) mod users;
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::fs::DirBuilder;
 use std::path::{Path, PathBuf};
 use std::{fs, io, process};
 use thiserror::Error;
 
-use crate::activate::etc_files::FileTree;
 use crate::{StorePath, STATE_FILE_NAME, SYSTEM_MANAGER_STATE_DIR};
 
 #[derive(Error, Debug)]
@@ -33,10 +33,26 @@ impl<R> ActivationError<R> {
 
 pub type ActivationResult<R> = Result<R, ActivationError<R>>;
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum FileStatus {
+    Managed,
+    ManagedWithBackup,
+}
+
+type EtcTree = HashSet<PathBuf>;
+type BackedUpFiles = HashSet<PathBuf>;
+#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EtcFilesState {
+    pub files: EtcTree,
+    pub backed_up_files: BackedUpFiles,
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct State {
-    pub(crate) file_tree: FileTree,
+    pub(crate) file_tree: EtcFilesState,
     pub(crate) services: services::Services,
 }
 
@@ -57,6 +73,7 @@ impl State {
 
     pub fn write_to_file(&self, state_file: &Path) -> Result<()> {
         log::info!("Writing state info into file: {}", state_file.display());
+        log::debug!("State: {:?}", self);
         let writer = io::BufWriter::new(fs::File::create(state_file)?);
 
         serde_json::to_writer(writer, self)?;
@@ -91,7 +108,7 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
             }
 
             log::info!("Activating tmp files...");
-            let tmp_result = tmp_files::activate(&etc_tree);
+            let tmp_result = tmp_files::activate(&etc_tree.files);
             if let Err(e) = &tmp_result {
                 log::error!("Error during activation of tmp files");
                 log::error!("{e}");
@@ -123,6 +140,7 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
         }
         Err(ActivationError::WithPartialResult { result, source }) => {
             log::error!("Error during activation: {source:?}");
+            log::debug!("Resulting file tree: {:?}", result);
             let final_state = State {
                 file_tree: result,
                 ..old_state
