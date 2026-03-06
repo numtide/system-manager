@@ -105,9 +105,25 @@ in
       "modules-load.d/system-manager.conf".source = kernelModulesConf;
     };
 
-    # config/sysctl.nix assumes it can freely configure systemd-sysctl.service.
-    # However, in our case, the service is managed by the host system,
-    # so we default to enable = false; to avoid unintended interference.
-    systemd.services.systemd-sysctl.enable = lib.mkDefault false;
+    systemd.services.systemd-modules-load.overrideStrategy = "asDropin";
+    systemd.services.systemd-modules-load = {
+      wantedBy = [
+        "system-manager.target"
+        "multi-user.target"
+      ];
+      restartTriggers = [ kernelModulesConf ];
+      serviceConfig = {
+        SuccessExitStatus = "0 1";
+      };
+    };
+
+    systemd.services.systemd-sysctl.overrideStrategy = "asDropin";
+    systemd.services.systemd-sysctl = {
+      wantedBy = [
+        "system-manager.target"
+        "multi-user.target"
+      ];
+      restartTriggers = [ config.environment.etc."sysctl.d/60-nixos.conf".source ];
+    };
   };
 }
