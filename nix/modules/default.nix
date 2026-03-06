@@ -100,6 +100,12 @@
       #   };
       # };
 
+      system.checks = lib.mkOption {
+        type = types.listOf types.package;
+        default = [ ];
+        description = "Packages that are built as dependencies of the system's build for validation purposes.";
+      };
+
       # No-op option for now.
       # TODO: should we include the settings in /etc/logrotate.d ?
       services.logrotate = lib.mkOption {
