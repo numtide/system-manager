@@ -119,6 +119,41 @@ in
       '';
   };
 
+  container-extra-init = makeContainerTestFor "extra-init" {
+    modules = [
+      (
+        { ... }:
+        {
+          environment.etc."nix/nix.conf".replaceExisting = true;
+
+          environment.extraInit = ''
+            export MY_CUSTOM_VAR="hello-from-extraInit"
+          '';
+        }
+      )
+    ];
+    testScriptFunction =
+      { toplevel, hostPkgs, ... }:
+      ''
+        start_all()
+
+        machine.wait_for_unit("multi-user.target")
+
+        activation_logs = machine.activate()
+        for line in activation_logs.split("\n"):
+            assert not "ERROR" in line, line
+        machine.wait_for_unit("system-manager.target")
+
+        with subtest("extraInit code is present in profile script"):
+            content = machine.succeed("cat /etc/profile.d/system-manager-path.sh")
+            assert "MY_CUSTOM_VAR" in content, f"Expected extraInit content in profile script, got: {content}"
+
+        with subtest("extraInit variable is set in login shell"):
+            value = machine.succeed("bash --login -c 'echo $MY_CUSTOM_VAR'").strip()
+            assert value == "hello-from-extraInit", f"Expected 'hello-from-extraInit', got: '{value}'"
+      '';
+  };
+
   container-masked-units = makeContainerTestFor "masked-units" {
     modules = [
       (
@@ -187,6 +222,124 @@ in
 
         with subtest("File from glob is present"):
             machine.succeed("test -f /etc/fail2ban/action.d/dummy.conf")
+      '';
+  };
+
+  container-system-checks =
+    let
+      failingToplevel = system-manager.lib.makeSystemConfig {
+        modules = [
+          (
+            { pkgs, ... }:
+            {
+              nixpkgs.hostPlatform = system;
+              system.checks = [
+                (pkgs.runCommand "failing-check" { } ''
+                  echo "this check should fail" >&2
+                  exit 1
+                '')
+              ];
+            }
+          )
+        ];
+      };
+    in
+    makeContainerTestFor "system-checks" {
+      modules = [
+        (
+          { pkgs, ... }:
+          {
+            system.checks = [
+              (pkgs.runCommand "passing-check" { } ''
+                echo "check passed" > $out
+              '')
+            ];
+          }
+        )
+      ];
+      extraPathsToRegister = [ ];
+      testScriptFunction =
+        { toplevel, hostPkgs, ... }:
+        ''
+          start_all()
+
+          machine.wait_for_unit("multi-user.target")
+
+          with subtest("Check outputs exist in toplevel under checks/"):
+              machine.succeed("test -d ${toplevel}/checks")
+              # Find the passing-check entry (index depends on other modules adding checks)
+              machine.succeed("ls ${toplevel}/checks/ | grep -F passing-check")
+              content = machine.succeed("cat ${toplevel}/checks/*-passing-check").strip()
+              assert content == "check passed", f"Expected 'check passed', got: {content}"
+
+          with subtest("Failing check prevents toplevel from building"):
+              machine.fail("nix-store --realise ${builtins.unsafeDiscardOutputDependency failingToplevel.drvPath}")
+        '';
+    };
+
+  container-security-wrappers = makeContainerTestFor "security-wrappers" {
+    modules = [
+      (
+        { pkgs, lib, ... }:
+        {
+          environment.etc."nix/nix.conf".replaceExisting = true;
+
+          security.wrappers.ping = {
+            owner = "root";
+            group = "root";
+            capabilities = "cap_net_raw+ep";
+            source = "${pkgs.iputils.out}/bin/ping";
+          };
+        }
+      )
+    ];
+    testScriptFunction =
+      { toplevel, hostPkgs, ... }:
+      ''
+        start_all()
+
+        machine.wait_for_unit("multi-user.target")
+
+        activation_logs = machine.activate()
+        for line in activation_logs.split("\n"):
+            assert not "ERROR" in line, line
+        machine.wait_for_unit("system-manager.target")
+
+        with subtest("Tmpfs mount at /run/wrappers exists"):
+            mount_output = machine.succeed("findmnt -n -o FSTYPE /run/wrappers").strip()
+            assert mount_output == "tmpfs", f"Expected tmpfs, got: {mount_output}"
+
+        with subtest("Wrapper binary exists and is executable"):
+            wrapper = machine.file("/run/wrappers/bin/ping")
+            assert wrapper.exists, "/run/wrappers/bin/ping should exist"
+            assert wrapper.is_file, "/run/wrappers/bin/ping should be a file"
+            machine.succeed("test -x /run/wrappers/bin/ping")
+
+        with subtest("Wrapper binary has correct ownership"):
+            owner = machine.succeed("stat -c '%U:%G' /run/wrappers/bin/ping").strip()
+            assert owner == "root:root", f"Expected root:root ownership, got: {owner}"
+
+        with subtest("Capabilities are set on wrapper binary"):
+            caps = machine.succeed("getcap /run/wrappers/bin/ping").strip()
+            assert "cap_net_raw" in caps, f"Expected cap_net_raw in capabilities, got: {caps}"
+
+        with subtest("/run/wrappers/bin precedes /usr/bin in PATH"):
+            path = machine.succeed("bash --login -c 'echo $PATH'").strip()
+            entries = path.split(":")
+            wrappers_idx = next(i for i, e in enumerate(entries) if e == "/run/wrappers/bin")
+            usr_bin_idx = next(i for i, e in enumerate(entries) if e == "/usr/bin")
+            assert wrappers_idx < usr_bin_idx, f"/run/wrappers/bin (index {wrappers_idx}) must come before /usr/bin (index {usr_bin_idx}) in PATH: {path}"
+
+        with subtest("Default mount and umount wrappers exist"):
+            assert machine.file("/run/wrappers/bin/mount").exists, "mount wrapper should exist"
+            assert machine.file("/run/wrappers/bin/umount").exists, "umount wrapper should exist"
+
+        with subtest("Build-time check output exists in toplevel"):
+            machine.succeed("test -d ${toplevel}/checks")
+
+        with subtest("Deactivation cleans up wrappers"):
+            machine.succeed("${toplevel}/bin/deactivate")
+            machine.fail("test -e /etc/systemd/system/suid-sgid-wrappers.service")
       '';
   };
 

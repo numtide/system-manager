@@ -144,12 +144,18 @@ let
               path = "${system-manager}/bin/system-manager-engine";
             };
 
+            checks = lib.imap0 (i: check: {
+              name = "checks/${toString i}-${check.name}";
+              path = check;
+            }) config.system.checks;
+
             entries = [
               (linkFarmEntryFromDrv servicesPath)
               (linkFarmEntryFromDrv etcPath)
               engineEntry
             ]
-            ++ scripts;
+            ++ scripts
+            ++ checks;
 
             addPassthru =
               drv:

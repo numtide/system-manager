@@ -8,6 +8,7 @@
     ./firewall.nix
     ./nginx.nix
     ./nix.nix
+    ./security-wrappers.nix
     ./userborn.nix
     ./users-groups.nix
     ../sops-nix.nix
@@ -19,6 +20,7 @@
       "/misc/meta.nix"
       "/misc/ids.nix"
       "/security/acme/"
+      "/security/wrappers/"
       "/services/web-servers/nginx/"
       # nix settings
       "/config/nix.nix"
