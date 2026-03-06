@@ -143,12 +143,6 @@ fn remove_file(from: &Path) -> Result<()> {
     Ok(())
 }
 
-fn remove_dir(from: &Path) -> Result<()> {
-    log::info!("Removing directory: {}", from.display());
-    fs::remove_dir(from)?;
-    Ok(())
-}
-
 pub fn etc_dir(ephemeral: bool) -> PathBuf {
     if ephemeral {
         Path::new("/run").join("etc")

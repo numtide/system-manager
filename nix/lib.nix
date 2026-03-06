@@ -195,7 +195,7 @@ let
         action,
       }:
       ''
-        ${node}.succeed("${profile}/bin/${action} 2>&1 | tee /tmp/output.log")
+        ${node}.succeed("RUST_LOG=debug ${profile}/bin/${action} 2>&1 | tee /tmp/output.log")
         ${node}.succeed("! grep -F 'ERROR' /tmp/output.log")
       '';
 
