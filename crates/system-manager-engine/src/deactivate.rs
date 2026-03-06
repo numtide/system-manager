@@ -17,6 +17,10 @@ pub fn deactivate() -> Result<()> {
         log::error!("Error locking managed user accounts: {e}");
     }
 
+    if let Err(e) = users::restore_original_shells() {
+        log::error!("Error restoring original shell paths: {e}");
+    }
+
     match etc_files::deactivate(old_state.file_tree) {
         Ok(etc_tree) => {
             log::info!("Deactivating systemd services...");
