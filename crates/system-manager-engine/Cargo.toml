@@ -21,6 +21,7 @@ dbus.workspace = true
 env_logger.workspace = true
 im.workspace = true
 itertools.workspace = true
+lazy_errors.workspace = true
 log.workspace = true
 nix.workspace = true
 regex.workspace = true

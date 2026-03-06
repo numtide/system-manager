@@ -141,6 +141,7 @@ let
             };
 
             nix = {
+              enable = true;
               settings = {
                 experimental-features = [
                   "nix-command"
@@ -226,8 +227,8 @@ forEachUbuntuImage "example" {
       vm.succeed("cp ${./sops/age-keys.txt} /run/age-keys.txt")
 
       vm.succeed("touch /etc/foo_test")
-      vm.succeed("${toplevel}/bin/activate 2>&1 | tee /tmp/output.log")
-      vm.succeed("grep -F 'Error while creating file in /etc: Unmanaged path already exists in filesystem, please remove it and run system-manager again: /etc/foo_test' /tmp/output.log")
+      output = vm.fail("${toplevel}/bin/activate 2>&1")
+      assert "Unmanaged path already exists" in output, f"Expected unmanaged path error, got: {output}"
       vm.succeed("rm /etc/foo_test")
 
       ${system-manager.lib.activateProfileSnippet {
@@ -277,7 +278,6 @@ forEachUbuntuImage "example" {
         node = "vm";
         profile = newConfig;
       }}
-      print(vm.succeed("cat /tmp/output.log"))
 
       print(vm.succeed("cat /run/secrets/test"))
 
@@ -531,12 +531,10 @@ forEachUbuntuImage "example" {
 
         # Test 2: Register and activate with --sudo should succeed
         # First register the profile (creates the symlink)
-        vm.succeed("su - testuser -c '${system-manager-cli}/bin/system-manager register --sudo --store-path ${toplevel} 2>&1' | tee /tmp/sudo-register.log")
-        vm.succeed("! grep -F 'ERROR' /tmp/sudo-register.log")
+        vm.succeed("su - testuser -c '${system-manager-cli}/bin/system-manager register --sudo --store-path ${toplevel} 2>&1'")
 
         # Then activate
-        vm.succeed("su - testuser -c '${system-manager-cli}/bin/system-manager activate --sudo --store-path ${toplevel} 2>&1' | tee /tmp/sudo-activate.log")
-        vm.succeed("! grep -F 'ERROR' /tmp/sudo-activate.log")
+        vm.succeed("su - testuser -c '${system-manager-cli}/bin/system-manager activate --sudo --store-path ${toplevel} 2>&1'")
 
         # Verify activation worked
         vm.wait_for_unit("system-manager.target")
@@ -545,8 +543,7 @@ forEachUbuntuImage "example" {
 
         # Test 3: Deactivation with --sudo should also work
         # Now that the profile is registered, deactivate can find the engine
-        vm.succeed("su - testuser -c '${system-manager-cli}/bin/system-manager deactivate --sudo 2>&1' | tee /tmp/sudo-deactivate.log")
-        vm.succeed("! grep -F 'ERROR' /tmp/sudo-deactivate.log")
+        vm.succeed("su - testuser -c '${system-manager-cli}/bin/system-manager deactivate --sudo 2>&1'")
 
         # Verify deactivation worked
         vm.fail("systemctl status service-9.service")
@@ -854,12 +851,10 @@ forEachUbuntuImage "example" {
         vm.succeed("mkdir -p /etc/systemd/system/timers.target.wants")
         vm.succeed("ln -sf /lib/systemd/system/fake-existing.timer /etc/systemd/system/timers.target.wants/existing.timer")
 
-        # Activate directly (not via snippet) because the no-replace-test entry
-        # will produce an expected ERROR that the snippet would reject.
-        vm.succeed("${toplevel}/bin/activate 2>&1 | tee /tmp/output.log")
-
-        # Verify that the no-replace entry produced the expected error
-        vm.succeed("grep -F 'File /etc/no-replace-test already exists' /tmp/output.log")
+        # Activate directly because the no-replace-test entry produces an
+        # expected error that causes a non-zero exit code.
+        output = vm.fail("${toplevel}/bin/activate 2>&1")
+        assert "File /etc/no-replace-test already exists" in output, f"Expected no-replace error, got: {output}"
         no_replace = vm.succeed("cat /etc/no-replace-test").strip()
         assert no_replace == "do not touch", f"Expected untouched file, got: {no_replace}"
         vm.fail("test -e /etc/no-replace-test.system-manager-backup")
