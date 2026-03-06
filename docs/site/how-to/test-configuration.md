@@ -166,7 +166,7 @@ Test "Verify application files" (0.3s)
 ```python
 start_all()
 
-# Wait for Ubuntu systemd to be ready
+# Wait for systemd to be ready
 machine.wait_for_unit("multi-user.target")
 
 # Activate system-manager configuration (displays full activation output)
@@ -196,9 +196,9 @@ with subtest("Verify service is responding"):
 
 The test framework:
 
-1. Builds an Ubuntu 24.04 container image with the nix-installer binary included
+1. Builds a container rootfs image (Ubuntu 24.04 by default, configurable per distro) with the nix-installer binary included
 2. Starts the container using systemd-nspawn within the Nix build sandbox
-3. Installs Nix via nix-installer at container startup (multi-user mode with daemon)
+3. Installs Nix via nix-installer at container startup
 4. Copies your system-manager profile closure into the container via `nix copy`
 5. Executes your test script
 

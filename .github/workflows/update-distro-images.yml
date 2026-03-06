@@ -1,0 +1,27 @@
+name: update-distro-images
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 4 * * 3" # runs weekly every Wednesday at 04:30 UTC
+
+jobs:
+  update-images:
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Checkout the repo"
+        uses: "actions/checkout@v6"
+      - name: "Install the Nix package manager"
+        uses: "cachix/install-nix-action@master"
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: "Update LXC distro images"
+        run: python3 tools/update_distro_images.py
+      - name: "Create Pull Request"
+        uses: "peter-evans/create-pull-request@v8"
+        with:
+          branch: "auto_update_distro_images"
+          title: "Update LXC container test images"
+          body: |
+            Automatically updated LXC container image URLs and hashes
+            for Fedora and Arch Linux in distros.nix.
+          commit-message: "chore: update LXC container test images"

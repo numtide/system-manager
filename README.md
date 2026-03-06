@@ -212,20 +212,20 @@ It's possible that you had a `nix.conf` file in `/etc/nix` that had experimental
 
 Then re-run System Manager and your changes will take effect; now you should have the two experimental features set, `nix-command` and `flakes`.
 
-## Supported Systems
+## Supported systems
 
-System Manager is currently only supported on NixOS and Ubuntu. However, it can be used on other distributions by enabling the following:
+System Manager supports the following distributions:
 
-```nix
-{
-  config = {
-    system-manager.allowAnyDistro = true;
-  }
-}
-```
+- Ubuntu 22.04+
+- NixOS
+- Debian 12+
+- Fedora 42+
+- Rocky Linux 9+
+- AlmaLinux 9+
+- Arch Linux
 
-> [!WARNING]
-> This is unsupported and untested. Use at your own risk.
+Other systemd-based distributions may work by setting `system-manager.allowAnyDistro = true` in your configuration.
+See the [supported platforms documentation](https://system-manager.net/main/reference/supported-platforms/) for details.
 
 ## Supported Nix
 

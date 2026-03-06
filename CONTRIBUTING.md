@@ -44,23 +44,32 @@ Before creating a new issue, please [search existing issues](https://github.com/
 
 # Extending System Manager
 
-## Adding New Distributions
+## Adding new distributions
 
-System Manager officially supports Ubuntu and NixOS. To add support for another distribution:
+System Manager officially supports Ubuntu, NixOS, Debian, Fedora, Rocky Linux, AlmaLinux, and Arch Linux.
+The `supportedIds` list in [nix/modules/default.nix](./nix/modules/default.nix) controls which distribution IDs (from `/etc/os-release`) pass the pre-activation check.
 
-1. Initialize a new flake with distribution checks disabled:
+To add support for another distribution:
+
+1. Add a distro entry in [lib/container-test-driver/distros.nix](./lib/container-test-driver/distros.nix) with the rootfs image, exclude patterns, and a maskable service for testing.
+   Use `rhelRootfsDefaults` for RHEL-family distros or `commonExcludePatterns` as a starting point.
+
+2. Run the example container test to verify activation works:
    ```sh
-   nix run 'github:numtide/system-manager' -- init --flake --allow-any-distro
+   cd testFlake
+   nix build .#checks.x86_64-linux.container-<distro>-example --print-build-logs
    ```
 
-2. Switch to the new configuration:
-   ```sh
-   nix run 'github:numtide/system-manager' -- switch --flake '.'
-   ```
+3. If the container fails to boot, check for interactive prompts (`systemd-firstboot`), missing default targets, or SELinux issues.
+   See existing entries in `distros.nix` for solutions to common problems.
 
-3. Debug any errors that occur. Refer to the FAQ, GitHub issues, or open a discussion for help.
+4. Add the distribution's `ID` (from `/etc/os-release`) to the `supportedIds` list in [nix/modules/default.nix](./nix/modules/default.nix).
 
-4. Once stable, the distribution can be added to the `supportedIds` list in the [system-manager module](./nix/modules/default.nix).
+5. Add image entries to [tools/update_distro_images.py](./tools/update_distro_images.py) so the weekly CI workflow keeps the URLs current.
+
+6. Update [docs/site/reference/supported-platforms.md](./docs/site/reference/supported-platforms.md) with the new platform.
+
+For distributions not yet in `supportedIds`, users can set `system-manager.allowAnyDistro = true` to bypass the check.
 
 ## Creating an Ad-Hoc Release
 

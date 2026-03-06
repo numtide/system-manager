@@ -9,9 +9,11 @@ System Manager runs on Linux systems that use systemd for service management.
 | Ubuntu 22.04+ | Tested | Primary development platform |
 | Ubuntu on WSL2 | Tested | Windows Subsystem for Linux |
 | NixOS | Tested | Works alongside existing NixOS configuration |
-| Debian | Community | Should work; similar to Ubuntu |
-| Fedora | Community | Should work; uses systemd |
-| Arch Linux | Community | Should work; uses systemd |
+| Debian 12+ | Tested | Container-tested via systemd-nspawn |
+| Fedora 42+ | Tested | Container-tested via systemd-nspawn |
+| Rocky Linux 9+ | Tested | Container-tested via systemd-nspawn |
+| AlmaLinux 9+ | Tested | Container-tested via systemd-nspawn |
+| Arch Linux | Tested | Container-tested via systemd-nspawn (x86_64 only) |
 
 ## Requirements
 
@@ -29,7 +31,7 @@ System Manager runs on Linux systems that use systemd for service management.
 ## Platform detection
 
 System Manager checks the platform at activation time using a pre-activation assertion that reads `/etc/os-release`.
-By default, it only allows activation on Ubuntu and NixOS.
+By default, it allows activation on Ubuntu, NixOS, Debian, Fedora, Rocky Linux, AlmaLinux, and Arch Linux.
 
 ### Enabling other distributions
 
@@ -44,7 +46,7 @@ To allow System Manager to run on untested distributions, set the `system-manage
 ```
 
 This disables the OS check entirely.
-There is no option to selectively allow specific distributions; the check is either on (default, allowing only Ubuntu and NixOS) or off.
+There is no option to selectively allow specific distributions; the check is either on (default, allowing the tested platforms listed above) or off.
 
 ## Limitations
 

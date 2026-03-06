@@ -34,7 +34,6 @@ let
               config = {
                 nixpkgs.hostPlatform = system;
                 hostPkgs = pkgs;
-                system-manager.allowAnyDistro = true;
               };
             }
           )
@@ -64,6 +63,7 @@ let
       inherit
         forEachDistro
         makeContainerTestFor
+        supportedDistros
         system-manager
         system
         nixpkgs

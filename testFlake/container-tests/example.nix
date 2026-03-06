@@ -25,8 +25,8 @@ forEachDistro "example" {
             assert machine.service("service-9").is_enabled, "service-9 should be enabled"
 
         with subtest("Verify packages are in PATH"):
-            machine.succeed("bash --login -c 'which rg'")
-            machine.succeed("bash --login -c 'which fd'")
+            machine.succeed("bash --login -c 'command -v rg'")
+            machine.succeed("bash --login -c 'command -v fd'")
 
         with subtest("Verify /etc/foo.conf configuration"):
             foo_conf = machine.file("/etc/foo.conf")

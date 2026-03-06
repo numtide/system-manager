@@ -203,6 +203,11 @@
           supportedIds = [
             "nixos"
             "ubuntu"
+            "debian"
+            "fedora"
+            "rocky"
+            "almalinux"
+            "arch"
           ];
         in
         {

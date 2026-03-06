@@ -100,21 +100,21 @@ forEachDistro "system-path" {
       start_all()
       machine.wait_for_unit("multi-user.target")
 
-      machine.fail("bash --login -c '$(which rg)'")
-      machine.fail("bash --login -c '$(which fd)'")
+      machine.fail("bash --login -c '$(command -v rg)'")
+      machine.fail("bash --login -c '$(command -v fd)'")
 
       machine.activate()
 
       machine.wait_for_unit("system-manager.target")
       machine.wait_for_unit("system-manager-path.service")
 
-      machine.succeed("bash --login -c 'realpath $(which rg) | grep -F ${hostPkgs.ripgrep}/bin/rg'")
-      machine.succeed("bash --login -c 'realpath $(which fd) | grep -F ${hostPkgs.fd}/bin/fd'")
+      machine.succeed("bash --login -c 'realpath $(command -v rg) | grep -F ${hostPkgs.ripgrep}/bin/rg'")
+      machine.succeed("bash --login -c 'realpath $(command -v fd) | grep -F ${hostPkgs.fd}/bin/fd'")
 
       machine.activate("${newConfig}")
 
-      machine.fail("bash --login -c '$(which rg)'")
-      machine.fail("bash --login -c '$(which fd)'")
-      machine.succeed("bash --login -c 'realpath $(which fish) | grep -F ${hostPkgs.fish}/bin/fish'")
+      machine.fail("bash --login -c '$(command -v rg)'")
+      machine.fail("bash --login -c '$(command -v fd)'")
+      machine.succeed("bash --login -c 'realpath $(command -v fish) | grep -F ${hostPkgs.fish}/bin/fish'")
     '';
 }

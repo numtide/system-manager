@@ -49,9 +49,8 @@ forEachDistro "ssh" {
 
       machine.wait_for_unit("multi-user.target")
 
-      # For some reason, the ubuntu image is lacking the ssh host key.
-      # It's generated as a postinstall hook, so let's run it again.
-      machine.succeed("dpkg-reconfigure openssh-server")
+      # Container images may lack SSH host keys; generate them if missing.
+      machine.succeed("ssh-keygen -A")
 
       machine.activate()
       machine.wait_for_unit("system-manager.target")
