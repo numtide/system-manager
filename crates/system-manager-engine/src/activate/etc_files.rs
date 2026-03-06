@@ -1,14 +1,12 @@
 mod etc_tree;
 
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use im::HashMap;
-use itertools::Itertools;
 use regex;
 use serde::{Deserialize, Serialize};
-use std::fs::{DirBuilder, Permissions};
-use std::os::unix::fs as unixfs;
+use std::fs::Permissions;
 use std::os::unix::prelude::PermissionsExt;
-use std::path;
+use std::os::unix::{self, fs as unixfs};
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 use std::{fs, io};
@@ -16,10 +14,7 @@ use std::{fs, io};
 use self::etc_tree::FileStatus;
 use super::ActivationResult;
 use crate::activate::ActivationError;
-use crate::{
-    create_link, create_store_link, etc_dir, remove_dir, remove_file, remove_link, StorePath,
-    SYSTEM_MANAGER_STATIC_NAME,
-};
+use crate::{create_link, etc_dir, remove_dir, remove_file, remove_link, StorePath};
 
 pub use etc_tree::FileTree;
 
@@ -100,18 +95,37 @@ pub fn activate(
 
     let initial_state = FileTree::root_node();
 
-    let state = create_etc_static_link(
-        SYSTEM_MANAGER_STATIC_NAME,
-        &config.static_env,
-        &etc_dir,
-        initial_state,
-    )?;
-
-    // Create the rest of the links
-    let final_state = create_etc_links(config.entries.values(), &etc_dir, state, &old_state)
-        .update_state(old_state, &try_delete_path)
-        .unwrap_or_default();
-
+    // Walk through static link, list entries
+    let mut entries = match list_static_entries(config.static_env) {
+        Ok(e) => e,
+        Err(e) => {
+            return Err(ActivationError::WithPartialResult {
+                result: initial_state.clone(),
+                source: e,
+            })
+        }
+    };
+    let mut non_static_entries: Vec<EtcFile> = config
+        .entries
+        .values()
+        .filter(|v| v.mode != "symlink")
+        .cloned()
+        .map(|mut v| {
+            v.source.store_path = v.source.store_path.join(&v.target);
+            v
+        })
+        .collect();
+    entries.append(&mut non_static_entries);
+    // Create dirs and link/copy entries
+    let final_state = match create_etc_files(entries, initial_state.clone(), old_state) {
+        Ok(e) => e,
+        Err(e) => {
+            return Err(ActivationError::WithPartialResult {
+                result: initial_state,
+                source: e.into(),
+            })
+        }
+    };
     log::info!("Done");
     Ok(final_state)
 }
@@ -197,349 +211,190 @@ fn try_delete_path(path: &Path, status: &FileStatus) -> bool {
         .is_ok()
 }
 
-fn create_etc_links<'a, E>(
-    entries: E,
-    etc_dir: &Path,
-    state: FileTree,
-    old_state: &FileTree,
-) -> FileTree
-where
-    E: Iterator<Item = &'a EtcFile>,
-{
-    entries.fold(state, |state, entry| {
-        let new_state = create_etc_entry(entry, etc_dir, state, old_state);
-        match new_state {
-            Ok(new_state) => new_state,
-            Err(ActivationError::WithPartialResult { result, source }) => {
-                log::error!(
-                    "Error while creating file in {}: {source:?}",
-                    etc_dir.display()
-                );
-                result
-            }
-        }
-    })
-}
-
-fn create_etc_static_link(
-    static_dir_name: &str,
-    store_path: &StorePath,
-    etc_dir: &Path,
-    state: FileTree,
-) -> EtcActivationResult {
-    let static_path = etc_dir.join(static_dir_name);
-    let new_state = create_dir_recursively(static_path.parent().unwrap(), state);
-    new_state.and_then(|new_state| {
-        create_store_link(store_path, &static_path).map_or_else(
-            |e| Err(ActivationError::with_partial_result(new_state.clone(), e)),
-            |_| Ok(new_state.clone().register_managed_entry(&static_path)),
-        )
-    })
-}
-
-fn create_etc_link<P>(
-    link_target: &P,
-    etc_dir: &Path,
-    state: FileTree,
-    old_state: &FileTree,
-    replace_existing: bool,
-) -> EtcActivationResult
-where
-    P: AsRef<Path>,
-{
-    fn link_dir_contents(
-        link_target: &Path,
-        absolute_target: &Path,
-        etc_dir: &Path,
-        state: FileTree,
-        old_state: &FileTree,
-        upwards_path: &Path,
-        replace_existing: bool,
-    ) -> EtcActivationResult {
-        let link_path = etc_dir.join(link_target);
-        // Create the dir if it doesn't exist yet
-        let dir_state = if !link_path.exists() {
-            create_dir_recursively(&link_path, state)?
-        } else {
-            state
-        };
-        log::debug!("Entering into directory {}...", link_path.display());
-        Ok(absolute_target
-            .read_dir()
-            .expect("Error reading the directory.")
-            .fold(dir_state, |state, entry| {
-                let new_state = go(
-                    &link_target.join(
-                        entry
-                            .expect("Error reading the directory entry.")
-                            .file_name(),
-                    ),
-                    etc_dir,
-                    state,
-                    old_state,
-                    &upwards_path.join(".."),
-                    replace_existing,
-                );
-                match new_state {
-                    Ok(new_state) => new_state,
-                    Err(ActivationError::WithPartialResult { result, source }) => {
-                        log::error!(
-                            "Error while trying to link directory {}: {source:?}",
-                            absolute_target.display()
-                        );
-                        result
-                    }
-                }
-            }))
+fn list_static_entries(static_path: StorePath) -> anyhow::Result<Vec<EtcFile>> {
+    let mut files = Vec::new();
+    #[derive(Clone)]
+    struct DirToVisit {
+        absolute_path: PathBuf,
+        path_from_root: PathBuf,
     }
+    let mut dirs_to_visit: Vec<DirToVisit> = vec![DirToVisit {
+        absolute_path: static_path.store_path,
+        path_from_root: PathBuf::from(""),
+    }];
+    let mut i = 0;
 
-    // Some versions of systemd ignore .wants and .requires directories when they are symlinks.
-    // We therefore create them as actual directories and link their contents instead.
-    fn is_systemd_dependency_dir(path: &Path) -> bool {
-        path.is_dir()
-            && path
-                .parent()
-                .map(|p| p.ends_with("systemd/system"))
-                .unwrap_or(false)
-            && path
-                .extension()
-                .filter(|ext| ["wants", "requires"].iter().any(|other| other == ext))
-                .is_some()
-    }
-
-    /// Check whether link_path is inside a systemd .wants or .requires directory.
-    fn is_inside_systemd_dependency_dir(link_path: &Path) -> bool {
-        link_path
-            .parent()
-            .map(|parent| {
-                parent
-                    .extension()
-                    .filter(|ext| ["wants", "requires"].iter().any(|other| other == ext))
-                    .is_some()
-                    && parent
-                        .parent()
-                        .map(|pp| pp.ends_with("systemd/system"))
-                        .unwrap_or(false)
-            })
-            .unwrap_or(false)
-    }
-
-    fn backup_and_link(
-        target: &Path,
-        link_path: &Path,
-        dir_state: FileTree,
-    ) -> EtcActivationResult {
-        backup_existing_file(link_path)
-            .map_err(|e| ActivationError::with_partial_result(dir_state.clone(), e))?;
-        create_link(target, link_path)
-            .map_err(|e| ActivationError::with_partial_result(dir_state.clone(), e))?;
-        Ok(dir_state.register_backed_up_entry(link_path))
-    }
-
-    fn go(
-        link_target: &Path,
-        etc_dir: &Path,
-        state: FileTree,
-        old_state: &FileTree,
-        upwards_path: &Path,
-        replace_existing: bool,
-    ) -> EtcActivationResult {
-        let link_path = etc_dir.join(link_target);
-        let mut dir_state = create_dir_recursively(link_path.parent().unwrap(), state)?;
-        let target = upwards_path
-            .join(SYSTEM_MANAGER_STATIC_NAME)
-            .join(link_target);
-        let absolute_target = etc_dir.join(SYSTEM_MANAGER_STATIC_NAME).join(link_target);
-        log::debug!(
-            "GO iteration on entry {} from {}",
-            link_path.display(),
-            absolute_target.display()
-        );
-        // The target is a directory. Let's create the directory to /etc.
-        // Note: if we were not doing that, we'd end up linking the whole directory to SYSTEM_MANAGER_STATIC_NAME (itself linked in the nix-store) and we'd end up trying creating the children on themselves via the symlink indirection.
-        if absolute_target.is_dir() {
-            if !link_path.exists() {
-                if let Err(err) = fs::create_dir(&link_path) {
-                    return Err(ActivationError::with_partial_result(
-                        dir_state,
-                        anyhow!(
-                            "Cannot create dir {}: {}, ignoring...",
-                            link_path.display(),
-                            err
-                        ),
-                    ));
-                }
-            }
-            dir_state = dir_state.register_managed_entry(&link_path);
-        };
-        // The link is a directory or a systemd dependency. Recurse into it and link its content.
-        if (link_path.exists() && link_path.is_dir()) || is_systemd_dependency_dir(&absolute_target)
-        {
-            if absolute_target.is_dir() {
-                // Auto-replace inside .wants/.requires directories
-                let effective_replace =
-                    replace_existing || is_systemd_dependency_dir(&absolute_target);
-                link_dir_contents(
-                    link_target,
-                    &absolute_target,
-                    etc_dir,
-                    dir_state,
-                    old_state,
-                    upwards_path,
-                    effective_replace,
-                )
-            } else if replace_existing || is_inside_systemd_dependency_dir(&link_path) {
-                backup_and_link(&target, &link_path, dir_state)
+    while i < dirs_to_visit.len() {
+        let dir = dirs_to_visit
+            .get(i)
+            .context("ERROR: index error in dir loop")?
+            .clone();
+        let dir_content = fs::read_dir(&dir.absolute_path)?;
+        for file in dir_content {
+            let file = file?;
+            let canon_path = fs::canonicalize(file.path()).context(format!(
+                "Failed to get the canonical path of {}",
+                file.path().display()
+            ))?;
+            if canon_path.is_dir() {
+                log::debug!("{} is a dir", canon_path.display());
+                let dirname = file.file_name();
+                let mut path_from_root = dir.path_from_root.clone();
+                path_from_root.push(dirname);
+                dirs_to_visit.push(DirToVisit {
+                    absolute_path: canon_path,
+                    path_from_root,
+                });
             } else {
-                Err(ActivationError::with_partial_result(
-                    dir_state,
-                    anyhow::anyhow!(
-                        "Unmanaged file or directory {} already exists, ignoring...",
-                        link_path.display()
-                    ),
-                ))
-            }
-        // The link is a symlink and is up to date. No-op.
-        } else if link_path.is_symlink()
-            && link_path.read_link().expect("Error reading link.") == target
-        {
-            log::debug!("Link {} up to date.", link_path.display());
-            Ok(dir_state.register_managed_entry(&link_path))
-        // The link exists but is not currently managed by system-manager.
-        // Override it if it's a systemd dependency or if we're in a replace mode.
-        } else if (link_path.exists() || link_path.is_symlink())
-            && !old_state.is_managed(&link_path)
-        {
-            if replace_existing || is_inside_systemd_dependency_dir(&link_path) {
-                backup_and_link(&target, &link_path, dir_state)
-            } else {
-                Err(ActivationError::with_partial_result(
-                    dir_state,
-                    anyhow::anyhow!("Unmanaged path already exists in filesystem, please remove it and run system-manager again: {}",
-                                    link_path.display()),
-                ))
-            }
-        // There's no directory to create or recurse on. Let's try to create the symlink and potentially remove the old one.
-        } else {
-            let result = if link_path.exists() || link_path.is_symlink() {
-                fs::remove_file(&link_path)
-                    .map_err(|e| ActivationError::with_partial_result(dir_state.clone(), e))
-            } else {
-                Ok(())
-            };
-
-            match result.and_then(|_| {
-                create_link(&target, &link_path)
-                    .map_err(|e| ActivationError::with_partial_result(dir_state.clone(), e))
-            }) {
-                Ok(_) => Ok(dir_state.register_managed_entry(&link_path)),
-                Err(e) => Err(e),
-            }
-        }
-    }
-
-    go(
-        link_target.as_ref(),
-        etc_dir,
-        state,
-        old_state,
-        Path::new("."),
-        replace_existing,
-    )
-}
-
-fn create_etc_entry(
-    entry: &EtcFile,
-    etc_dir: &Path,
-    state: FileTree,
-    old_state: &FileTree,
-) -> EtcActivationResult {
-    if entry.mode == "symlink" {
-        if let Some(path::Component::Normal(link_target)) = entry.target.components().next() {
-            create_etc_link(
-                &link_target,
-                etc_dir,
-                state,
-                old_state,
-                entry.replace_existing,
-            )
-        } else {
-            Err(ActivationError::with_partial_result(
-                state,
-                anyhow::anyhow!("Cannot create link: {}", entry.target.display()),
-            ))
-        }
-    } else {
-        let target_path = etc_dir.join(&entry.target);
-        let new_state = create_dir_recursively(target_path.parent().unwrap(), state)?;
-        match copy_file(
-            &entry.source.store_path.join(&entry.target),
-            &target_path,
-            entry,
-            old_state,
-        ) {
-            Ok(backed_up) => {
-                let register = if backed_up {
-                    FileTree::register_backed_up_entry
-                } else {
-                    FileTree::register_managed_entry
+                log::debug!("{} is a file", file.path().display());
+                let etc_file = EtcFile {
+                    source: StorePath {
+                        store_path: canon_path,
+                    },
+                    target: PathBuf::from("/etc")
+                        .join(dir.path_from_root.clone())
+                        .join(file.file_name()),
+                    uid: 0,
+                    gid: 0,
+                    group: "".to_string(),
+                    user: "".to_string(),
+                    mode: "symlink".to_string(),
+                    replace_existing: false,
                 };
-                Ok(register(new_state, &target_path))
+                log::debug!(
+                    "add file: {:?}, path_from_root: {:?}, absolute_path: {:?}",
+                    etc_file,
+                    dir.path_from_root,
+                    dir.absolute_path
+                );
+                files.push(etc_file);
             }
-            Err(e) => Err(ActivationError::with_partial_result(new_state, e)),
         }
+        i += 1;
     }
+    Ok(files)
 }
 
-fn create_dir_recursively(dir: &Path, state: FileTree) -> EtcActivationResult {
-    use itertools::FoldWhile::{Continue, Done};
-    use path::Component;
-    log::debug!("create_dir_recursively: {}", dir.display());
-    let dirbuilder = DirBuilder::new();
-    let (new_state, _) = dir
-        .components()
-        .fold_while(
-            (Ok(state), PathBuf::from(path::MAIN_SEPARATOR_STR)),
-            |(state, path), component| match (state, component) {
-                (Ok(state), Component::RootDir) => Continue((Ok(state), path)),
-                (Ok(state), Component::Normal(dir)) => {
-                    let new_path = path.join(dir);
-                    if !new_path.exists() {
-                        log::debug!("Creating path: {}", new_path.display());
-                        match dirbuilder.create(&new_path) {
-                            Ok(_) => {
-                                let new_state = state.register_managed_entry(&new_path);
-                                Continue((Ok(new_state), new_path))
-                            }
-                            Err(e) => Done((
-                                Err(ActivationError::with_partial_result(
-                                    state,
-                                    anyhow::anyhow!(e).context(format!(
-                                        "Error creating directory {}",
-                                        new_path.display()
-                                    )),
-                                )),
-                                path,
-                            )),
+fn create_etc_files(
+    mut files: Vec<EtcFile>,
+    mut state: FileTree,
+    old_state: FileTree,
+) -> EtcActivationResult {
+    files.sort_by(|a, b| a.target.cmp(&b.target));
+    log::debug!("FILES: {:?}", files);
+    for file in files {
+        let target = PathBuf::from("/etc").join(&file.target);
+        log::debug!(
+            "Creating {} to {} ({})",
+            file.source,
+            target.display(),
+            file.target.display()
+        );
+        // Create all dirs
+        log::debug!("Creating all dirs up to {:?}", target.parent());
+        target.parent().map(fs::create_dir_all);
+
+        // Target is a symlink
+        if file.mode == "symlink" {
+            log::debug!("{} is a symlink", file.source);
+            // TODO: add condition to se if it's already managed
+            if target.exists() {
+                if old_state.is_managed(&target) {
+                    log::debug!(
+                        "{} is managed by system-manager. Deleting.",
+                        &target.display()
+                    );
+                    fs::remove_file(&target).map_err(|e| ActivationError::WithPartialResult {
+                        result: state.clone(),
+                        source: e.into(),
+                    })?;
+                    log::debug!("{} is managed by system-manager.", &target.display());
+                    unix::fs::symlink(file.source.store_path, &target).map_err(|e| {
+                        ActivationError::WithPartialResult {
+                            result: state.clone(),
+                            source: e.into(),
                         }
-                    } else {
-                        Continue((Ok(state), new_path))
+                    })?;
+                    state = state.register_managed_entry(&target);
+                } else if file.replace_existing {
+                    log::debug!("{} already exist. Backup and link again.", file.source);
+                    state = backup_and_link(&target, &file.source.store_path, state)?;
+                } else {
+                    return Err(ActivationError::WithPartialResult {
+                        result: state.clone(),
+                        source: anyhow!("{} already exists. Set replace_existing if you're willing to override it.", target.display()),
+                    });
+                }
+            } else {
+                log::debug!("Symlink {} => {}", file.source, target.display());
+                unix::fs::symlink(file.source.store_path, &target).map_err(|e| {
+                    ActivationError::WithPartialResult {
+                        result: state.clone(),
+                        source: e.into(),
                     }
+                })?;
+                state = state.register_managed_entry(&target);
+            }
+        } else {
+            log::debug!("{} is a regular file", file.source);
+            // target is a regular file
+            // TODO: add condition to se if it's already managed
+            if target.exists() {
+                if old_state.is_managed(&target) {
+                    log::debug!(
+                        "{} is managed by system-manager, deleting.",
+                        &target.display()
+                    );
+                    fs::remove_file(&target).map_err(|e| ActivationError::WithPartialResult {
+                        result: state.clone(),
+                        source: e.into(),
+                    })?;
+                    copy_file(&file.source.store_path, &target, &file, &state).map_err(|e| {
+                        ActivationError::WithPartialResult {
+                            result: state.clone(),
+                            source: e,
+                        }
+                    })?;
+                    state = state.register_managed_entry(&target)
+                } else if file.replace_existing {
+                    log::debug!("{} already exists. Backup and link again.", file.source);
+                    backup_existing_file(target.as_path()).map_err(|e| {
+                        ActivationError::WithPartialResult {
+                            result: state.clone(),
+                            source: e,
+                        }
+                    })?;
+                } else {
+                    return Err(ActivationError::WithPartialResult {
+                        result: state.clone(),
+                        source: anyhow!("{} already exists. Set replace_existing if you're willing to override it", target.display()),
+                    });
                 }
-                (Ok(state), otherwise) => Done((
-                    Err(ActivationError::with_partial_result(
-                        state,
-                        anyhow::anyhow!("Unexpected path component encountered: {:?}", otherwise),
-                    )),
-                    path,
-                )),
-                (Err(e), _) => {
-                    panic!("Something went horribly wrong! We should not get here: {e:?}.")
-                }
-            },
-        )
-        .into_inner();
-    new_state
+            } else {
+                log::debug!(
+                    "Copy {} => {}",
+                    file.source.store_path.display(),
+                    target.display()
+                );
+                copy_file(&file.source.store_path, &target, &file, &state).map_err(|e| {
+                    ActivationError::WithPartialResult {
+                        result: state.clone(),
+                        source: e,
+                    }
+                })?;
+                state = state.register_managed_entry(&target)
+            }
+        }
+    }
+    Ok(state)
+}
+
+fn backup_and_link(target: &Path, link_path: &Path, dir_state: FileTree) -> EtcActivationResult {
+    backup_existing_file(link_path)
+        .map_err(|e| ActivationError::with_partial_result(dir_state.clone(), e))?;
+    create_link(target, link_path)
+        .map_err(|e| ActivationError::with_partial_result(dir_state.clone(), e))?;
+    Ok(dir_state.register_backed_up_entry(link_path))
 }
 
 fn find_uid(entry: &EtcFile) -> anyhow::Result<u32> {

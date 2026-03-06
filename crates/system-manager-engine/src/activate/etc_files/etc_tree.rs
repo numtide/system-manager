@@ -13,18 +13,6 @@ pub enum FileStatus {
     Unmanaged,
 }
 
-impl FileStatus {
-    fn merge(&self, other: &Self) -> Self {
-        use FileStatus::*;
-
-        match (self, other) {
-            (Unmanaged, Unmanaged) => Unmanaged,
-            (ManagedWithBackup, _) | (_, ManagedWithBackup) => ManagedWithBackup,
-            _ => Managed,
-        }
-    }
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FileTree {
@@ -209,60 +197,6 @@ impl FileTree {
         } else {
             Some(new_tree)
         }
-    }
-
-    pub fn update_state<F>(self, other: Self, delete_action: &F) -> Option<Self>
-    where
-        F: Fn(&Path, &FileStatus) -> bool,
-    {
-        let to_deactivate = other
-            .nested
-            .clone()
-            .relative_complement(self.nested.clone());
-        let to_merge = other.nested.intersection(self.nested.clone());
-
-        let deactivated = to_deactivate
-            .into_iter()
-            .fold(self, |mut new_tree, (name, subtree)| {
-                subtree
-                    .deactivate(delete_action)
-                    .into_iter()
-                    .for_each(|subtree| {
-                        new_tree.nested.insert(name.to_owned(), subtree);
-                    });
-                new_tree
-            });
-
-        let merged = to_merge
-            .into_iter()
-            .fold(deactivated, |mut new_tree, (name, other_tree)| {
-                new_tree.nested = new_tree.nested.alter(
-                    |subtree| {
-                        subtree.and_then(|subtree| {
-                            subtree.update_state(other_tree.clone(), delete_action).map(
-                                |mut new_tree| {
-                                    new_tree.status = new_tree.status.merge(&other_tree.status);
-                                    new_tree
-                                },
-                            )
-                        })
-                    },
-                    name,
-                );
-                new_tree
-            });
-
-        // If our invariants are properly maintained, then we should never end up
-        // here with dangling unmanaged nodes.
-        debug_assert!(
-            !merged.nested.is_empty()
-                || matches!(
-                    merged.status,
-                    FileStatus::Managed | FileStatus::ManagedWithBackup
-                )
-        );
-
-        Some(merged)
     }
 }
 
@@ -465,30 +399,6 @@ mod tests {
     }
 
     #[test]
-    fn merge_preserves_managed_with_backup() {
-        assert_eq!(
-            FileStatus::ManagedWithBackup.merge(&FileStatus::Unmanaged),
-            FileStatus::ManagedWithBackup,
-        );
-        assert_eq!(
-            FileStatus::ManagedWithBackup.merge(&FileStatus::Managed),
-            FileStatus::ManagedWithBackup,
-        );
-        assert_eq!(
-            FileStatus::Managed.merge(&FileStatus::ManagedWithBackup),
-            FileStatus::ManagedWithBackup,
-        );
-        assert_eq!(
-            FileStatus::Unmanaged.merge(&FileStatus::ManagedWithBackup),
-            FileStatus::ManagedWithBackup,
-        );
-        assert_eq!(
-            FileStatus::ManagedWithBackup.merge(&FileStatus::ManagedWithBackup),
-            FileStatus::ManagedWithBackup,
-        );
-    }
-
-    #[test]
     fn deactivate_passes_backup_status_to_action() {
         let tree = FileTree::root_node()
             .register_backed_up_entry(&PathBuf::from("/").join("etc").join("nix.conf"))
@@ -539,33 +449,6 @@ mod tests {
         assert_eq!(
             *tree.get_status(&PathBuf::from("/").join("foo").join("baz")),
             FileStatus::ManagedWithBackup,
-        );
-    }
-
-    #[test]
-    fn update_state() {
-        let tree1 = FileTree::root_node()
-            .register_managed_entry(&PathBuf::from("/").join("foo").join("bar"))
-            .register_managed_entry(&PathBuf::from("/").join("foo2"))
-            .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz"))
-            .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz").join("bar"))
-            .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz2"))
-            .register_managed_entry(&PathBuf::from("/").join("foo2").join("baz2").join("bar"))
-            .register_managed_entry(&PathBuf::from("/").join("foo3").join("baz2").join("bar"));
-        let tree2 = FileTree::root_node()
-            .register_managed_entry(&PathBuf::from("/").join("foo").join("bar"))
-            .register_managed_entry(&PathBuf::from("/").join("foo3").join("bar"))
-            .register_managed_entry(&PathBuf::from("/").join("foo4"))
-            .register_managed_entry(&PathBuf::from("/").join("foo4").join("bar"))
-            .register_managed_entry(&PathBuf::from("/").join("foo5"))
-            .register_managed_entry(&PathBuf::from("/").join("foo5").join("bar"));
-        let new_tree = tree1.update_state(tree2, &|path, _status| {
-            println!("Deactivating path: {}", path.display());
-            *path != PathBuf::from("/").join("foo5").join("bar")
-        });
-        assert_eq!(
-            new_tree.unwrap().nested.keys().sorted().collect::<Vec<_>>(),
-            ["foo", "foo2", "foo3", "foo5"]
         );
     }
 }
