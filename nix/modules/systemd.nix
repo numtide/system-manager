@@ -253,7 +253,7 @@ in
 
               for package in $packages
               do
-                for hook in $package/lib/systemd/system/*
+                for hook in $package/etc/systemd/system/* $package/lib/systemd/system/*
                 do
                   ln -s $hook $out/
                 done
