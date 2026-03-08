@@ -42,8 +42,9 @@
 
       packages = eachSystem (
         { pkgs, system }:
-        {
-          default = pkgs.callPackage ./package.nix { };
+        rec {
+          system-manager-unwrapped = pkgs.callPackage ./package.nix { };
+          default = pkgs.callPackage ./nix/packages/wrapper.nix { inherit system-manager-unwrapped; };
         }
       );
 
@@ -51,8 +52,9 @@
       docs = eachSystem ({ pkgs, ... }: import ./docs/options.nix { inherit pkgs; });
 
       overlays = {
-        default = final: _prev: {
-          system-manager = final.callPackage ./package.nix { };
+        default = final: _prev: rec {
+          system-manager-unwrapped = final.callPackage ./package.nix { };
+          system-manager = final.callPackage ./nix/packages/wrapper.nix { inherit system-manager-unwrapped; };
         };
       };
 
