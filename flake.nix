@@ -33,6 +33,10 @@
             pkgs = nixpkgs.legacyPackages.${system};
           }
         );
+      packageOverlay = final: _prev: rec {
+        system-manager-unwrapped = final.callPackage ./package.nix { };
+        system-manager = final.callPackage ./nix/packages/wrapper.nix { inherit system-manager-unwrapped; };
+      };
     in
     {
       lib = (import ./nix/lib.nix { inherit nixpkgs userborn; }) // {
@@ -40,23 +44,21 @@
         containerTest = import ./lib/container-test-driver { inherit (nixpkgs) lib; };
       };
 
+      # Get overlayed packages in toplevel output
       packages = eachSystem (
         { pkgs, system }:
-        rec {
-          system-manager-unwrapped = pkgs.callPackage ./package.nix { };
-          default = pkgs.callPackage ./nix/packages/wrapper.nix { inherit system-manager-unwrapped; };
+        {
+          system-manager-unwrapped = pkgs.system-manager-unwrapped;
+          default = pkgs.system-manager;
         }
       );
 
       # Documentation outputs
       docs = eachSystem ({ pkgs, ... }: import ./docs/options.nix { inherit pkgs; });
 
-      overlays = {
-        default = final: _prev: rec {
-          system-manager-unwrapped = final.callPackage ./package.nix { };
-          system-manager = final.callPackage ./nix/packages/wrapper.nix { inherit system-manager-unwrapped; };
-        };
-      };
+      overlays.default = packageOverlay;
+      # Overlay packages onto internal nixpkgs
+      nixpkgs.overlays = [ packageOverlay ];
 
       # Only useful for quick tests
       systemConfigs.default = self.lib.makeSystemConfig {
