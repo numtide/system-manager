@@ -108,12 +108,31 @@ pub fn activate(
     )?;
 
     // Create the rest of the links
-    let final_state = create_etc_links(config.entries.values(), &etc_dir, state, &old_state)
-        .update_state(old_state, &try_delete_path)
-        .unwrap_or_default();
+    let mut errors = Vec::new();
+    let final_state = create_etc_links(
+        config.entries.values(),
+        &etc_dir,
+        state,
+        &old_state,
+        &mut errors,
+    )
+    .update_state(old_state, &try_delete_path)
+    .unwrap_or_default();
 
     log::info!("Done");
-    Ok(final_state)
+    if errors.is_empty() {
+        Ok(final_state)
+    } else {
+        let messages: Vec<String> = errors.iter().map(|e| format!("{e:#}")).collect();
+        Err(ActivationError::with_partial_result(
+            final_state,
+            anyhow::anyhow!(
+                "{} etc file error(s):\n{}",
+                messages.len(),
+                messages.join("\n")
+            ),
+        ))
+    }
 }
 
 pub fn deactivate(old_state: FileTree) -> EtcActivationResult {
@@ -202,12 +221,13 @@ fn create_etc_links<'a, E>(
     etc_dir: &Path,
     state: FileTree,
     old_state: &FileTree,
+    errors: &mut Vec<anyhow::Error>,
 ) -> FileTree
 where
     E: Iterator<Item = &'a EtcFile>,
 {
     entries.fold(state, |state, entry| {
-        let new_state = create_etc_entry(entry, etc_dir, state, old_state);
+        let new_state = create_etc_entry(entry, etc_dir, state, old_state, errors);
         match new_state {
             Ok(new_state) => new_state,
             Err(ActivationError::WithPartialResult { result, source }) => {
@@ -215,6 +235,7 @@ where
                     "Error while creating file in {}: {source:?}",
                     etc_dir.display()
                 );
+                errors.push(source);
                 result
             }
         }
@@ -243,10 +264,12 @@ fn create_etc_link<P>(
     state: FileTree,
     old_state: &FileTree,
     replace_existing: bool,
+    errors: &mut Vec<anyhow::Error>,
 ) -> EtcActivationResult
 where
     P: AsRef<Path>,
 {
+    #[allow(clippy::too_many_arguments)]
     fn link_dir_contents(
         link_target: &Path,
         absolute_target: &Path,
@@ -255,6 +278,7 @@ where
         old_state: &FileTree,
         upwards_path: &Path,
         replace_existing: bool,
+        errors: &mut Vec<anyhow::Error>,
     ) -> EtcActivationResult {
         let link_path = etc_dir.join(link_target);
         // Create the dir if it doesn't exist yet
@@ -279,6 +303,7 @@ where
                     old_state,
                     &upwards_path.join(".."),
                     replace_existing,
+                    errors,
                 );
                 match new_state {
                     Ok(new_state) => new_state,
@@ -287,6 +312,7 @@ where
                             "Error while trying to link directory {}: {source:?}",
                             absolute_target.display()
                         );
+                        errors.push(source);
                         result
                     }
                 }
@@ -343,6 +369,7 @@ where
         old_state: &FileTree,
         upwards_path: &Path,
         replace_existing: bool,
+        errors: &mut Vec<anyhow::Error>,
     ) -> EtcActivationResult {
         let link_path = etc_dir.join(link_target);
         let mut dir_state = create_dir_recursively(link_path.parent().unwrap(), state)?;
@@ -387,6 +414,7 @@ where
                     old_state,
                     upwards_path,
                     effective_replace,
+                    errors,
                 )
             } else if replace_existing || is_inside_systemd_dependency_dir(&link_path) {
                 backup_and_link(&target, &link_path, dir_state)
@@ -445,6 +473,7 @@ where
         old_state,
         Path::new("."),
         replace_existing,
+        errors,
     )
 }
 
@@ -453,6 +482,7 @@ fn create_etc_entry(
     etc_dir: &Path,
     state: FileTree,
     old_state: &FileTree,
+    errors: &mut Vec<anyhow::Error>,
 ) -> EtcActivationResult {
     if entry.mode == "symlink" {
         if let Some(path::Component::Normal(link_target)) = entry.target.components().next() {
@@ -462,6 +492,7 @@ fn create_etc_entry(
                 state,
                 old_state,
                 entry.replace_existing,
+                errors,
             )
         } else {
             Err(ActivationError::with_partial_result(
