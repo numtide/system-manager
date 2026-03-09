@@ -76,10 +76,13 @@ let
                       shell;
                 };
               # Pass the wrapped system-manager binary down
-              # TODO: Use nixpkgs version by default.
-              system-manager = pkgs.callPackage ./packages/wrapper.nix {
-                system-manager-unwrapped = pkgs.callPackage ../package.nix { };
-              };
+              system-manager =
+                if pkgs ? system-manager then
+                  pkgs.system-manager
+                else
+                  (pkgs.callPackage ./packages/wrapper.nix {
+                    system-manager-unwrapped = pkgs.callPackage ../package.nix { };
+                  });
               userborn = userborn.packages.${config.nixpkgs.hostPlatform}.default;
             };
           };
@@ -104,9 +107,13 @@ let
         inherit (config.nixpkgs) pkgs;
 
         # Build system-manager package for use in toplevel
-        system-manager = pkgs.callPackage ./packages/wrapper.nix {
-          system-manager-unwrapped = pkgs.callPackage ../package.nix { };
-        };
+        system-manager =
+          if pkgs ? system-manager then
+            pkgs.system-manager
+          else
+            (pkgs.callPackage ./packages/wrapper.nix {
+              system-manager-unwrapped = pkgs.callPackage ../package.nix { };
+            });
 
         returnIfNoAssertions =
           drv:
