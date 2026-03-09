@@ -225,14 +225,19 @@ in
       '';
   };
 
-  container-systemd-packages = makeContainerTestFor "systemd-packages" {
+  # Test NixOS modules integrations
+  container-upstream-modules = makeContainerTestFor "upstream-packages" {
     modules = [
       (
         { pkgs, ... }:
         {
-          imports = [ "${nixpkgs}/nixos/modules/services/security/fail2ban.nix" ];
+          imports = [
+            "${nixpkgs}/nixos/modules/services/security/fail2ban.nix"
+            "${nixpkgs}/nixos/modules/programs/direnv.nix"
+          ];
           config = {
 
+            programs.direnv.enable = true;
             # Enabling fail2ban to test systemd units overrides and
             # systemd.packages options.
             services.fail2ban = {
@@ -275,6 +280,10 @@ in
             assert unit.exists, "fail2ban.service unit file should exist"
             assert unit.is_symlink or unit.is_file, "fail2ban.service should be a file or symlink"
             machine.wait_for_unit("fail2ban.service")
+        with subtest ("Direnv integration should work"):
+            machine.succeed("test -f /etc/direnv/direnv.toml")
+            machine.succeed("test -f /etc/direnv/direnvrc")
+            machine.succeed("which direnv")
       '';
   };
 }
