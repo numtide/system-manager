@@ -1098,6 +1098,8 @@ forEachUbuntuImage "example" {
 
         vm.fail("test -f /etc/modules-load.d/system-manager.conf")
         vm.fail("test -d /etc/systemd/system/systemd-modules-load.service.d")
+        # sysctl drop-in exist even without explicit config (upstream defaults)
+        vm.succeed("test -e /etc/systemd/system/systemd-sysctl.service.d/overrides.conf")
 
         # Activate with kernel modules: config should exist
         ${system-manager.lib.activateProfileSnippet {
@@ -1114,5 +1116,6 @@ forEachUbuntuImage "example" {
         vm.succeed("test -f /etc/sysctl.d/60-nixos.conf")
         vm.succeed("grep -q net.ipv4.ip_forward /etc/sysctl.d/60-nixos.conf")
         vm.succeed("grep -q vm.swappiness /etc/sysctl.d/60-nixos.conf")
+        vm.succeed("test -e /etc/systemd/system/systemd-sysctl.service.d/overrides.conf")
       '';
   }
