@@ -1,0 +1,22 @@
+name: nix-build
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  nix-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: NixOS/nix-installer-action@main
+        with:
+          extra-conf: |
+            extra-substituters = https://cache.numtide.com
+            extra-trusted-public-keys = niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=
+      - name: nix-build
+        run: nix-build
+      - name: nix-shell
+        run: nix-shell --run "echo ok"
