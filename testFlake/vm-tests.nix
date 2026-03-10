@@ -1097,6 +1097,7 @@ forEachUbuntuImage "example" {
         vm.wait_for_unit("system-manager.target")
 
         vm.fail("test -f /etc/modules-load.d/system-manager.conf")
+        vm.fail("test -d /etc/systemd/system/systemd-modules-load.service.d")
 
         # Activate with kernel modules: config should exist
         ${system-manager.lib.activateProfileSnippet {
@@ -1107,6 +1108,7 @@ forEachUbuntuImage "example" {
 
         vm.succeed("test -f /etc/modules-load.d/system-manager.conf")
         vm.succeed("grep -q veth /etc/modules-load.d/system-manager.conf")
+        vm.succeed("test -e /etc/systemd/system/systemd-modules-load.service.d/overrides.conf")
 
         # Verify sysctl config file
         vm.succeed("test -f /etc/sysctl.d/60-nixos.conf")
