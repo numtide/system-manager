@@ -123,8 +123,8 @@ in
         };
       };
 
-      systemd-sysctl.overrideStrategy = "asDropin";
-      systemd-sysctl = {
+      systemd-sysctl = lib.mkIf (config.environment.etc ? "sysctl.d/60-nixos.conf") {
+        overrideStrategy = "asDropin";
         wantedBy = [
           "system-manager.target"
           "multi-user.target"
