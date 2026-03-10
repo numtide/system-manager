@@ -1117,5 +1117,13 @@ forEachUbuntuImage "example" {
         vm.succeed("grep -q net.ipv4.ip_forward /etc/sysctl.d/60-nixos.conf")
         vm.succeed("grep -q vm.swappiness /etc/sysctl.d/60-nixos.conf")
         vm.succeed("test -e /etc/systemd/system/systemd-sysctl.service.d/overrides.conf")
+
+        ip_forward = vm.succeed("sysctl -n net.ipv4.ip_forward").strip()
+        assert ip_forward == "1", f"Expected net.ipv4.ip_forward=1, got {ip_forward}"
+
+        swappiness = vm.succeed("sysctl -n vm.swappiness").strip()
+        assert swappiness == "10", f"Expected vm.swappiness=10, got {swappiness}"
+
+        vm.succeed("lsmod | grep -q veth")
       '';
   }
