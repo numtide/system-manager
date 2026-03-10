@@ -1107,5 +1107,10 @@ forEachUbuntuImage "example" {
 
         vm.succeed("test -f /etc/modules-load.d/system-manager.conf")
         vm.succeed("grep -q veth /etc/modules-load.d/system-manager.conf")
+
+        # Verify sysctl config file
+        vm.succeed("test -f /etc/sysctl.d/60-nixos.conf")
+        vm.succeed("grep -q net.ipv4.ip_forward /etc/sysctl.d/60-nixos.conf")
+        vm.succeed("grep -q vm.swappiness /etc/sysctl.d/60-nixos.conf")
       '';
   }
