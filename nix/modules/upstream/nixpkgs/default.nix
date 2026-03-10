@@ -110,25 +110,27 @@ in
       "modules-load.d/system-manager.conf".source = kernelModulesConf;
     };
 
-    systemd.services.systemd-modules-load.overrideStrategy = "asDropin";
-    systemd.services.systemd-modules-load = {
-      wantedBy = [
-        "system-manager.target"
-        "multi-user.target"
-      ];
-      restartTriggers = [ kernelModulesConf ];
-      serviceConfig = {
-        SuccessExitStatus = "0 1";
+    systemd.services = {
+      systemd-modules-load = lib.mkIf (config.boot.kernelModules != [ ]) {
+        overrideStrategy = "asDropin";
+        wantedBy = [
+          "system-manager.target"
+          "multi-user.target"
+        ];
+        restartTriggers = [ kernelModulesConf ];
+        serviceConfig = {
+          SuccessExitStatus = "0 1";
+        };
       };
-    };
 
-    systemd.services.systemd-sysctl.overrideStrategy = "asDropin";
-    systemd.services.systemd-sysctl = {
-      wantedBy = [
-        "system-manager.target"
-        "multi-user.target"
-      ];
-      restartTriggers = [ config.environment.etc."sysctl.d/60-nixos.conf".source ];
+      systemd-sysctl.overrideStrategy = "asDropin";
+      systemd-sysctl = {
+        wantedBy = [
+          "system-manager.target"
+          "multi-user.target"
+        ];
+        restartTriggers = [ config.environment.etc."sysctl.d/60-nixos.conf".source ];
+      };
     };
   };
 }
