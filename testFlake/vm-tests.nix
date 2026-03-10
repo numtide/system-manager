@@ -1046,3 +1046,66 @@ forEachUbuntuImage "example" {
         print("SSH key-based sops decryption test passed!")
       '';
   }
+
+//
+
+  # Test that boot.kernel.sysctl and boot.kernelModules are applied at runtime
+  forEachUbuntuImage "boot-config" {
+    modules = [
+      (
+        { ... }:
+        {
+          boot.kernel.sysctl = {
+            "net.ipv4.ip_forward" = 1;
+            "vm.swappiness" = 10;
+          };
+          boot.kernelModules = [ "veth" ];
+        }
+      )
+    ];
+    extraPathsToRegister =
+      let
+        emptyConfig = system-manager.lib.makeSystemConfig {
+          modules = [
+            {
+              nixpkgs.hostPlatform = system;
+            }
+          ];
+        };
+      in
+      [ emptyConfig ];
+    testScriptFunction =
+      { toplevel, hostPkgs, ... }:
+      let
+        emptyConfig = system-manager.lib.makeSystemConfig {
+          modules = [
+            {
+              nixpkgs.hostPlatform = system;
+            }
+          ];
+        };
+      in
+      ''
+        start_all()
+        vm.wait_for_unit("default.target")
+
+        # Activate empty config: modules-load.d config should not be created
+        ${system-manager.lib.activateProfileSnippet {
+          node = "vm";
+          profile = emptyConfig;
+        }}
+        vm.wait_for_unit("system-manager.target")
+
+        vm.fail("test -f /etc/modules-load.d/system-manager.conf")
+
+        # Activate with kernel modules: config should exist
+        ${system-manager.lib.activateProfileSnippet {
+          node = "vm";
+          profile = toplevel;
+        }}
+        vm.wait_for_unit("system-manager.target")
+
+        vm.succeed("test -f /etc/modules-load.d/system-manager.conf")
+        vm.succeed("grep -q veth /etc/modules-load.d/system-manager.conf")
+      '';
+  }
