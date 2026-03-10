@@ -7,9 +7,14 @@
   };
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  inputs.flake-compat = {
+    url = "github:edolstra/flake-compat";
+    flake = false;
+  };
   inputs.userborn = {
     url = "github:jfroche/userborn/system-manager";
     inputs.nixpkgs.follows = "nixpkgs";
+    inputs.flake-compat.follows = "flake-compat";
   };
 
   outputs =
@@ -17,6 +22,7 @@
       self,
       nixpkgs,
       userborn,
+      ...
     }:
     let
       systems = [
@@ -73,7 +79,42 @@
       devShells = eachSystem (
         { pkgs, ... }:
         {
-          default = import ./shell.nix { inherit pkgs; };
+          default =
+            let
+              llvm = pkgs.llvmPackages_latest;
+            in
+            pkgs.mkShellNoCC {
+              shellHook = ''
+                ${pkgs.pre-commit}/bin/pre-commit install --install-hooks --overwrite
+                export PKG_CONFIG_PATH="${pkgs.lib.makeSearchPath "lib/pkgconfig" [ pkgs.dbus.dev ]}"
+                export LIBCLANG_PATH="${llvm.libclang}/lib"
+                # for rust-analyzer
+                export RUST_SRC_PATH="${pkgs.rustPlatform.rustLibSrc}"
+                export RUST_BACKTRACE=1
+              '';
+              buildInputs = [
+                pkgs.dbus
+              ]
+              ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isDarwin [ pkgs.libiconv ];
+              nativeBuildInputs = with pkgs; [
+                llvm.clang
+                pkg-config
+                rustc
+                cargo
+                # Formatting
+                pre-commit
+                treefmt
+                nixfmt
+                rustfmt
+                clippy
+                mdbook
+                mdformat
+                rust-analyzer
+                gh
+                # Testing tools
+                parallel
+              ];
+            };
         }
       );
 

@@ -1,9 +1,11 @@
-{
-  nixpkgs ? <nixpkgs>,
-  pkgs ? import nixpkgs { },
-}:
-rec {
-  lib = import ./nix/lib.nix { inherit nixpkgs; };
-  system-manager-unwrapped = pkgs.callPackage ./package.nix { };
-  system-manager = pkgs.callPackage ./nix/packages/wrapper.nix { inherit system-manager-unwrapped; };
-}
+(import (
+  let
+    lock = builtins.fromJSON (builtins.readFile ./flake.lock);
+  in
+  fetchTarball {
+    url =
+      lock.nodes.flake-compat.locked.url
+        or "https://github.com/edolstra/flake-compat/archive/${lock.nodes.flake-compat.locked.rev}.tar.gz";
+    sha256 = lock.nodes.flake-compat.locked.narHash;
+  }
+) { src = ./.; }).defaultNix
