@@ -225,6 +225,10 @@ forEachUbuntuImage "example" {
       vm.wait_for_unit("default.target")
       vm.succeed("cp ${./sops/age-keys.txt} /run/age-keys.txt")
 
+      # Capture original shell paths before activation (for deactivation restoration check)
+      root_shell_before = vm.succeed("getent passwd root").strip().split(":")[-1]
+      nobody_shell_before = vm.succeed("getent passwd nobody").strip().split(":")[-1]
+
       vm.succeed("touch /etc/foo_test")
       vm.succeed("${toplevel}/bin/activate 2>&1 | tee /tmp/output.log")
       vm.succeed("grep -F 'Error while creating file in /etc: Unmanaged path already exists in filesystem, please remove it and run system-manager again: /etc/foo_test' /tmp/output.log")
@@ -320,15 +324,21 @@ forEachUbuntuImage "example" {
       nix_trusted_users = vm.succeed("${hostPkgs.nix}/bin/nix config show trusted-users").strip()
       assert "zimbatm" in nix_trusted_users, f"Expected 'zimbatm' to be in trusted-users, got {nix_trusted_users}"
 
-      luj_entry = vm.succeed("grep '^luj:' /etc/passwd").strip()
+      luj_entry = vm.succeed("getent passwd luj").strip()
       assert luj_entry != "", "Expected user 'luj' to exist"
 
       # Verify zimbatm user exists with correct shell path
-      zimbatm_entry = vm.succeed("grep '^zimbatm:' /etc/passwd").strip()
+      zimbatm_entry = vm.succeed("getent passwd zimbatm").strip()
       assert "/run/system-manager/sw/bin/bash" in zimbatm_entry, f"Expected shell to be /run/system-manager/sw/bin/bash, got: {zimbatm_entry}"
 
+      # Verify root and nobody shells were rewritten to system-manager paths during activation
+      root_entry_active = vm.succeed("getent passwd root").strip()
+      assert "/run/system-manager/sw" in root_entry_active, f"Expected root shell under /run/system-manager/sw, got: {root_entry_active}"
+      nobody_entry_active = vm.succeed("getent passwd nobody").strip()
+      assert "/run/system-manager/sw" in nobody_entry_active, f"Expected nobody shell under /run/system-manager/sw, got: {nobody_entry_active}"
+
       # Verify wheel group exists and zimbatm is in it
-      wheel_entry = vm.succeed("grep '^wheel:' /etc/group").strip()
+      wheel_entry = vm.succeed("getent group wheel").strip()
       print(f"Wheel group: {wheel_entry}")
       assert wheel_entry != "", "Expected wheel group to exist"
 
@@ -339,7 +349,7 @@ forEachUbuntuImage "example" {
       # Verify zimbatm is added to pre-existing sudo group (gid 27 on Ubuntu)
       # This tests that userborn correctly adds users to groups that existed
       # on the system before system-manager was activated.
-      sudo_entry = vm.succeed("grep '^sudo:' /etc/group").strip()
+      sudo_entry = vm.succeed("getent group sudo").strip()
       print(f"Sudo group: {sudo_entry}")
       assert "zimbatm" in sudo_entry, f"Expected zimbatm in sudo group, got: {sudo_entry}"
       assert "sudo" in zimbatm_groups, f"Expected zimbatm to be in sudo group, got: {zimbatm_groups}"
@@ -371,8 +381,8 @@ forEachUbuntuImage "example" {
       vm.fail("test -f /etc/foo_new")
 
       # userborn never deletes users
-      zimbatm_entry = vm.succeed("grep '^zimbatm:' /etc/passwd").strip()
-      assert zimbatm_entry != "", f"Expected user 'zimbatm' to persist in /etc/passwd after deactivation, got empty"
+      zimbatm_entry = vm.succeed("getent passwd zimbatm").strip()
+      assert zimbatm_entry != "", f"Expected user 'zimbatm' to persist after deactivation, got empty"
 
       # userborn locks user in shadow (password = "!*") after deactivation
       zimbatm_shadow = vm.succeed("grep '^zimbatm:' /etc/shadow").strip()
@@ -390,6 +400,17 @@ forEachUbuntuImage "example" {
       print(f"Shadow permissions after deactivation: mode={shadow_mode_after}, group={shadow_group_after}")
       assert shadow_mode_after == "640", f"Expected /etc/shadow mode 640 after deactivation, got: {shadow_mode_after}"
       assert shadow_group_after == "shadow", f"Expected /etc/shadow group shadow after deactivation, got: {shadow_group_after}"
+
+      # Verify /etc/passwd shells are restored to original values after deactivation
+      root_shell_after = vm.succeed("getent passwd root").strip().split(":")[-1]
+      assert root_shell_after == root_shell_before, f"Expected root shell restored to {root_shell_before}, got: {root_shell_after}"
+
+      nobody_shell_after = vm.succeed("getent passwd nobody").strip().split(":")[-1]
+      assert nobody_shell_after == nobody_shell_before, f"Expected nobody shell restored to {nobody_shell_before}, got: {nobody_shell_after}"
+
+      # Managed user shell should not point to /run/system-manager/sw after deactivation
+      zimbatm_shell_after = vm.succeed("getent passwd zimbatm").strip().split(":")[-1]
+      assert "/run/system-manager/sw" not in zimbatm_shell_after, f"Expected zimbatm shell to not reference system-manager after deactivation, got: {zimbatm_shell_after}"
     '';
 }
 
@@ -736,7 +757,7 @@ forEachUbuntuImage "example" {
         vm.succeed("groupadd -f wheel")
         vm.succeed("usermod -aG wheel zimbatm")
 
-        wheel_members_before = vm.succeed("grep '^wheel:' /etc/group").strip()
+        wheel_members_before = vm.succeed("getent group wheel").strip()
         print(f"Wheel group before activation: {wheel_members_before}")
         assert "zimbatm" in wheel_members_before, f"zimbatm should be in wheel group before activation"
 
@@ -758,7 +779,7 @@ forEachUbuntuImage "example" {
         assert "wheel" in managed_groups, f"manageduser should be in wheel group"
 
         # Verify existing user is STILL in wheel group after activation
-        wheel_members_after = vm.succeed("grep '^wheel:' /etc/group").strip()
+        wheel_members_after = vm.succeed("getent group wheel").strip()
         print(f"Wheel group after activation: {wheel_members_after}")
 
         existing_groups = vm.succeed("id -Gn zimbatm").strip()
@@ -778,7 +799,7 @@ forEachUbuntuImage "example" {
         print(vm.succeed("journalctl -u userborn.service --no-pager"))
 
         # Verify wheel group after deactivation
-        wheel_members_deactivated = vm.succeed("grep '^wheel:' /etc/group").strip()
+        wheel_members_deactivated = vm.succeed("getent group wheel").strip()
         print(f"Wheel group after deactivation: {wheel_members_deactivated}")
 
         # zimbatm should STILL be in wheel (pre-existing member preserved)
