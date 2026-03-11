@@ -1101,6 +1101,8 @@ forEachUbuntuImage "example" {
         # sysctl drop-in exist even without explicit config (upstream defaults)
         vm.succeed("test -e /etc/systemd/system/systemd-sysctl.service.d/overrides.conf")
 
+        print(vm.succeed("systemctl --no-pager status systemd-modules-load.service || true"))
+
         # Activate with kernel modules: config should exist
         ${system-manager.lib.activateProfileSnippet {
           node = "vm";
@@ -1123,6 +1125,9 @@ forEachUbuntuImage "example" {
 
         swappiness = vm.succeed("sysctl -n vm.swappiness").strip()
         assert swappiness == "10", f"Expected vm.swappiness=10, got {swappiness}"
+
+        # Debug output to surface module-load status in CI logs
+        print(vm.succeed("systemctl --no-pager status systemd-modules-load.service || true"))
 
         vm.succeed("lsmod | grep -q veth")
       '';
