@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-03-12
+
 ### Added
 
 - User and group management via [userborn](https://github.com/nikstur/userborn) integration (#266)
