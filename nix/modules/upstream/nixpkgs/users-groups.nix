@@ -260,8 +260,8 @@ let
 
         shell = mkOption {
           type = types.nullOr (types.either types.shellPackage (types.passwdEntry types.path));
-          default = pkgs.shadow;
-          defaultText = literalExpression "pkgs.shadow";
+          default = nologinPackage;
+          defaultText = literalExpression "nologinPackage";
           example = literalExpression "pkgs.bashInteractive";
           description = ''
             The path to the user's shell. Can use shell derivations,
@@ -656,6 +656,19 @@ let
     }
   );
 
+  # Provide only nologin from the shadow suite.
+  # The full pkgs.shadow must not end up in systemPackages because its
+  # binaries (passwd, su, chsh, etc.) are linked against nix store PAM
+  # libraries and are incompatible with the host system's PAM
+  # configuration on non-NixOS distributions.
+  nologinPackage = pkgs.runCommand "nologin" {
+    meta.mainProgram = "nologin";
+    passthru.shellPath = "/bin/nologin";
+  } ''
+    mkdir -p $out/bin
+    ln -s ${pkgs.shadow.out}/bin/nologin $out/bin/nologin
+  '';
+
   systemShells =
     let
       shells = mapAttrsToList (_: u: u.shell) cfg.users;
@@ -833,7 +846,6 @@ in
       cryptSchemeIdPatternGroup = "(${lib.concatStringsSep "|" pkgs.libxcrypt.enabledCryptSchemeIds})";
     in
     {
-
       users.defaultUserShell = lib.mkDefault pkgs.bashInteractive;
       users.users = {
         root = {
@@ -1001,6 +1013,16 @@ in
       # };
 
       assertions = [
+        {
+          assertion = !(lib.any (p: p == pkgs.shadow) config.environment.systemPackages);
+          message = ''
+            pkgs.shadow must not be in environment.systemPackages.
+            Its binaries (passwd, su, chsh, etc.) are linked against nix store
+            PAM libraries and are incompatible with the host system's PAM
+            configuration on non-NixOS distributions.
+            Use the host's native shadow utilities instead.
+          '';
+        }
         {
           assertion = !cfg.enforceIdUniqueness || (uidsAreUnique && gidsAreUnique);
           message = "UIDs and GIDs must be unique!";

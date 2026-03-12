@@ -994,6 +994,13 @@ forEachUbuntuImage "example" {
         vm.succeed("test -x /run/wrappers/bin/mount")
         vm.succeed("test -x /run/wrappers/bin/umount")
 
+        # Shadow binaries must NOT be in system-manager PATH: they are linked
+        # against nix store PAM libraries and are incompatible with the host
+        # system's PAM configuration on non-NixOS distributions.
+        vm.fail("test -e /run/system-manager/sw/bin/passwd")
+        vm.fail("test -e /run/system-manager/sw/bin/su")
+        vm.fail("test -e /run/system-manager/sw/bin/chsh")
+
         # Build-time check output exists in toplevel
         vm.succeed("test -d ${toplevel}/checks")
 
