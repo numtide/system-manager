@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enable systemd unit overrides (#376)
 - Support `environment.extraInit` option (#389)
 - Support `system.checks` option (#390)
+- Support `security.wrappers` (#391)
 
 ### Fixed
 
@@ -56,7 +57,7 @@ Thanks to all the contributors who made this release possible:
 - Jeffrey Cogswell
 - Jonas Chevalier
 - Julien Malka
-- Picnoir
+- picnoir
 - Rowan Amber-Jones
 
 ## [1.0.0] - 2026-01-06
