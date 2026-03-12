@@ -9,18 +9,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- User and group management via [userborn](https://github.com/nikstur/userborn) integration (#266)
+- Secrets management via [sops-nix](https://github.com/Mic92/sops-nix) integration (#270)
+- Container test driver with Ubuntu support, testinfra integration, interactive debugging (#333)
+- Default value for `--flake` CLI option set to `~/.config/system-manager/flake.nix` (#326)
+- `target_host` is now global CLI argument (#340)
+- Speed up system-manager build using Numtide cache substituter (#337)
 - Support running system-manager from macOS to deploy configurations to Linux (#325)
+- Reduce the number of flake inputs using a sub-flake (#329)
+- Add mocks for `networking.firewall` options (#356)
+- Support `systemd.maskedUnits` option (#361)
+- Add `replaceExisting` option to `environment.etc` entries to backup and replace existing files that are not managed by system-manager (#359)
+- Support `systemd.packages` option (#372)
+- Handle wildcards in `environment.etc` entries (#373)
+- Enable systemd unit overrides (#376)
+- Support `environment.extraInit` option (#389)
+- Support `system.checks` option (#390)
+- Support `security.wrappers` (#391)
 
 ### Fixed
 
-- Remove eval warnings (#324)
+- Fix directory/file/symlink creation order in etc (#374)
+- Remove unused .mode/.uid/.gid sidecar files from etc static environment (#344)
+- Remove multiple eval warnings
 
 ### Documentation
 
 - Reorganize documentation with tutorials, how-to guides, explanations, and reference pages
+- Update Nix installation instructions to recommend nix-installer
+- Add users, groups example and documentation
+- Add container test driver documentation
+- Improve remote deployment documentation
 - Add CONTRIBUTING.md with developer guidelines
 - Add supported platforms reference page
 - Add file permissions and ownership reference
+- Auto-generated module options reference integrated into MkDocs
+- Document how to import upstream NixOS modules
+
+### Contributors
+
+Thanks to all the contributors who made this release possible:
+
+- Aaron Honeycutt
+- David Chocholatý
+- Francisco-Andre-Martins
+- Jean-François Roche
+- Jeffrey Cogswell
+- Jonas Chevalier
+- Julien Malka
+- picnoir
+- Rowan Amber-Jones
 
 ## [1.0.0] - 2026-01-06
 
@@ -103,5 +141,6 @@ Thanks to all the contributors who made this release possible:
 - Steve Dodd
 - Yvan Sraka
 
-[unreleased]: https://github.com/numtide/system-manager/compare/v1.0.0...HEAD
+[unreleased]: https://github.com/numtide/system-manager/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/numtide/system-manager/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/numtide/system-manager/releases/tag/v1.0.0
