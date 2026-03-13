@@ -661,13 +661,16 @@ let
   # binaries (passwd, su, chsh, etc.) are linked against nix store PAM
   # libraries and are incompatible with the host system's PAM
   # configuration on non-NixOS distributions.
-  nologinPackage = pkgs.runCommand "nologin" {
-    meta.mainProgram = "nologin";
-    passthru.shellPath = "/bin/nologin";
-  } ''
-    mkdir -p $out/bin
-    ln -s ${pkgs.shadow.out}/bin/nologin $out/bin/nologin
-  '';
+  nologinPackage =
+    pkgs.runCommand "nologin"
+      {
+        meta.mainProgram = "nologin";
+        passthru.shellPath = "/bin/nologin";
+      }
+      ''
+        mkdir -p $out/bin
+        ln -s ${pkgs.shadow.out}/bin/nologin $out/bin/nologin
+      '';
 
   systemShells =
     let
