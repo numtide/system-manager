@@ -30,13 +30,20 @@
         "aarch64-darwin"
         "x86_64-linux"
       ];
+      pkgsFor = nixpkgs.lib.genAttrs systems (
+        system:
+        import nixpkgs {
+          inherit system;
+          overlays = [ packageOverlay ];
+        }
+      );
       eachSystem =
         f:
         nixpkgs.lib.genAttrs systems (
           system:
           f {
             inherit system;
-            pkgs = nixpkgs.legacyPackages.${system};
+            pkgs = pkgsFor.${system};
           }
         );
       packageOverlay = final: _prev: rec {
@@ -63,8 +70,6 @@
       docs = eachSystem ({ pkgs, ... }: import ./docs/options.nix { inherit pkgs; });
 
       overlays.default = packageOverlay;
-      # Overlay packages onto internal nixpkgs
-      nixpkgs.overlays = [ packageOverlay ];
 
       # Only useful for quick tests
       systemConfigs.default = self.lib.makeSystemConfig {
