@@ -124,8 +124,6 @@ in
       (
         { ... }:
         {
-          environment.etc."nix/nix.conf".replaceExisting = true;
-
           environment.extraInit = ''
             export MY_CUSTOM_VAR="hello-from-extraInit"
           '';
