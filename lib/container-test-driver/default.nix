@@ -8,6 +8,7 @@
   #   name: Name of the test
   #   toplevel: system-manager profile to test
   #   testScript: Python test script
+  #   rootfs: Container rootfs derivation
   #   extraPathsToRegister: Additional store paths to make available
   #   skipTypeCheck: Skip mypy type checking (default: false)
   #   skipLint: Skip pyflakes linting (default: false)
@@ -17,13 +18,13 @@
       name,
       toplevel,
       testScript,
+      rootfs,
       extraPathsToRegister ? [ ],
       skipTypeCheck ? false,
       skipLint ? false,
     }:
     let
       testDriver = hostPkgs.callPackage ./package.nix { };
-      ubuntuRootfs = import ./ubuntu-rootfs.nix { pkgs = hostPkgs; };
 
       # Create closure info for nix copy
       closureInfo = hostPkgs.closureInfo {
@@ -61,7 +62,7 @@
         let
           runnerScript = ''
             exec ${testDriver}/bin/container-test-driver \
-              --ubuntu-rootfs ${ubuntuRootfs} \
+              --rootfs ${rootfs} \
               --container-name ${name} \
               --profile ${toplevel} \
               --host-nix-store /nix/store \
@@ -73,7 +74,7 @@
           inherit
             toplevel
             testDriver
-            ubuntuRootfs
+            rootfs
             closureInfo
             ;
           driver = hostPkgs.writeShellScriptBin "run-container-test" ''
@@ -116,7 +117,7 @@
       + ''
         # Run the container test driver
         container-test-driver \
-          --ubuntu-rootfs ${ubuntuRootfs} \
+          --rootfs ${rootfs} \
           --container-name ${name} \
           --profile ${toplevel} \
           --host-nix-store /nix/store \

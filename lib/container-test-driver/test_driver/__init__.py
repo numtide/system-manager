@@ -1,4 +1,4 @@
-"""Test driver for container-based system-manager testing on Ubuntu."""
+"""Test driver for container-based system-manager testing."""
 
 import argparse
 import os
@@ -7,7 +7,7 @@ from pathlib import Path
 
 from colorama import Fore, Style
 
-from .driver import Driver, UbuntuContainerInfo
+from .driver import ContainerInfo, Driver
 from .errors import Error
 from .logger import CompositeLogger, TerminalLogger
 from .machine import Machine
@@ -16,7 +16,7 @@ __all__ = [
     "Driver",
     "Error",
     "Machine",
-    "UbuntuContainerInfo",
+    "ContainerInfo",
     "generate_driver_symbols",
     "main",
 ]
@@ -37,10 +37,10 @@ def main() -> None:
     """Main entry point for the container test driver CLI."""
     arg_parser = argparse.ArgumentParser(prog="container-test-driver")
     arg_parser.add_argument(
-        "--ubuntu-rootfs",
+        "--rootfs",
         type=Path,
         required=True,
-        help="Path to the Ubuntu rootfs",
+        help="Path to the container rootfs",
     )
     arg_parser.add_argument(
         "--container-name",
@@ -85,9 +85,9 @@ def main() -> None:
     )
     args = arg_parser.parse_args()
 
-    container = UbuntuContainerInfo(
+    container = ContainerInfo(
         name=args.container_name,
-        rootfs=args.ubuntu_rootfs,
+        rootfs=args.rootfs,
         profile=args.profile,
         host_nix_store=args.host_nix_store,
         closure_info=args.closure_info,

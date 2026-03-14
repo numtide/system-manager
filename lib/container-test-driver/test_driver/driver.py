@@ -21,8 +21,8 @@ from .utils import CONTAINER_PATH, pythonize_name
 
 
 @dataclass
-class UbuntuContainerInfo:
-    """Container info for Ubuntu-based containers."""
+class ContainerInfo:
+    """Container configuration for systemd-nspawn based tests."""
 
     name: str
     rootfs: Path
@@ -42,7 +42,7 @@ class Driver:
 
     def __init__(
         self,
-        containers: list[UbuntuContainerInfo],
+        containers: list[ContainerInfo],
         logger: AbstractLogger,
         testscript: str,
         out_dir: str,
