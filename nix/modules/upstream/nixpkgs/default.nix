@@ -5,6 +5,7 @@
 }:
 {
   imports = [
+    ./dhparams.nix
     ./firewall.nix
     ./nginx.nix
     ./nix.nix
@@ -20,6 +21,7 @@
       "/misc/meta.nix"
       "/misc/ids.nix"
       "/security/acme/"
+      "/security/dhparams.nix"
       "/security/wrappers/"
       "/services/web-servers/nginx/"
       # nix settings
