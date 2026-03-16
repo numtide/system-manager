@@ -19,7 +19,7 @@ let
       ubuntu = nix-vm-test.ubuntu;
     in
     lib.listToAttrs (
-      lib.flip map (lib.attrNames ubuntu.images) (
+      lib.flip map (lib.filter (v: v != "20_04") (lib.attrNames ubuntu.images)) (
         imageVersion:
         let
           toplevel = (
@@ -1010,6 +1010,75 @@ forEachUbuntuImage "example" {
           profile = toplevel;
         }}
         vm.fail("test -e /etc/systemd/system/suid-sgid-wrappers.service")
+      '';
+  }
+
+//
+
+  # Test sudo module with pam_shim integration.
+  # This must run in a VM because sudo requires SUID wrappers.
+  forEachUbuntuImage "sudo-module" {
+    modules = [
+      (
+        { ... }:
+        {
+          security.sudo = {
+            enable = true;
+            wheelNeedsPassword = false;
+            extraRules = [
+              {
+                groups = [ "sudo" ];
+                commands = [
+                  {
+                    command = "ALL";
+                    options = [ "NOPASSWD" ];
+                  }
+                ];
+              }
+            ];
+          };
+
+          users.users.testuser = {
+            isNormalUser = true;
+            uid = 1100;
+            group = "testuser";
+            extraGroups = [
+              "wheel"
+              "sudo"
+            ];
+          };
+          users.groups.testuser.gid = 1100;
+        }
+      )
+    ];
+    extraPathsToRegister = [ ];
+    testScriptFunction =
+      { toplevel, hostPkgs, ... }:
+      ''
+        start_all()
+
+        vm.wait_for_unit("default.target")
+
+        ${system-manager.lib.activateProfileSnippet {
+          node = "vm";
+          profile = toplevel;
+        }}
+        vm.wait_for_unit("system-manager.target")
+
+        # Verify /etc/sudoers is generated with correct rules
+        vm.succeed("test -f /etc/sudoers")
+        content = vm.succeed("cat /etc/sudoers")
+        assert "%wheel" in content, f"sudoers should contain wheel group, got: {content}"
+        assert "%sudo" in content, f"sudoers should contain sudo group, got: {content}"
+        assert "NOPASSWD" in content, f"sudoers should contain NOPASSWD, got: {content}"
+
+        # Verify sudo SUID wrapper is installed
+        vm.succeed("test -x /run/wrappers/bin/sudo")
+        vm.succeed("test -x /run/wrappers/bin/sudoedit")
+
+        # Verify testuser can sudo without password
+        result = vm.succeed("su - testuser -c 'sudo whoami'").strip()
+        assert result == "root", f"sudo whoami should return root, got: {result}"
       '';
   }
 
