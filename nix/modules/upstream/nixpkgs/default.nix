@@ -9,6 +9,7 @@
     ./firewall.nix
     ./nginx.nix
     ./nix.nix
+    ./programs/ssh.nix
     ./security-wrappers.nix
     ./security/sudo.nix
     ./userborn.nix
@@ -21,6 +22,7 @@
     map (path: nixosModulesPath + path) [
       "/misc/meta.nix"
       "/misc/ids.nix"
+      "/programs/ssh.nix"
       "/security/acme/"
       "/security/dhparams.nix"
       "/security/sudo.nix"
