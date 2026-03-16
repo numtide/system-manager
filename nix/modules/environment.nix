@@ -12,6 +12,16 @@
       default = [ ];
     };
 
+    corePackages = lib.mkOption {
+      type = lib.types.listOf lib.types.package;
+      default = [ ];
+      description = ''
+        Packages that are considered essential for the system to function.
+        These are automatically included in `environment.systemPackages`.
+        NixOS modules use this to register packages they depend on.
+      '';
+    };
+
     pathsToLink = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
@@ -30,6 +40,8 @@
     in
     {
       environment = {
+        systemPackages = config.environment.corePackages;
+
         pathsToLink = [
           "/bin"
         ];
