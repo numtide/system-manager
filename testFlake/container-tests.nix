@@ -327,6 +327,69 @@ forEachDistro "example" {
     '';
 }
 
+// forEachDistro "ssh-known-hosts" {
+  modules = [
+    (
+      { ... }:
+      {
+        environment.etc."nix/nix.conf".replaceExisting = true;
+
+        programs.ssh.knownHosts = {
+          "github.com" = {
+            publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
+          };
+          "gitlab.com" = {
+            extraHostNames = [
+              "gitlab.com"
+              "10.0.0.1"
+            ];
+            publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAfuCHKVTjquxvt6CM6tdG4SLp1Btn/nOeHHE5UOzRdf";
+          };
+        };
+      }
+    )
+  ];
+  testScriptFunction =
+    { toplevel, hostPkgs, ... }:
+    ''
+      start_all()
+
+      machine.wait_for_unit("multi-user.target")
+
+      activation_logs = machine.activate()
+      for line in activation_logs.split("\n"):
+          assert not "ERROR" in line, line
+      machine.wait_for_unit("system-manager.target")
+
+      with subtest("ssh_known_hosts file exists"):
+          known_hosts = machine.file("/etc/ssh/ssh_known_hosts")
+          assert known_hosts.exists, "/etc/ssh/ssh_known_hosts should exist"
+
+      with subtest("github.com key is present"):
+          content = machine.succeed("cat /etc/ssh/ssh_known_hosts")
+          assert "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl" in content, \
+              f"Expected github.com key in known_hosts, got: {content}"
+
+      with subtest("gitlab.com key with extra hostnames is present"):
+          content = machine.succeed("cat /etc/ssh/ssh_known_hosts")
+          assert "gitlab.com,10.0.0.1 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAfuCHKVTjquxvt6CM6tdG4SLp1Btn/nOeHHE5UOzRdf" in content, \
+              f"Expected gitlab.com key with extra hostnames in known_hosts, got: {content}"
+
+      with subtest("ssh_config references known hosts file"):
+          ssh_config = machine.file("/etc/ssh/ssh_config")
+          assert ssh_config.exists, "/etc/ssh/ssh_config should exist"
+          config_content = machine.succeed("cat /etc/ssh/ssh_config")
+          assert "GlobalKnownHostsFile" in config_content, \
+              f"Expected GlobalKnownHostsFile in ssh_config, got: {config_content}"
+          assert "/etc/ssh/ssh_known_hosts" in config_content, \
+              f"Expected /etc/ssh/ssh_known_hosts path in ssh_config, got: {config_content}"
+
+      with subtest("deactivation removes known hosts file"):
+          machine.succeed("${toplevel}/bin/deactivate")
+          machine.fail("test -f /etc/ssh/ssh_known_hosts")
+    '';
+}
+
 // forEachDistro "systemd-packages" {
   modules = [
     (
@@ -345,10 +408,6 @@ forEachDistro "example" {
           networking.nftables.enable = true;
         };
         options = {
-          # Dummy valies to enable fail2ban
-          services.openssh.settings = lib.mkOption {
-            type = lib.types.attrs;
-          };
           # Some goes for nftables
           networking.nftables.enable = lib.mkEnableOption "dummy nftable module";
         };
