@@ -10,6 +10,7 @@
     ./nginx.nix
     ./nix.nix
     ./security-wrappers.nix
+    ./security/sudo.nix
     ./userborn.nix
     ./users-groups.nix
     ../sops-nix.nix
@@ -22,6 +23,7 @@
       "/misc/ids.nix"
       "/security/acme/"
       "/security/dhparams.nix"
+      "/security/sudo.nix"
       "/security/wrappers/"
       "/services/web-servers/nginx/"
       # nix settings

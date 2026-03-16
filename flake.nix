@@ -16,12 +16,17 @@
     inputs.nixpkgs.follows = "nixpkgs";
     inputs.flake-compat.follows = "flake-compat";
   };
+  inputs.pam-shim = {
+    url = "github:Cu3PO42/pam_shim";
+    inputs.nixpkgs.follows = "nixpkgs";
+  };
 
   outputs =
     {
       self,
       nixpkgs,
       userborn,
+      pam-shim,
       ...
     }:
     let
@@ -52,7 +57,7 @@
       };
     in
     {
-      lib = (import ./nix/lib.nix { inherit nixpkgs userborn; }) // {
+      lib = (import ./nix/lib.nix { inherit nixpkgs userborn pam-shim; }) // {
         # Container test library for external projects
         containerTest = import ./lib/container-test-driver { inherit (nixpkgs) lib; };
       };
