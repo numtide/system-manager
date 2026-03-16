@@ -23,6 +23,7 @@ let
         modules,
         overlays ? [ ],
         extraSpecialArgs ? { },
+        specialArgs ? { },
       }:
       let
         # Module that sets additional module arguments
@@ -89,6 +90,7 @@ let
             specialArgs = {
               nixosModulesPath = "${nixos}/modules";
             }
+            // specialArgs
             // extraSpecialArgs;
             modules = [
               extraArgsModule
@@ -96,6 +98,19 @@ let
               {
                 _file = "${self.printAttrPos (builtins.unsafeGetAttrPos "a" { a = null; })}: inline module";
                 build = { inherit toplevel; };
+              }
+              {
+                config = {
+                  assertions = [
+                    {
+                      assertion = !((extraSpecialArgs != { }) && (specialArgs != { }));
+                      message = "extraSpecialArgs cannot be used together with specialArgs, please use specialArgs only instead";
+                    }
+                  ];
+                  warnings =
+                    lib.optional (extraSpecialArgs != { })
+                      "extraSpecialArgs is deprecated and will be removed in the next release, please use specialArgs instead";
+                };
               }
             ]
             ++ modules;
