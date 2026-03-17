@@ -80,9 +80,12 @@ System Manager is designed to coexist with:
 
 ## The system-manager.target
 
-System Manager creates a systemd target called `system-manager.target`. Services configured with `wantedBy = [ "system-manager.target" ]` start when System Manager activates and on every boot.
+System Manager creates a systemd target called `system-manager.target`.
+This target is "wanted by" `default.target`, ensuring your services start during normal system boot.
 
-This target is "wanted by" `multi-user.target`, ensuring your services start during normal system boot.
+Services that declare `wantedBy = [ "system-manager.target" ]` start when System Manager activates and on every boot.
+You can also use `wantedBy = [ "multi-user.target" ]` as you would in NixOS: system-manager automatically substitutes `multi-user.target` with `system-manager.target` in all `wantedBy` and `requiredBy` declarations during unit generation.
+This means imported NixOS modules work without manual target adjustment.
 
 ## See Also
 
