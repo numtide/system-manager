@@ -331,11 +331,6 @@ in
             };
             networking.nftables.enable = true;
 
-            systemd.services.fail2ban = {
-              wantedBy = lib.mkForce [
-                "system-manager.target"
-              ];
-            };
           };
           options = {
             # Dummy valies to enable fail2ban

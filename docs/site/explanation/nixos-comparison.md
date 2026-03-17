@@ -53,7 +53,6 @@ System Manager uses a subset of NixOS modules. Many modules work directly:
 
   systemd.services.myapp = {
     description = "My Application";
-    wantedBy = [ "system-manager.target" ]; # NixOS uses different target
     serviceConfig.ExecStart = "${pkgs.myapp}/bin/myapp";
   };
 }
@@ -86,9 +85,8 @@ If you later decide to switch to NixOS:
 
 If you need to configure non-NixOS machines:
 
-1. Extract the service/package parts of your NixOS config
-2. Replace NixOS-specific targets with `system-manager.target`
-3. Use System Manager on your non-NixOS machines
+1. Extract the nixos modules, service/package parts of your NixOS config
+2. Use System Manager on your non-NixOS machines
 
 ## Using Both Together
 

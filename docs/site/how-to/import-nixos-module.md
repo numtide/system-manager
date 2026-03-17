@@ -74,22 +74,12 @@ When you need the stub to carry a specific default value (for example, an empty 
 This is the actual stub that system-manager uses to allow sops-nix to evaluate.
 The sops-nix module reads `services.openssh.hostKeys` to auto-detect SSH keys for age decryption; the empty default means no keys are auto-detected, and users set `sops.age.sshKeyPaths` explicitly instead.
 
-## Adapting service targets
+## Automatic target substitution
 
 NixOS services typically declare `wantedBy = [ "multi-user.target" ]`.
-In system-manager, services must be wanted by `system-manager.target` to start during activation.
-Override this with `lib.mkForce`:
+System-manager automatically rewrites `multi-user.target` to `system-manager.target` in all `wantedBy` and `requiredBy` declarations during unit generation, so imported NixOS modules work without manual target adjustment.
 
-```nix
-{ config, lib, ... }:
-{
-  systemd.services.myservice = lib.mkIf config.services.myservice.enable {
-    wantedBy = lib.mkForce [ "system-manager.target" ];
-  };
-}
-```
-
-This is exactly how the built-in nginx adapter works: it imports the upstream NixOS nginx module, then overrides the target in a local wrapper.
+This means you can use `wantedBy = [ "multi-user.target" ]` in your service definitions exactly as you would in NixOS, and system-manager will do the right thing.
 
 ## Step-by-step walkthrough
 
@@ -98,21 +88,19 @@ It is a self-contained 58-line module that defines a single systemd service with
 
 ### 1. Try to build
 
-Create a module that imports saslauthd and adapts its service target:
+Create a module that imports saslauthd:
 
 ```nix
 # saslauthd.nix
-{ nixosModulesPath, config, lib, ... }:
+{ nixosModulesPath, ... }:
 {
   imports = [
     (nixosModulesPath + "/services/system/saslauthd.nix")
   ];
-
-  systemd.services.saslauthd = lib.mkIf config.services.saslauthd.enable {
-    wantedBy = lib.mkForce [ "system-manager.target" ];
-  };
 }
 ```
+
+The upstream module declares `wantedBy = [ "multi-user.target" ]`, which system-manager automatically substitutes with `system-manager.target`.
 
 Add it to your `makeSystemConfig` modules list:
 
