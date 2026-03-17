@@ -231,13 +231,21 @@ in
 
               for package in $packages
               do
-                for hook in $package/lib/systemd/system/*
+                for hook in $package/etc/systemd/system/* $package/lib/systemd/system/*
                 do
                   ln -s $hook $out/
                 done
               done
 
-              for i in ${toString (lib.mapAttrsToList (n: v: v.unit) enabledUnits)}; do
+              for i in ${
+                toString (
+                  lib.mapAttrsToList (n: v: v.unit) (
+                    lib.filterAttrs (
+                      n: v: (lib.attrByPath [ "overrideStrategy" ] "asDropinIfExists" v) == "asDropinIfExists"
+                    ) enabledUnits
+                  )
+                )
+              }; do
                 fn=$(basename $i/*)
                 if [ -e $out/$fn ]; then
                   if [ "$(readlink -f $i/$fn)" = /dev/null ]; then
@@ -249,6 +257,18 @@ in
                 else
                   ln -fs $i/$fn $out/
                 fi
+              done
+
+              for i in ${
+                toString (
+                  lib.mapAttrsToList (n: v: v.unit) (
+                    lib.filterAttrs (n: v: v ? overrideStrategy && v.overrideStrategy == "asDropin") enabledUnits
+                  )
+                )
+              }; do
+                fn=$(basename $i/*)
+                mkdir -p $out/$fn.d
+                ln -s $i/$fn $out/$fn.d/overrides.conf
               done
 
               ${lib.concatStrings (
