@@ -3,7 +3,6 @@
   lib ? import "${nixpkgs}/lib",
   nixos ? "${nixpkgs}/nixos",
   userborn,
-  pam-shim,
 }:
 let
   self = {
@@ -82,7 +81,6 @@ let
                 system-manager-unwrapped = pkgs.callPackage ../package.nix { };
               };
               userborn = userborn.packages.${config.nixpkgs.hostPlatform}.default;
-              pam-shim = pam-shim.packages.${config.nixpkgs.hostPlatform}.default;
             };
           };
 
