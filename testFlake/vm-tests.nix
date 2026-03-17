@@ -19,6 +19,7 @@ let
       ubuntu = nix-vm-test.ubuntu;
     in
     lib.listToAttrs (
+      # Ubuntu 20.04 reaches end of life April 2025; drop support.
       lib.flip map (lib.filter (v: v != "20_04") (lib.attrNames ubuntu.images)) (
         imageVersion:
         let
@@ -1015,8 +1016,8 @@ forEachUbuntuImage "example" {
 
 //
 
-  # Test sudo module with pam_shim integration.
-  # This must run in a VM because sudo requires SUID wrappers.
+  # Test sudo module: sudoers generation, no Nix-built sudo in PATH/wrappers,
+  # and host sudo works with the generated config.
   forEachUbuntuImage "sudo-module" {
     modules = [
       (
@@ -1071,10 +1072,13 @@ forEachUbuntuImage "example" {
         assert "%wheel" in content, f"sudoers should contain wheel group, got: {content}"
         assert "%sudo" in content, f"sudoers should contain sudo group, got: {content}"
         assert "NOPASSWD" in content, f"sudoers should contain NOPASSWD, got: {content}"
+        assert "@includedir /etc/sudoers.d" in content, f"sudoers should include sudoers.d, got: {content}"
 
-        # Verify sudo SUID wrapper is installed
-        vm.succeed("test -x /run/wrappers/bin/sudo")
-        vm.succeed("test -x /run/wrappers/bin/sudoedit")
+        # Nix-built sudo must not be in system-manager PATH or wrappers
+        vm.fail("test -e /run/system-manager/sw/bin/sudo")
+        vm.fail("test -e /run/system-manager/sw/bin/sudoedit")
+        vm.fail("test -e /run/wrappers/bin/sudo")
+        vm.fail("test -e /run/wrappers/bin/sudoedit")
 
         # Verify testuser can sudo without password
         result = vm.succeed("su - testuser -c 'sudo whoami'").strip()
