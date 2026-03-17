@@ -11,6 +11,9 @@ let
 
   inherit (utils) systemdUtils;
   systemd-lib = utils.systemdUtils.lib;
+
+  substituteTarget =
+    target: if target == "multi-user.target" then "system-manager.target" else target;
 in
 {
   options.systemd = {
@@ -254,9 +257,9 @@ in
               ${lib.concatStrings (
                 lib.mapAttrsToList (
                   name: unit:
-                  lib.concatMapStrings (name2: ''
-                    mkdir -p $out/'${name2}.wants'
-                    ln -sfn '../${name}' $out/'${name2}.wants'/
+                  lib.concatMapStrings (target: ''
+                    mkdir -p $out/'${substituteTarget target}.wants'
+                    ln -sfn '../${name}' $out/'${substituteTarget target}.wants'/
                   '') (unit.wantedBy or [ ])
                 ) enabledUnits
               )}
@@ -264,9 +267,9 @@ in
               ${lib.concatStrings (
                 lib.mapAttrsToList (
                   name: unit:
-                  lib.concatMapStrings (name2: ''
-                    mkdir -p $out/'${name2}.requires'
-                    ln -sfn '../${name}' $out/'${name2}.requires'/
+                  lib.concatMapStrings (target: ''
+                    mkdir -p $out/'${substituteTarget target}.requires'
+                    ln -sfn '../${name}' $out/'${substituteTarget target}.requires'/
                   '') (unit.requiredBy or [ ])
                 ) enabledUnits
               )}
