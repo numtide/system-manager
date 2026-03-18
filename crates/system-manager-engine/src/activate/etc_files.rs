@@ -23,7 +23,7 @@ use crate::{
 
 pub use etc_tree::FileTree;
 
-type EtcActivationResult = ActivationResult<FileTree>;
+pub type EtcActivationResult = ActivationResult<FileTree>;
 
 static UID_GID_REGEX: OnceLock<regex::Regex> = OnceLock::new();
 
