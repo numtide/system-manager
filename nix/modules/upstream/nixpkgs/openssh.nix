@@ -255,16 +255,6 @@ in
         description = "OpenSSH package to use for sshd.";
       };
 
-      startWhenNeeded = lib.mkOption {
-        type = lib.types.bool;
-        default = false;
-        description = ''
-          If set, {command}`sshd` is socket-activated; that
-          is, instead of having it permanently running as a daemon,
-          systemd will start an instance for each incoming connection.
-        '';
-      };
-
       allowSFTP = lib.mkOption {
         type = lib.types.bool;
         default = true;
@@ -693,7 +683,24 @@ in
             source = sshconf;
             replaceExisting = lib.mkDefault true;
           };
+          # HACK: dirty hack to go around
+          # https://github.com/numtide/system-manager/issues/423
+          "systemd/system/sshd.service" = {
+            replaceExisting = true;
+            source = "/dev/null";
+          };
+          # HACK: dirty hack to go around
+          # https://github.com/numtide/system-manager/issues/423
+          "systemd/system/sshd.socket" = {
+            replaceExisting = true;
+            source = "/dev/null";
+          };
         };
+
+      systemd.maskedUnits = [
+        "ssh.service"
+        "ssh.socket"
+      ];
 
       systemd.tmpfiles.settings."ssh-root-provision" = {
         "/root"."d-" = {
@@ -749,6 +756,33 @@ in
           ++ lib.map (k: "HostKey ${k.path}") cfg.hostKeys
         )
       );
+
+      # Service definition taken from ubuntu
+      systemd.services."ssh-system-manager" = {
+        wantedBy = [ "system-manager.target" ];
+        aliases = [
+          "ssh.service"
+          "sshd.service"
+        ];
+        unitConfig = {
+          Description = "OpenBSD Secure Shell server";
+          Documentation = "man:sshd(8) man:sshd_config(5)";
+          After = "network.target auditd.service";
+          ConditionPathExists = "!/etc/ssh/sshd_not_to_be_run";
+        };
+        serviceConfig = {
+          EnvironmentFile = "-/etc/default/ssh";
+          ExecStartPre = "/usr/sbin/sshd -t";
+          ExecStart = "/usr/sbin/sshd -D $SSHD_OPTS";
+          ExecReload = "/bin/kill -HUP $MAINPID";
+          KillMode = "process";
+          Restart = "on-failure";
+          RestartPreventExitStatus = "255";
+          Type = "notify";
+          RuntimeDirectory = "sshd";
+          RuntimeDirectoryMode = "0755";
+        };
+      };
 
       system.checks = [
         (pkgs.runCommand "check-sshd-config"
