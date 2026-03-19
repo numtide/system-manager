@@ -36,12 +36,6 @@ in
       internal = true;
     };
 
-    services.openssh.settings = lib.mkOption {
-      type = lib.types.attrsOf lib.types.raw;
-      default = { };
-      internal = true;
-    };
-
     environment.variables = lib.mkOption {
       type = lib.types.attrsOf lib.types.str;
       default = { };

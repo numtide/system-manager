@@ -15,6 +15,7 @@
     ./userborn.nix
     ./users-groups.nix
     ../sops-nix.nix
+    ./openssh.nix
   ]
   ++
     # List of imported NixOS modules
@@ -51,24 +52,5 @@
         default = "";
       };
 
-      services.openssh = {
-        enable = lib.mkOption {
-          type = lib.types.bool;
-          default = false;
-        };
-        # sops-nix uses hostKeys to find SSH keys for age decryption.
-        # On non-NixOS systems, users should set sops.age.sshKeyPaths explicitly.
-        hostKeys = lib.mkOption {
-          type = lib.types.listOf (
-            lib.types.submodule {
-              options = {
-                path = lib.mkOption { type = lib.types.path; };
-                type = lib.mkOption { type = lib.types.str; };
-              };
-            }
-          );
-          default = [ ];
-        };
-      };
     };
 }

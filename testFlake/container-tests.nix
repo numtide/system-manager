@@ -376,12 +376,14 @@ forEachDistro "example" {
     '';
 }
 
-// forEachDistro "ssh-known-hosts" {
+// forEachDistro "ssh" {
   modules = [
     (
       { ... }:
       {
         programs.ssh.enable = true;
+        services.openssh.enable = true;
+
         programs.ssh.knownHosts = {
           "github.com" = {
             publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
@@ -403,6 +405,10 @@ forEachDistro "example" {
       start_all()
 
       machine.wait_for_unit("multi-user.target")
+
+      # For some reason, the ubuntu image is lacking the ssh host key.
+      # It's generated as a postinstall hook, we let's run it again.
+      machine.succeed("dpkg-reconfigure openssh-server")
 
       activation_logs = machine.activate()
       for line in activation_logs.split("\n"):
@@ -431,6 +437,14 @@ forEachDistro "example" {
               f"Expected GlobalKnownHostsFile in ssh_config, got: {config_content}"
           assert "/etc/ssh/ssh_known_hosts" in config_content, \
               f"Expected /etc/ssh/ssh_known_hosts path in ssh_config, got: {config_content}"
+
+      with subtest("ssh server"):
+          machine.wait_for_unit("sshd.service")
+          sshd_config = machine.file("/etc/ssh/sshd_config")
+          assert sshd_config.exists, "/etc/ssh/sshd_config should exist"
+          sshd_content = machine.succeed("cat /etc/ssh/sshd_config")
+          assert "Subsystem sftp /nix/store/" in sshd_content, \
+              "/etc/ssh/sshd_config does not appear to be the system-manager provided one."
 
       with subtest("deactivation removes known hosts file"):
           machine.succeed("${toplevel}/bin/deactivate")
