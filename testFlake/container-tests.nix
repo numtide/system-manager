@@ -427,7 +427,7 @@ forEachDistro "example" {
       machine.wait_for_unit("multi-user.target")
 
       # For some reason, the ubuntu image is lacking the ssh host key.
-      # It's generated as a postinstall hook, we let's run it again.
+      # It's generated as a postinstall hook, so let's run it again.
       machine.succeed("dpkg-reconfigure openssh-server")
 
       activation_logs = machine.activate()
@@ -459,18 +459,14 @@ forEachDistro "example" {
               f"Expected /etc/ssh/ssh_known_hosts path in ssh_config, got: {config_content}"
 
       with subtest("ssh server test"):
-          # We have to manually restart the ssh service.
-          # The restartTriggers mechanism is not implemented in the system-manager
-          # activation :(
-          machine.systemctl("restart ssh.service")
-          machine.wait_for_unit("ssh.service")
+          machine.wait_for_unit("ssh-system-manager.service")
           sshd_config = machine.file("/etc/ssh/sshd_config")
           assert sshd_config.exists, "/etc/ssh/sshd_config should exist"
           sshd_content = machine.succeed("cat /etc/ssh/sshd_config")
           assert "Subsystem sftp /nix/store/" in sshd_content, \
               "/etc/ssh/sshd_config does not appear to be the system-manager provided one."
           machine.succeed('ssh -i /etc/privatekey -o "StrictHostKeyChecking no" root@localhost echo ok')
-
+          machine.succeed('echo "ls /" | sftp -i /etc/privatekey root@localhost')
 
       with subtest("deactivation removes known hosts file"):
           machine.succeed("${toplevel}/bin/deactivate")
