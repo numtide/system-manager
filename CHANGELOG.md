@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Breaking change: we disabled the nix module by default. To enable it, set `nix.enable = true` in your configuration. This allows users to choose their preferred Nix installation method and avoids conflicts with existing Nix setups. (#408)
+
 ## [1.1.0] - 2026-03-12
 
 ### Added
