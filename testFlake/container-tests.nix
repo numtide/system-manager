@@ -126,6 +126,15 @@ forEachDistro "example" {
             assert machine.file("/etc/tmpfiles.d/00-system-manager.conf").is_file, "00-system-manager.conf should exist"
 
       activate_and_check()
+
+      with subtest("sudoers is not a symlink when security.sudo is not enabled"):
+          assert not machine.file("/etc/sudoers").is_symlink, \
+              "sudoers should not be a symlink when sudo module is disabled"
+
+      with subtest("ssh_config is not a symlink when programs.ssh is not enabled"):
+          assert not machine.file("/etc/ssh/ssh_config").is_symlink, \
+              "ssh_config should not be a symlink when ssh module is disabled"
+
       activate_and_check()
     '';
 }
@@ -372,6 +381,7 @@ forEachDistro "example" {
     (
       { ... }:
       {
+        programs.ssh.enable = true;
         programs.ssh.knownHosts = {
           "github.com" = {
             publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
