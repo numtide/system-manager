@@ -39,23 +39,21 @@ When system-manager is deactivated or the entry is removed from the configuratio
 
 ## Nix configuration
 
-The `nix` module is enabled by default and generates `/etc/nix/nix.conf` from `nix.settings`.
-Since the Nix installer already creates this file, you need `replaceExisting`:
+The `nix` module is disabled by default.
+When you enable it with `nix.enable = true`, it generates `/etc/nix/nix.conf` from `nix.settings` and automatically sets `replaceExisting` on that file, so the Nix-installer-created `nix.conf` is backed up and replaced without extra configuration.
 
 ```nix
 { ... }:
 {
+  nix.enable = true;
   nix.settings = {
     experimental-features = [ "nix-command" "flakes" ];
     trusted-users = [ "myuser" ];
   };
-
-  environment.etc."nix/nix.conf".replaceExisting = true;
 }
 ```
 
-This backs up the installer-created `nix.conf` and replaces it with the one generated from `nix.settings`.
-On deactivation, the original is restored so `nix` keeps working.
+On deactivation, the original `nix.conf` is restored so `nix` keeps working.
 
 ## Systemd timer and service conflicts
 
