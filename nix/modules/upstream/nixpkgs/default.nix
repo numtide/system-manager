@@ -22,7 +22,6 @@
     map (path: nixosModulesPath + path) [
       "/misc/meta.nix"
       "/misc/ids.nix"
-      "/programs/ssh.nix"
       "/security/acme/"
       "/security/dhparams.nix"
       "/security/sudo.nix"
