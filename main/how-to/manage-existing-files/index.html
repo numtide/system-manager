@@ -1967,8 +1967,8 @@ On deactivation, the original is restored.</p>
 <p>During activation, the pre-existing file is renamed to <code>/etc/my-app/config.toml.system-manager-backup</code>.
 When system-manager is deactivated or the entry is removed from the configuration, the backup is restored to its original path.</p>
 <h2 id="nix-configuration">Nix configuration<a class="headerlink" href="#nix-configuration" title="Permanent link">&para;</a></h2>
-<p>The <code>nix</code> module is enabled by default and generates <code>/etc/nix/nix.conf</code> from <code>nix.settings</code>.
-Since the Nix installer already creates this file, you need <code>replaceExisting</code>:</p>
+<p>The <code>nix</code> module is disabled by default.
+When you enable it with <code>nix.enable = true</code>, it generates <code>/etc/nix/nix.conf</code> from <code>nix.settings</code> and automatically sets <code>replaceExisting</code> on that file, so the Nix-installer-created <code>nix.conf</code> is backed up and replaced without extra configuration.</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span>
 <span class="normal"><a href="#__codelineno-2-2">2</a></span>
 <span class="normal"><a href="#__codelineno-2-3">3</a></span>
@@ -1976,19 +1976,16 @@ Since the Nix installer already creates this file, you need <code>replaceExistin
 <span class="normal"><a href="#__codelineno-2-5">5</a></span>
 <span class="normal"><a href="#__codelineno-2-6">6</a></span>
 <span class="normal"><a href="#__codelineno-2-7">7</a></span>
-<span class="normal"><a href="#__codelineno-2-8">8</a></span>
-<span class="normal"><a href="#__codelineno-2-9">9</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="p">{</span> <span class="o">...</span> <span class="p">}:</span>
+<span class="normal"><a href="#__codelineno-2-8">8</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="p">{</span> <span class="o">...</span> <span class="p">}:</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="p">{</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3"></a>  nix<span class="o">.</span><span class="ss">settings</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4"></a>    <span class="ss">experimental-features</span> <span class="o">=</span> <span class="p">[</span> <span class="s2">&quot;nix-command&quot;</span> <span class="s2">&quot;flakes&quot;</span> <span class="p">];</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5"></a>    <span class="ss">trusted-users</span> <span class="o">=</span> <span class="p">[</span> <span class="s2">&quot;myuser&quot;</span> <span class="p">];</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6"></a>  <span class="p">};</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7"></a>
-<a id="__codelineno-2-8" name="__codelineno-2-8"></a>  environment<span class="o">.</span>etc<span class="o">.</span><span class="s2">&quot;nix/nix.conf&quot;</span><span class="o">.</span><span class="ss">replaceExisting</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9"></a><span class="p">}</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3"></a>  nix<span class="o">.</span><span class="ss">enable</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4"></a>  nix<span class="o">.</span><span class="ss">settings</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5"></a>    <span class="ss">experimental-features</span> <span class="o">=</span> <span class="p">[</span> <span class="s2">&quot;nix-command&quot;</span> <span class="s2">&quot;flakes&quot;</span> <span class="p">];</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6"></a>    <span class="ss">trusted-users</span> <span class="o">=</span> <span class="p">[</span> <span class="s2">&quot;myuser&quot;</span> <span class="p">];</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7"></a>  <span class="p">};</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8"></a><span class="p">}</span>
 </code></pre></div></td></tr></table></div>
-<p>This backs up the installer-created <code>nix.conf</code> and replaces it with the one generated from <code>nix.settings</code>.
-On deactivation, the original is restored so <code>nix</code> keeps working.</p>
+<p>On deactivation, the original <code>nix.conf</code> is restored so <code>nix</code> keeps working.</p>
 <h2 id="systemd-timer-and-service-conflicts">Systemd timer and service conflicts<a class="headerlink" href="#systemd-timer-and-service-conflicts" title="Permanent link">&para;</a></h2>
 <p>Systemd <code>.wants</code> and <code>.requires</code> directories are handled automatically.
 When system-manager declares a timer with <code>wantedBy</code> and the target <code>.wants</code> directory already contains a symlink for that unit (common on Ubuntu/Debian), the existing symlink is backed up and replaced without requiring any configuration.</p>
@@ -2082,7 +2079,7 @@ The file tree state tracks which paths have backups via a <code>ManagedWithBacku
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="February 9, 2026 18:09:47 UTC">February 9, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="March 23, 2026 18:03:03 UTC">March 23, 2026</span>
   </span>
 
     
