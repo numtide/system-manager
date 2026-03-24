@@ -37,10 +37,7 @@ This results in the following flake:
 Now add System Manager to its inputs section:
 
 ```nix
-    system-manager = {
-        url = "github:numtide/system-manager";
-        inputs.nixpkgs.follows = "nixpkgs";
-    };
+    system-manager.url = "github:numtide/system-manager";
 ```
 
 Next, create a folder called `hosts`, and under that a folder called `default`:

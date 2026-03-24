@@ -7,24 +7,15 @@
   };
 
   inputs = {
-    # Specify the source of System Manager and Nixpkgs.
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     system-manager.url = "github:numtide/system-manager";
   };
 
   outputs =
-    {
-      self,
-      nixpkgs,
-      system-manager,
-      ...
-    }:
-    let
-      system = "x86_64-linux";
-    in
+    { nixpkgs, system-manager, ... }:
     {
       nixosConfigurations.default = nixpkgs.lib.nixosSystem {
-        inherit system;
+        system = "x86_64-linux";
         modules = [
           ./configuration.nix
           ./system.nix

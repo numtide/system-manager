@@ -14,21 +14,25 @@ nix build .#systemConfigs.default
 # or test in a container/virtualized environment
 ```
 
-### 2. Use Flake Inputs Follows
+### 2. Use the Numtide binary cache
 
-This ensures consistent nixpkgs versions:
+System Manager publishes pre-built binaries to the Numtide cache. Add `nixConfig` to your flake so builds are fast and you benefit from the exact nixpkgs version that was tested:
 
 ```nix
-inputs = {
-  nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-  system-manager = {
-    url = "github:numtide/system-manager";
-    inputs.nixpkgs.follows = "nixpkgs";  # Use the same nixpkgs
+{
+  nixConfig = {
+    extra-substituters = [ "https://cache.numtide.com" ];
+    extra-trusted-public-keys = [ "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=" ];
   };
-};
+
+  inputs = {
+    system-manager.url = "github:numtide/system-manager";
+  };
+  # ...
+}
 ```
 
-By default, each flake input pins its own version of its dependencies, which means you could end up with multiple versions of `nixpkgs`. The `follows` directive tells Nix to use your `nixpkgs` instead of the one bundled with System Manager, ensuring consistent package versions across your entire configuration while reducing disk usage and evaluation time.
+Avoid overriding `inputs.system-manager.inputs.nixpkgs.follows = "nixpkgs"`. Doing so replaces the nixpkgs revision that System Manager was built and tested against, which means cache hits are lost and you must build everything from source.
 
 ### 3. Modular Configuration
 

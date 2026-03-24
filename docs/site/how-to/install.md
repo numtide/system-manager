@@ -103,15 +103,17 @@ If you're on NixOS and want to install the `system-manager` CLI as a system pack
 ```nix
 # flake.nix
 {
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    system-manager = {
-      url = "github:numtide/system-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+  nixConfig = {
+    extra-substituters = [ "https://cache.numtide.com" ];
+    extra-trusted-public-keys = [ "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=" ];
   };
 
-  outputs = { self, nixpkgs, system-manager, ... }:
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    system-manager.url = "github:numtide/system-manager";
+  };
+
+  outputs = { nixpkgs, system-manager, ... }:
     let
       system = "x86_64-linux";
     in {
@@ -152,7 +154,6 @@ For older nixpkgs versions (e.g., 24.05), you may need to pin System Manager to 
       owner = "numtide";
       repo = "system-manager";
       ref = "64627568a52fd5f4d24ecb504cb33a51ffec086d";
-      inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 }
