@@ -173,7 +173,7 @@ class Driver:
                         "sudo",
                         "nsenter",
                         "--target",
-                        f"$(\\pgrep -f '^/bin/sh.*{nspawn_uuid}')",
+                        f"{machine.container_pid}",
                         "--mount",
                         "--uts",
                         "--ipc",
