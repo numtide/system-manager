@@ -135,6 +135,13 @@ forEachDistro "example" {
           assert not machine.file("/etc/ssh/ssh_config").is_symlink, \
               "ssh_config should not be a symlink when ssh module is disabled"
 
+      with subtest("the sshd config is not managed by system-manager when the module is not explicitely enabled"):
+          assert not machine.file("/etc/ssh/sshd_config").is_symlink, "sshd should not be a symlink"
+          try:
+              assert not machine.service("ssh-system-manager.service").is_enabled, "the system manager ssh service should not be running"
+          except:
+              print("ssh-system-manager.service is not available as expected")
+
       activate_and_check()
     '';
 }
