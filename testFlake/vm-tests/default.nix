@@ -44,7 +44,7 @@ let
           );
           inherit (toplevel.config) hostPkgs;
         in
-        lib.nameValuePair "ubuntu-${imageVersion}-${name}" (
+        lib.nameValuePair "vm-ubuntu-${imageVersion}-${name}" (
           projectTest (
             ubuntu.${imageVersion} {
               testScript = testScriptFunction { inherit toplevel hostPkgs; };
