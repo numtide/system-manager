@@ -1,6 +1,5 @@
 {
   forEachUbuntuImage,
-  testModule,
   newConfig,
   system-manager,
   ...
@@ -8,7 +7,6 @@
 
 forEachUbuntuImage "example" {
   modules = [
-    (testModule "old")
     ../../examples/example.nix
   ];
   extraPathsToRegister = [
