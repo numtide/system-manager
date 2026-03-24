@@ -3,7 +3,6 @@
 # It tests that the engine can be invoked remotely, which is the core of --target-host
 {
   forEachUbuntuImage,
-  testModule,
   system-manager,
   system,
   ...
@@ -11,7 +10,6 @@
 
 forEachUbuntuImage "target-host" {
   modules = [
-    (testModule "old")
     ../../examples/example.nix
   ];
   extraPathsToRegister = [

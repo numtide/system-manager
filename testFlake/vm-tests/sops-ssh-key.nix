@@ -4,7 +4,6 @@
 # SSH host keys and don't want to manage separate age keys.
 {
   forEachUbuntuImage,
-  testModule,
   system-manager,
   system,
   sops-nix,
@@ -14,7 +13,6 @@ let
   # Config for SSH key-based sops decryption test
   sshKeyConfig = system-manager.lib.makeSystemConfig {
     modules = [
-      (testModule "ssh")
       (
         { lib, pkgs, ... }:
         {
@@ -44,7 +42,6 @@ let
 in
 forEachUbuntuImage "sops-ssh-key" {
   modules = [
-    (testModule "old")
     ../../examples/example.nix
   ];
   extraPathsToRegister = [

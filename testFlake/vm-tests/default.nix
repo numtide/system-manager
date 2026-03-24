@@ -58,47 +58,8 @@ let
       )
     );
 
-  # To test reload and restart, we include two services, one that can be reloaded
-  # and one that cannot.
-  # The id parameter is a string that can be used to force reloading the services
-  # between two configs by changing their contents.
-  testModule =
-    id:
-    { lib, pkgs, ... }:
-    {
-      systemd.services = {
-        has-reload = {
-          enable = true;
-          description = "service-reload";
-          serviceConfig = {
-            Type = "oneshot";
-            RemainAfterExit = true;
-            ExecReload = ''
-              ${lib.getBin pkgs.coreutils}/bin/true
-            '';
-          };
-          wantedBy = [ "system-manager.target" ];
-          script = ''
-            echo "I can be reloaded (id: ${id})"
-          '';
-        };
-        has-no-reload = {
-          enable = true;
-          description = "service-no-reload";
-          serviceConfig.Type = "simple";
-          wantedBy = [ "system-manager.target" ];
-          script = ''
-            while true; do
-              echo "I cannot be reloaded (id: ${id})"
-            done
-          '';
-        };
-      };
-    };
-
   newConfig = system-manager.lib.makeSystemConfig {
     modules = [
-      (testModule "new")
       (
         { lib, pkgs, ... }:
         {
@@ -182,7 +143,6 @@ let
     import file {
       inherit
         forEachUbuntuImage
-        testModule
         newConfig
         system-manager
         system

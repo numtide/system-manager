@@ -4,7 +4,6 @@
 # 2. Running system-manager with --sudo succeeds
 {
   forEachUbuntuImage,
-  testModule,
   system-manager,
   system,
   ...
@@ -12,7 +11,6 @@
 
 forEachUbuntuImage "sudo" {
   modules = [
-    (testModule "old")
     ../../examples/example.nix
   ];
   extraPathsToRegister = [
