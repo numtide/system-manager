@@ -107,7 +107,7 @@ This example shows how to install Docker and configure it as a systemd service.
 
 ```bash
 # Activate the configuration
-nix run 'github:numtide/system-manager' -- switch --flake /path/to/this/example --sudo
+nix run --accept-flake-config 'github:numtide/system-manager' -- switch --flake /path/to/this/example --sudo
 
 # Check Docker service status
 sudo systemctl status docker

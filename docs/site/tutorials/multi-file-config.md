@@ -103,7 +103,7 @@ Modify your `flake.nix` to load all modules:
 ## Step 4: Apply the Configuration
 
 ```sh
-nix run 'github:numtide/system-manager' -- switch --flake . --sudo
+nix run --accept-flake-config 'github:numtide/system-manager' -- switch --flake . --sudo
 ```
 
 ## How Nix Merges Configurations

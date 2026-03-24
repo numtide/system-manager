@@ -61,7 +61,7 @@ This example demonstrates how to install a systemd timer that runs every minute.
 
 ```bash
 # Activate the configuration
-nix run 'github:numtide/system-manager' -- switch --flake /path/to/this/example --sudo
+nix run --accept-flake-config 'github:numtide/system-manager' -- switch --flake /path/to/this/example --sudo
 ```
 
 Then restart the system; the timer will start automatically.

@@ -3,7 +3,7 @@
 The basic command looks like this:
 
 ```sh
-nix run 'github:numtide/system-manager' -- switch --flake . --sudo
+nix run --accept-flake-config 'github:numtide/system-manager' -- switch --flake . --sudo
 ```
 
 This is the most common scenario you'll use.
@@ -21,13 +21,13 @@ This subcommand creates two initial files for use with System Manager, a fully-f
 #### Example
 
 ```sh
-nix run 'github:numtide/system-manager' -- init
+nix run --accept-flake-config 'github:numtide/system-manager' -- init
 ```
 
 This will create the initial files in `~/.config/system-manager` by default.
 
 ```sh
-nix run 'github:numtide/system-manager' -- init --path='/home/ubuntu/system-manager'
+nix run --accept-flake-config 'github:numtide/system-manager' -- init --path='/home/ubuntu/system-manager'
 ```
 
 This will create the initial files in `/home/ubuntu/system-manager`.

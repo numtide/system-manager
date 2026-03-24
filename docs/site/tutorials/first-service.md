@@ -62,7 +62,7 @@ modules = [
 Run System Manager to activate your new service:
 
 ```sh
-nix run 'github:numtide/system-manager' -- switch --flake . --sudo
+nix run --accept-flake-config 'github:numtide/system-manager' -- switch --flake . --sudo
 ```
 
 ## Step 4: Verify It Worked

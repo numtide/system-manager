@@ -31,7 +31,7 @@ nix flake update
 And make sure you've pushed it up to the repo. (If you don't do this step, Nix will try to build a `flake.lock`, but will be unable to write it to the same location as the other files, and will error out.)
 
 ```sh
-nix run 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes' -- switch --flake git+https://github.com/numtide/system-manager-test#default --sudo
+nix run --accept-flake-config 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes' -- switch --flake git+https://github.com/numtide/system-manager-test#default --sudo
 ```
 
 ### When should you update your `flake.lock` file?
@@ -66,21 +66,21 @@ In order to ensure System Manager retrieves the correct `.nix` files from your r
 Once your configuration is pushed to a remote repository with a valid `flake.lock`, you can apply it directly:
 
 ```sh
-nix run 'github:numtide/system-manager' -- switch --flake github:your-username/your-repo --sudo
+nix run --accept-flake-config 'github:numtide/system-manager' -- switch --flake github:your-username/your-repo --sudo
 ```
 
 You can also specify a branch or tag:
 
 ```sh
 # Using a specific branch
-nix run 'github:numtide/system-manager' -- switch --flake github:your-username/your-repo/main --sudo
+nix run --accept-flake-config 'github:numtide/system-manager' -- switch --flake github:your-username/your-repo/main --sudo
 
 # Using a tag
-nix run 'github:numtide/system-manager' -- switch --flake github:your-username/your-repo?ref=v1.0.0 --sudo
+nix run --accept-flake-config 'github:numtide/system-manager' -- switch --flake github:your-username/your-repo?ref=v1.0.0 --sudo
 ```
 
 For private repositories, use the `git+ssh` protocol:
 
 ```sh
-nix run 'github:numtide/system-manager' -- switch --flake git+ssh://git@github.com/your-username/your-repo --sudo
+nix run --accept-flake-config 'github:numtide/system-manager' -- switch --flake git+ssh://git@github.com/your-username/your-repo --sudo
 ```

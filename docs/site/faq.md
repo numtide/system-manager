@@ -81,7 +81,7 @@ sudo nix-env --profile /nix/var/nix/profiles/system-manager-profiles --list-gene
 sudo nix-env --profile /nix/var/nix/profiles/system-manager-profiles --rollback
 
 # Activate the previous generation
-nix run 'github:numtide/system-manager' -- activate --sudo
+nix run --accept-flake-config 'github:numtide/system-manager' -- activate --sudo
 ```
 
 ---
@@ -121,7 +121,7 @@ echo $PATH
 Ensure you're running System Manager with sudo:
 
 ```bash
-nix run 'github:numtide/system-manager' -- switch --flake . --sudo
+nix run --accept-flake-config 'github:numtide/system-manager' -- switch --flake . --sudo
 ```
 
 ### Configuration Won't Build

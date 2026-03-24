@@ -19,7 +19,7 @@ Quickly revert to the last working configuration:
 sudo nix-env --profile /nix/var/nix/profiles/system-manager-profiles --rollback
 
 # Activate the rollback
-nix run 'github:numtide/system-manager' -- activate --sudo
+nix run --accept-flake-config 'github:numtide/system-manager' -- activate --sudo
 ```
 
 ## Rollback to a Specific Generation
@@ -31,7 +31,7 @@ To rollback to a specific generation number:
 sudo nix-env --profile /nix/var/nix/profiles/system-manager-profiles --switch-generation 42
 
 # Activate it
-nix run 'github:numtide/system-manager' -- activate --sudo
+nix run --accept-flake-config 'github:numtide/system-manager' -- activate --sudo
 ```
 
 ## Cleaning Up Old Generations

@@ -11,20 +11,11 @@ Before proceeding, ensure you have [installed Nix with flakes enabled](../how-to
 To get started with System Manager, run the init subcommand, which will create an initial set of files in the `~/.config/system-manager` folder:
 
 ```
-nix run 'github:numtide/system-manager' -- init
+nix run --accept-flake-config 'github:numtide/system-manager' -- init
 ```
 
-(Remember, the double dash -- signifies that any options following it are passed to the following command, in this case System Manager, rather than to the main command, `nix`).
-
-You might see the following for questions; you can simply answer yes to them:
-
-* Do you want to allow configuration setting 'extra-substituters' to be set to 'https://cache.numtide.com' (y/N)?
-
-* Do you want to permanently mark this value as trusted (y/N)?
-
-* Do you want to allow configuration setting 'extra-trusted-public-keys' to be set to 'niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=' (y/N)?
-
-* Do you want to permanently mark this value as trusted (y/N)?
+The `--accept-flake-config` flag tells Nix to trust the substituter settings declared in the flake, so that pre-built binaries are downloaded from the Numtide cache instead of being compiled from source.
+The double dash `--` signifies that any options following it are passed to System Manager rather than to `nix`.
 
 
 After running the command, you will have the following files in your `~/.config/system-manager` folder:
@@ -77,8 +68,8 @@ Here are the contents of the files that were created:
 
     environment = {
       # Packages that should be installed on a system
-      systemPackages = [
-        # pkgs.hello
+      systemPackages = with pkgs; [
+        # hello
       ];
 
       # Add directories and files to `/etc` and set their permissions
@@ -142,8 +133,6 @@ First, in the `~/.config/system-manager` folder, create a file `apps.nix` and pl
 ```nix
 { pkgs, ... }:
 {
-  nixpkgs.hostPlatform = "x86_64-linux";
-  
   environment.systemPackages = with pkgs; [
     tldr
   ];
@@ -155,11 +144,11 @@ This configuration states that the system being configured should have the `tldr
 Now add the file to the modules list in `flake.nix` by replacing this modules line:
 
 ```diff
--         modules = [ ./system.nix ];
-+         modules = [
-+             ./system.nix
-+             ./apps.nix
-+         ];
+-        modules = [ ./system.nix ];
++        modules = [
++          ./system.nix
++          ./apps.nix
++        ];
 ```
 
 Note: By default, `system.nix` includes starter code and some commented-out examples, and nothing else. You can leave it in the list; in its original state, it does nothing.
@@ -169,7 +158,7 @@ Next, we'll run System Manager to apply the configuration.
 System Manager requires root privileges to modify `/etc`, manage systemd services, and create system profiles. Use the `--sudo` flag to run these operations via sudo:
 
 ```sh
-nix run 'github:numtide/system-manager' -- switch --flake . --sudo
+nix run --accept-flake-config 'github:numtide/system-manager' -- switch --flake . --sudo
 ```
 
 After a short moment, the `tldr` app should be installed on your system.
@@ -182,14 +171,10 @@ Now, to demonstrate the declarative feature of System Manager, let's add another
 ```nix
 { pkgs, ... }:
 {
-  config = {
-    nixpkgs.hostPlatform = "x86_64-linux";
-
-    environment.systemPackages = with pkgs; [
-      tldr
-      cowsay
-    ];
-  };
+  environment.systemPackages = with pkgs; [
+    tldr
+    cowsay
+  ];
 }
 ```
 
@@ -216,13 +201,9 @@ Now let's remove `cowsay` from the list of installed software. To do so, simply 
 ```nix
 { pkgs, ... }:
 {
-  config = {
-    nixpkgs.hostPlatform = "x86_64-linux";
-
-    environment.systemPackages = with pkgs; [
-      tldr
-    ];
-  };
+  environment.systemPackages = with pkgs; [
+    tldr
+  ];
 }
 ```
 

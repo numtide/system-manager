@@ -9,7 +9,7 @@ System Manager has two main components:
 1. **system-manager** - The CLI tool you interact with
 2. **system-manager-engine** - The privileged core that modifies the system
 
-When you run `nix run 'github:numtide/system-manager' -- switch --flake . --sudo`, several things happen.
+When you run `nix run --accept-flake-config 'github:numtide/system-manager' -- switch --flake . --sudo`, several things happen.
 
 ## The Build Phase
 

@@ -56,7 +56,7 @@ Because Nix can load code (called "flakes") remotely, you don't need to download
 To get started, run:
 
 ```sh
-nix run 'github:numtide/system-manager' -- init
+nix run --accept-flake-config 'github:numtide/system-manager' -- init
 ```
 
 This will create initial configuration files in `~/.config/system-manager/`. See [Getting Started](../tutorials/getting-started.md) for a complete walkthrough.

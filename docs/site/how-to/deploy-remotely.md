@@ -27,7 +27,7 @@ sudo systemctl restart nix-daemon
 Deploy your local configuration to a remote machine:
 
 ```bash
-nix run 'github:numtide/system-manager' -- --target-host user@remote-host \
+nix run --accept-flake-config 'github:numtide/system-manager' -- --target-host user@remote-host \
   switch \
   --flake . \
   --sudo
@@ -38,7 +38,7 @@ nix run 'github:numtide/system-manager' -- --target-host user@remote-host \
 Deploy a configuration hosted on GitHub directly to a remote machine:
 
 ```bash
-nix run 'github:numtide/system-manager' -- --target-host user@remote-host \
+nix run --accept-flake-config 'github:numtide/system-manager' -- --target-host user@remote-host \
   switch \
   --flake github:your-username/your-config \
   --sudo
@@ -50,13 +50,13 @@ If you have different configurations for different hosts, use the flake output n
 
 ```bash
 # Deploy the "webserver" configuration to web.example.com
-nix run 'github:numtide/system-manager' -- --target-host admin@web.example.com \
+nix run --accept-flake-config 'github:numtide/system-manager' -- --target-host admin@web.example.com \
   switch \
   --flake .#webserver \
   --sudo
 
 # Deploy the "database" configuration to db.example.com
-nix run 'github:numtide/system-manager' -- --target-host admin@db.example.com \
+nix run --accept-flake-config 'github:numtide/system-manager' -- --target-host admin@db.example.com \
   switch \
   --flake .#database \
   --sudo
@@ -85,7 +85,7 @@ Host dbserver
 Then deploy with just:
 
 ```bash
-nix run 'github:numtide/system-manager' -- --target-host webserver \
+nix run --accept-flake-config 'github:numtide/system-manager' -- --target-host webserver \
 switch \
   --flake . \
   --sudo
@@ -97,7 +97,7 @@ If you prefer not to modify your SSH config, you can load your key into the SSH 
 ```bash
 eval $(ssh-agent -s)
 ssh-add /home/ubuntu/.ssh/my.pem
-nix run github:numtide/system-manager -- --target-host 'ubuntu@172.31.40.14' switch --flake . --sudo
+nix run --accept-flake-config github:numtide/system-manager -- --target-host 'ubuntu@172.31.40.14' switch --flake . --sudo
 ```
 
 This approach is particularly useful for automation scripts, as we'll see in the next section.
@@ -132,7 +132,7 @@ HOSTS=(
 # Deploy to each host
 for host in "${HOSTS[@]}"; do
     echo "Deploying to $host..."
-    nix run github:numtide/system-manager -- --target-host "$host" switch --flake . --sudo
+    nix run --accept-flake-config github:numtide/system-manager -- --target-host "$host" switch --flake . --sudo
 done
 
 # Clean up the SSH agent
@@ -153,7 +153,7 @@ ssh-add ~/.ssh/my.pem
 while IFS= read -r host; do
     [[ -z "$host" || "$host" =~ ^# ]] && continue  # Skip empty lines and comments
     echo "Deploying to $host..."
-    nix run github:numtide/system-manager -- --target-host "$host" switch --flake . --sudo
+    nix run --accept-flake-config github:numtide/system-manager -- --target-host "$host" switch --flake . --sudo
 done < hosts.txt
 
 ssh-agent -k
@@ -210,7 +210,7 @@ echo "Host keys added to known_hosts"
 # Deploy to each host
 for host in "${HOSTS[@]}"; do
     echo "Deploying to $host..."
-    nix run github:numtide/system-manager -- --target-host "$host" switch --flake . --sudo
+    nix run --accept-flake-config github:numtide/system-manager -- --target-host "$host" switch --flake . --sudo
 done
 
 ssh-agent -k
@@ -247,7 +247,7 @@ HOSTS=(
 # Deploy to each host
 for host in "${HOSTS[@]}"; do
     echo "Deploying to $host..."
-    nix run github:numtide/system-manager -- --target-host "$host" switch --flake . --sudo
+    nix run --accept-flake-config github:numtide/system-manager -- --target-host "$host" switch --flake . --sudo
 done
 
 echo "Deployment complete!"
@@ -287,7 +287,7 @@ echo "Host keys added to known_hosts"
 # Deploy to each host from a remote flake
 for host in "${HOSTS[@]}"; do
     echo "Deploying to $host..."
-    nix run github:numtide/system-manager -- --target-host "$host" switch --flake git+https://github.com/numtide/system-manager-test#default --sudo
+    nix run --accept-flake-config github:numtide/system-manager -- --target-host "$host" switch --flake git+https://github.com/numtide/system-manager-test#default --sudo
 done
 
 ssh-agent -k

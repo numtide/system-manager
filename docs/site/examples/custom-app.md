@@ -23,7 +23,7 @@ Next, log out and log back in so that nix is available in the system path.
 And then you can run System Manager and deploy the app with one command:
 
 ```sh
-nix run 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes' -- switch --flake github:frecklefacelabs/system-manager-custom-app-deploy/v1.0.0#default --sudo
+nix run --accept-flake-config 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes' -- switch --flake github:frecklefacelabs/system-manager-custom-app-deploy/v1.0.0#default --sudo
 ```
 
 (Remember, the first time System Manager runs, it takes up to five minutes or so to compile everything.)

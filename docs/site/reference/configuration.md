@@ -227,7 +227,7 @@ experimental-features = nix-command flakes
 And then running System Manager with the init subcommand:
 
 ```sh
-nix run 'github:numtide/system-manager' -- init
+nix run --accept-flake-config 'github:numtide/system-manager' -- init
 ```
 
 (For this step, do not simply add the flag for experimental features; otherwise `init` won't create the `flake.nix` file.)
@@ -260,13 +260,13 @@ sudo rm /etc/nix/nix.conf
 
 ```sh
 cd ~/.config/system-manager
-nix run 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes' -- switch --sudo
+nix run --accept-flake-config 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes' -- switch --sudo
 ```
 
 System Manager is now managing your system for you, including the `/etc/nix/nix.conf` file. And experimental features are required and turned on through the `flake.nix` file, meaning you do not need to include the `--extra-experimental-features` option when you run System Manager:
 
 ```
-nix run 'github:numtide/system-manager' -- switch --sudo
+nix run --accept-flake-config 'github:numtide/system-manager' -- switch --sudo
 ```
 
 Next, if you want to make sure experimental features are always on, you can add it to your flake.
@@ -288,7 +288,7 @@ The reason for these questions is Numtide has made pre-built binary versions of 
 But doing so can cause problems with a non-interactive script. To run System Manager in a script, you can simply add the `--accept-flake-config` option like so:
 
 ```sh
-nix run 'github:numtide/system-manager' --accept-flake-config --extra-experimental-features 'nix-command flakes' -- switch --flake . --sudo
+nix run --accept-flake-config 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes' -- switch --flake . --sudo
 ```
 
 If you like, you can add these settings into your flake file, such as in the following:
@@ -388,11 +388,11 @@ sudo rm /etc/nix/nix.conf
 And now run System Manager. Because you removed `nix.conf`, you'll need to turn on experimental features as a command-line option.
 
 ```sh
-nix run 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes' -- switch --flake . --sudo
+nix run --accept-flake-config 'github:numtide/system-manager' --extra-experimental-features 'nix-command flakes' -- switch --flake . --sudo
 ```
 
 After System Manager runs, you'll have the changes in place (in this case the `glow` command added), and you'll be able to manage features, including experimental features, through your flake. And because you turned on the flakes experimental features, future runs of System Manager no longer need the flags. You can simply run:
 
 ```sh
-nix run 'github:numtide/system-manager' -- switch --flake . --sudo
+nix run --accept-flake-config 'github:numtide/system-manager' -- switch --flake . --sudo
 ```

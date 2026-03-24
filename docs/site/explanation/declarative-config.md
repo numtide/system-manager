@@ -61,7 +61,7 @@ System Manager keeps previous configurations as "generations." If an update brea
 
 ```bash
 sudo nix-env --profile /nix/var/nix/profiles/system-manager-profiles --rollback
-nix run 'github:numtide/system-manager' -- activate --sudo
+nix run --accept-flake-config 'github:numtide/system-manager' -- activate --sudo
 ```
 
 ### Team Collaboration

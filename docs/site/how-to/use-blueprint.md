@@ -74,7 +74,7 @@ For example, here's a configuration file that installs `bat`:
 Now return to the folder two levels up (the one containing `flake.nix`) and you can run System Manager:
 
 ```sh
-nix run 'github:numtide/system-manager' -- switch --flake . --sudo
+nix run --accept-flake-config 'github:numtide/system-manager' -- switch --flake . --sudo
 ```
 
 !!! Remember
@@ -109,7 +109,7 @@ If, for example, under the `hosts` folder you have a folder called `tree`, and i
 Then you can choose to install `tree` by specifying the `tree` folder like so:
 
 ```sh
-nix run 'github:numtide/system-manager' -- switch --flake '.#tree' --sudo
+nix run --accept-flake-config 'github:numtide/system-manager' -- switch --flake '.#tree' --sudo
 ```
 
 ## Using multiple configuration files with Blueprint
@@ -182,7 +182,7 @@ cowsay.nix:
 Now you can return to the top level where your `flake.nix` file is and run these two configuration files:
 
 ```sh
-nix run 'github:numtide/system-manager' -- switch --flake '.#cli-tools' --sudo
+nix run --accept-flake-config 'github:numtide/system-manager' -- switch --flake '.#cli-tools' --sudo
 ```
 
 This means if you want to include various recipes, you can easily do so.
