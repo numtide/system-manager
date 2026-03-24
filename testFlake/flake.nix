@@ -39,7 +39,7 @@
       };
       vmChecks =
         system:
-        import ./vm-tests.nix {
+        import ./vm-tests {
           system = vmTestSystem;
           inherit (nixpkgs) lib;
           nix-vm-test = vmTestLib;
@@ -48,11 +48,12 @@
         };
       containerChecks =
         system:
-        import ./container-tests.nix {
+        import ./container-tests {
           inherit nixpkgs system;
           inherit (nixpkgs) lib;
           hostPkgs = nixpkgs.legacyPackages.${system};
           inherit system-manager;
+          inherit sops-nix;
         };
     in
     {
