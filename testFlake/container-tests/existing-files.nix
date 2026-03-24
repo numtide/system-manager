@@ -2,12 +2,12 @@
 # is enabled, and that systemd .wants/.requires symlinks are auto-replaced
 # with backup on systems where those entries already exist.
 {
-  forEachUbuntuImage,
+  forEachDistro,
   system-manager,
   ...
 }:
 
-forEachUbuntuImage "existing-files" {
+forEachDistro "existing-files" {
   modules = [
     (
       { lib, pkgs, ... }:
@@ -50,69 +50,67 @@ forEachUbuntuImage "existing-files" {
     { toplevel, hostPkgs, ... }:
     ''
       start_all()
-      vm.wait_for_unit("default.target")
+      machine.wait_for_unit("multi-user.target")
 
       # Create pre-existing files that system-manager will replace
-      vm.succeed("echo -n 'original copy content' > /etc/force-copy-test")
-      vm.succeed("echo -n 'original symlink content' > /etc/force-symlink-test")
-      vm.succeed("echo -n 'do not touch' > /etc/no-replace-test")
+      machine.succeed("echo -n 'original copy content' > /etc/force-copy-test")
+      machine.succeed("echo -n 'original symlink content' > /etc/force-symlink-test")
+      machine.succeed("echo -n 'do not touch' > /etc/no-replace-test")
 
       # Create pre-existing .wants symlink (simulating Ubuntu's pre-installed timers)
-      vm.succeed("mkdir -p /etc/systemd/system/timers.target.wants")
-      vm.succeed("ln -sf /lib/systemd/system/fake-existing.timer /etc/systemd/system/timers.target.wants/existing.timer")
+      machine.succeed("mkdir -p /etc/systemd/system/timers.target.wants")
+      machine.succeed("ln -sf /lib/systemd/system/fake-existing.timer /etc/systemd/system/timers.target.wants/existing.timer")
 
-      # Activate directly (not via snippet) because the no-replace-test entry
-      # will produce an expected ERROR that the snippet would reject.
-      vm.succeed("${toplevel}/bin/activate 2>&1 | tee /tmp/output.log")
+      # Activate directly because the no-replace-test entry
+      # will produce an expected ERROR that machine.activate() would reject.
+      machine.succeed("${toplevel}/bin/activate 2>&1 | tee /tmp/output.log")
 
       # Verify that the no-replace entry produced the expected error
-      vm.succeed("grep -F 'File /etc/no-replace-test already exists' /tmp/output.log")
-      no_replace = vm.succeed("cat /etc/no-replace-test").strip()
+      machine.succeed("grep -F 'File /etc/no-replace-test already exists' /tmp/output.log")
+      no_replace = machine.succeed("cat /etc/no-replace-test").strip()
       assert no_replace == "do not touch", f"Expected untouched file, got: {no_replace}"
-      vm.fail("test -e /etc/no-replace-test.system-manager-backup")
+      machine.fail("test -e /etc/no-replace-test.system-manager-backup")
 
-      managed_copy = vm.succeed("cat /etc/force-copy-test").strip()
+      managed_copy = machine.succeed("cat /etc/force-copy-test").strip()
       assert "managed copy content" in managed_copy, f"Expected managed copy content, got: {managed_copy}"
-      backup_copy = vm.succeed("cat /etc/force-copy-test.system-manager-backup").strip()
+      backup_copy = machine.succeed("cat /etc/force-copy-test.system-manager-backup").strip()
       assert backup_copy == "original copy content", f"Expected original backup, got: {backup_copy}"
 
-      vm.succeed("test -L /etc/force-symlink-test")
-      managed_symlink = vm.succeed("cat /etc/force-symlink-test").strip()
+      machine.succeed("test -L /etc/force-symlink-test")
+      managed_symlink = machine.succeed("cat /etc/force-symlink-test").strip()
       assert "managed symlink content" in managed_symlink, f"Expected managed symlink content, got: {managed_symlink}"
-      backup_symlink = vm.succeed("cat /etc/force-symlink-test.system-manager-backup").strip()
+      backup_symlink = machine.succeed("cat /etc/force-symlink-test.system-manager-backup").strip()
       assert backup_symlink == "original symlink content", f"Expected original symlink backup, got: {backup_symlink}"
 
       # Verify .wants symlink was replaced (auto-backup for systemd dependency dirs)
-      vm.succeed("test -L /etc/systemd/system/timers.target.wants/existing.timer")
-      backup_wants = vm.succeed("readlink /etc/systemd/system/timers.target.wants/existing.timer.system-manager-backup").strip()
+      machine.succeed("test -L /etc/systemd/system/timers.target.wants/existing.timer")
+      backup_wants = machine.succeed("readlink /etc/systemd/system/timers.target.wants/existing.timer.system-manager-backup").strip()
       assert "fake-existing.timer" in backup_wants, f"Expected backup of original .wants symlink, got: {backup_wants}"
 
       # Verify the timer unit content matches the declared config
-      timer_content = vm.succeed("cat /etc/systemd/system/existing.timer")
+      timer_content = machine.succeed("cat /etc/systemd/system/existing.timer")
       assert "OnCalendar=daily" in timer_content, f"Expected OnCalendar=daily in timer unit, got: {timer_content}"
       assert "Persistent=true" in timer_content, f"Expected Persistent=true in timer unit, got: {timer_content}"
 
       # Deactivate and verify backups are restored
-      ${system-manager.lib.deactivateProfileSnippet {
-        node = "vm";
-        profile = toplevel;
-      }}
+      machine.succeed("${toplevel}/bin/deactivate 2>&1 | tee /tmp/output.log")
+      machine.succeed("! grep -F 'ERROR' /tmp/output.log")
 
       # Verify originals restored from backups
-      restored_copy = vm.succeed("cat /etc/force-copy-test").strip()
+      restored_copy = machine.succeed("cat /etc/force-copy-test").strip()
       assert restored_copy == "original copy content", f"Expected restored original, got: {restored_copy}"
-      vm.fail("test -e /etc/force-copy-test.system-manager-backup")
+      machine.fail("test -e /etc/force-copy-test.system-manager-backup")
 
-      restored_symlink = vm.succeed("cat /etc/force-symlink-test").strip()
+      restored_symlink = machine.succeed("cat /etc/force-symlink-test").strip()
       assert restored_symlink == "original symlink content", f"Expected restored original, got: {restored_symlink}"
-      vm.fail("test -e /etc/force-symlink-test.system-manager-backup")
+      machine.fail("test -e /etc/force-symlink-test.system-manager-backup")
 
-      restored_wants = vm.succeed("readlink /etc/systemd/system/timers.target.wants/existing.timer").strip()
+      restored_wants = machine.succeed("readlink /etc/systemd/system/timers.target.wants/existing.timer").strip()
       assert "fake-existing.timer" in restored_wants, f"Expected restored .wants symlink, got: {restored_wants}"
-      vm.fail("test -e /etc/systemd/system/timers.target.wants/existing.timer.system-manager-backup")
+      machine.fail("test -e /etc/systemd/system/timers.target.wants/existing.timer.system-manager-backup")
 
       # Verify no-replace-test was never touched
-      no_replace_after = vm.succeed("cat /etc/no-replace-test").strip()
+      no_replace_after = machine.succeed("cat /etc/no-replace-test").strip()
       assert no_replace_after == "do not touch", f"Expected untouched file after deactivation, got: {no_replace_after}"
     '';
 }
