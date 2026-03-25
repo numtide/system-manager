@@ -152,6 +152,10 @@ struct BuildArgs {
         },
     )]
     flake_uri: String,
+
+    #[arg(long, action)]
+    /// Bypass the flake evaluation cache and fetch remote flakes fresh
+    refresh: bool,
 }
 
 #[derive(clap::Args, Debug)]
@@ -290,8 +294,8 @@ fn go(args: Args) -> Result<()> {
         }
 
         Action::Build {
-            build_args: BuildArgs { flake_uri },
-        } => build(&flake_uri, &target_host, &nix_options).and_then(print_store_path),
+            build_args: BuildArgs { flake_uri, refresh },
+        } => build(&flake_uri, &target_host, &nix_options, refresh).and_then(print_store_path),
 
         Action::Deactivate {
             optional_store_path_args: OptionalStorePathArg { maybe_store_path },
@@ -363,12 +367,12 @@ fn go(args: Args) -> Result<()> {
         }
 
         Action::Switch {
-            build_args: BuildArgs { flake_uri },
+            build_args: BuildArgs { flake_uri, refresh },
             activation_args: ActivationArgs { ephemeral },
             sudo_args,
         } => {
             let sudo_options = sudo_args.to_sudo_options(legacy_use_remote_sudo)?;
-            let store_path = do_build(&flake_uri, &nix_options)?;
+            let store_path = do_build(&flake_uri, &nix_options, refresh)?;
             copy_closure(&store_path, &target_host)?;
             invoke_engine_register(&store_path, &target_host, &sudo_options)?;
             invoke_engine_activate(&store_path, ephemeral, &target_host, &sudo_options)
@@ -428,14 +432,15 @@ fn build(
     flake_uri: &str,
     target_host: &Option<String>,
     nix_options: &NixOptions,
+    refresh: bool,
 ) -> Result<StorePath> {
-    let store_path = do_build(flake_uri, nix_options)?;
+    let store_path = do_build(flake_uri, nix_options, refresh)?;
     copy_closure(&store_path, target_host)?;
     Ok(store_path)
 }
 
-fn do_build(flake_uri: &str, nix_options: &NixOptions) -> Result<StorePath> {
-    system_manager_engine::register::build(flake_uri, nix_options)
+fn do_build(flake_uri: &str, nix_options: &NixOptions, refresh: bool) -> Result<StorePath> {
+    system_manager_engine::register::build(flake_uri, nix_options, refresh)
 }
 
 fn register(
@@ -455,7 +460,7 @@ fn register(
                     maybe_flake_uri: Some(flake_uri),
                 },
         } => {
-            let store_path = do_build(&flake_uri, nix_options)?;
+            let store_path = do_build(&flake_uri, nix_options, false)?;
             copy_closure(&store_path, target_host)?;
             invoke_engine_register(&store_path, target_host, sudo_options)?;
             Ok(store_path)
@@ -498,7 +503,7 @@ fn prepopulate(
                     maybe_flake_uri: Some(flake_uri),
                 },
         } => {
-            let store_path = do_build(&flake_uri, nix_options)?;
+            let store_path = do_build(&flake_uri, nix_options, false)?;
             copy_closure(&store_path, target_host)?;
             invoke_engine_register(&store_path, target_host, sudo_options)?;
             invoke_engine_prepopulate(&store_path, ephemeral, target_host, sudo_options)?;
