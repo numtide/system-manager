@@ -66,13 +66,13 @@ fn create_gcroot(gcroot_path: &str, profile_path: &Path) -> Result<()> {
     create_store_link(&store_path, Path::new(gcroot_path))
 }
 
-pub fn build(flake_uri: &str, nix_options: &NixOptions) -> Result<StorePath> {
+pub fn build(flake_uri: &str, nix_options: &NixOptions, refresh: bool) -> Result<StorePath> {
     let full_flake_uri = find_flake_attr(flake_uri, nix_options)?;
 
     log::info!("Building new system-manager generation...");
     log::info!("Running nix build...");
     let store_path =
-        run_nix_build(full_flake_uri.as_ref(), nix_options).and_then(get_store_path)?;
+        run_nix_build(full_flake_uri.as_ref(), nix_options, refresh).and_then(get_store_path)?;
     log::info!("Built system-manager profile {store_path}");
     Ok(store_path)
 }
@@ -175,9 +175,16 @@ fn parse_nix_build_output(output: String) -> Result<StorePath> {
     anyhow::bail!("Multiple build results were returned, we cannot handle that yet.")
 }
 
-fn run_nix_build(flake_uri: &str, nix_options: &NixOptions) -> Result<process::Output> {
+fn run_nix_build(
+    flake_uri: &str,
+    nix_options: &NixOptions,
+    refresh: bool,
+) -> Result<process::Output> {
     let mut cmd = nix_cmd(nix_options);
     cmd.arg("build").arg(flake_uri).arg("--json");
+    if refresh {
+        cmd.arg("--refresh");
+    }
 
     log::debug!("Running nix command: {cmd:?}");
 
