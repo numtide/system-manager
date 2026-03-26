@@ -99,8 +99,6 @@ forEachDistro "system-path" {
       # Start the container
       start_all()
       machine.wait_for_unit("multi-user.target")
-      # System manager is trying to configure nix. Activation will get a partial error if we do not delete it.
-      machine.execute("rm -rf /etc/nix")
 
       machine.fail("bash --login -c '$(which rg)'")
       machine.fail("bash --login -c '$(which fd)'")

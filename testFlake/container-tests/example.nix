@@ -12,8 +12,6 @@ forEachDistro "example" {
 
       # Wait for systemd to be ready
       machine.wait_for_unit("multi-user.target")
-      # System manager is trying to configure nix. Activation will get a partial error if we do not delete it.
-      machine.execute("rm -rf /etc/nix")
 
       # Nix is installed and profile is copied by the driver automatically
       # Activate system-manager

@@ -55,8 +55,6 @@ forEachDistro "sops-ssh-key" {
       start_all()
 
       machine.wait_for_unit("multi-user.target")
-      # System manager is trying to configure nix. Activation will get a partial error if we do not delete it.
-      machine.execute("rm -rf /etc/nix")
 
       # Set up the SSH ed25519 key as if it were a host key
       machine.succeed("mkdir -p /etc/ssh")
