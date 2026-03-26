@@ -28,6 +28,10 @@ struct Args {
 
     #[clap(long = "nix-option", num_args = 2, global = true)]
     nix_options: Vec<String>,
+
+    /// Enable debug logging (equivalent to RUST_LOG=debug)
+    #[arg(short, long, global = true)]
+    verbose: bool,
 }
 
 #[derive(clap::Args, Debug)]
@@ -81,8 +85,11 @@ enum Action {
 }
 
 fn main() -> ExitCode {
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
-    handle_toplevel_error(go(Args::parse()))
+    let args = Args::parse();
+    let default_filter = if args.verbose { "debug" } else { "info" };
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(default_filter))
+        .init();
+    handle_toplevel_error(go(args))
 }
 
 fn go(args: Args) -> Result<()> {
