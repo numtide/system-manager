@@ -112,6 +112,10 @@ struct Args {
 
     #[arg(long = "ssh-option", global = true, allow_hyphen_values = true)]
     ssh_options: Vec<String>,
+
+    /// Enable debug logging (equivalent to RUST_LOG=debug)
+    #[arg(short, long, global = true)]
+    verbose: bool,
 }
 
 #[derive(clap::Args, Debug)]
@@ -261,8 +265,11 @@ enum Action {
 }
 
 fn main() -> ExitCode {
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
-    handle_toplevel_error(go(Args::parse()))
+    let args = Args::parse();
+    let default_filter = if args.verbose { "debug" } else { "info" };
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(default_filter))
+        .init();
+    handle_toplevel_error(go(args))
 }
 
 fn go(args: Args) -> Result<()> {
@@ -272,6 +279,7 @@ fn go(args: Args) -> Result<()> {
         legacy_use_remote_sudo,
         nix_options,
         ssh_options,
+        verbose,
     } = args;
 
     if legacy_use_remote_sudo {
@@ -307,6 +315,7 @@ fn go(args: Args) -> Result<()> {
                 &sudo_options,
                 &nix_options,
                 &ssh_options,
+                verbose,
             )
             .and_then(print_store_path)
         }
@@ -320,7 +329,13 @@ fn go(args: Args) -> Result<()> {
             sudo_args,
         } => {
             let sudo_options = sudo_args.to_sudo_options(legacy_use_remote_sudo)?;
-            deactivate(maybe_store_path, &target_host, &sudo_options, &ssh_options)
+            deactivate(
+                maybe_store_path,
+                &target_host,
+                &sudo_options,
+                &ssh_options,
+                verbose,
+            )
         }
 
         Action::Register {
@@ -334,6 +349,7 @@ fn go(args: Args) -> Result<()> {
                 &sudo_options,
                 &nix_options,
                 &ssh_options,
+                verbose,
             )
             .and_then(print_store_path)
         }
@@ -394,13 +410,20 @@ fn go(args: Args) -> Result<()> {
             let sudo_options = sudo_args.to_sudo_options(legacy_use_remote_sudo)?;
             let store_path = do_build(&mut nix_build_options, &nix_options)?;
             copy_closure(&store_path, &target_host, &ssh_options)?;
-            invoke_engine_register(&store_path, &target_host, &sudo_options, &ssh_options)?;
+            invoke_engine_register(
+                &store_path,
+                &target_host,
+                &sudo_options,
+                &ssh_options,
+                verbose,
+            )?;
             invoke_engine_activate(
                 &store_path,
                 ephemeral,
                 &target_host,
                 &sudo_options,
                 &ssh_options,
+                verbose,
             )
         }
 
@@ -417,6 +440,7 @@ fn go(args: Args) -> Result<()> {
                 &target_host,
                 &sudo_options,
                 &ssh_options,
+                verbose,
             )
         }
     }
@@ -485,6 +509,7 @@ fn register(
     sudo_options: &SudoOptions,
     nix_options: &NixOptions,
     ssh_options: &[String],
+    verbose: bool,
 ) -> Result<StorePath> {
     match args {
         StoreOrFlakeArgs {
@@ -501,7 +526,7 @@ fn register(
             let mut nix_build_options = NixBuildOptions { flake_uri, refresh };
             let store_path = do_build(&mut nix_build_options, nix_options)?;
             copy_closure(&store_path, target_host, ssh_options)?;
-            invoke_engine_register(&store_path, target_host, sudo_options, ssh_options)?;
+            invoke_engine_register(&store_path, target_host, sudo_options, ssh_options, verbose)?;
             Ok(store_path)
         }
         StoreOrFlakeArgs {
@@ -516,7 +541,7 @@ fn register(
             refresh: _,
         } => {
             copy_closure(&store_path, target_host, ssh_options)?;
-            invoke_engine_register(&store_path, target_host, sudo_options, ssh_options)?;
+            invoke_engine_register(&store_path, target_host, sudo_options, ssh_options, verbose)?;
             Ok(store_path)
         }
         _ => {
@@ -532,6 +557,7 @@ fn prepopulate(
     sudo_options: &SudoOptions,
     nix_options: &NixOptions,
     ssh_options: &[String],
+    verbose: bool,
 ) -> Result<StorePath> {
     match args {
         StoreOrFlakeArgs {
@@ -548,13 +574,14 @@ fn prepopulate(
             let mut nix_build_options = NixBuildOptions { flake_uri, refresh };
             let store_path = do_build(&mut nix_build_options, nix_options)?;
             copy_closure(&store_path, target_host, ssh_options)?;
-            invoke_engine_register(&store_path, target_host, sudo_options, ssh_options)?;
+            invoke_engine_register(&store_path, target_host, sudo_options, ssh_options, verbose)?;
             invoke_engine_prepopulate(
                 &store_path,
                 ephemeral,
                 target_host,
                 sudo_options,
                 ssh_options,
+                verbose,
             )?;
             Ok(store_path)
         }
@@ -568,13 +595,14 @@ fn prepopulate(
         } => {
             let store_path = StorePath::try_from(store_path_or_active_profile(maybe_store_path))?;
             copy_closure(&store_path, target_host, ssh_options)?;
-            invoke_engine_register(&store_path, target_host, sudo_options, ssh_options)?;
+            invoke_engine_register(&store_path, target_host, sudo_options, ssh_options, verbose)?;
             invoke_engine_prepopulate(
                 &store_path,
                 ephemeral,
                 target_host,
                 sudo_options,
                 ssh_options,
+                verbose,
             )?;
             Ok(store_path)
         }
@@ -589,9 +617,10 @@ fn deactivate(
     target_host: &Option<String>,
     sudo_options: &SudoOptions,
     ssh_options: &[String],
+    verbose: bool,
 ) -> Result<()> {
     let store_path = store_path_or_active_profile(maybe_store_path);
-    invoke_engine_deactivate(&store_path, target_host, sudo_options, ssh_options)
+    invoke_engine_deactivate(&store_path, target_host, sudo_options, ssh_options, verbose)
 }
 
 // --- Engine invocation functions ---
@@ -602,13 +631,17 @@ fn invoke_engine_register(
     target_host: &Option<String>,
     sudo_options: &SudoOptions,
     ssh_options: &[String],
+    verbose: bool,
 ) -> Result<()> {
     let engine_path = store_path.store_path.join("bin").join(ENGINE_BIN);
-    let args = vec![
+    let mut args = vec![
         "register".to_string(),
         "--store-path".to_string(),
         store_path.to_string(),
     ];
+    if verbose {
+        args.push("--verbose".to_string());
+    }
     invoke_engine(&engine_path, &args, target_host, sudo_options, ssh_options)
 }
 
@@ -619,6 +652,7 @@ fn invoke_engine_activate(
     target_host: &Option<String>,
     sudo_options: &SudoOptions,
     ssh_options: &[String],
+    verbose: bool,
 ) -> Result<()> {
     let engine_path = store_path.store_path.join("bin").join(ENGINE_BIN);
     let mut args = vec![
@@ -628,6 +662,9 @@ fn invoke_engine_activate(
     ];
     if ephemeral {
         args.push("--ephemeral".to_string());
+    }
+    if verbose {
+        args.push("--verbose".to_string());
     }
     invoke_engine(&engine_path, &args, target_host, sudo_options, ssh_options)
 }
@@ -639,6 +676,7 @@ fn invoke_engine_prepopulate(
     target_host: &Option<String>,
     sudo_options: &SudoOptions,
     ssh_options: &[String],
+    verbose: bool,
 ) -> Result<()> {
     let engine_path = store_path.store_path.join("bin").join(ENGINE_BIN);
     let mut args = vec![
@@ -649,6 +687,9 @@ fn invoke_engine_prepopulate(
     if ephemeral {
         args.push("--ephemeral".to_string());
     }
+    if verbose {
+        args.push("--verbose".to_string());
+    }
     invoke_engine(&engine_path, &args, target_host, sudo_options, ssh_options)
 }
 
@@ -658,6 +699,7 @@ fn invoke_engine_deactivate(
     target_host: &Option<String>,
     sudo_options: &SudoOptions,
     ssh_options: &[String],
+    verbose: bool,
 ) -> Result<()> {
     // For deactivate, we need to find the engine in the profile
     // If we have a specific store path, use it; otherwise use the active profile
@@ -671,7 +713,10 @@ fn invoke_engine_deactivate(
             .unwrap_or_else(|_| store_path.to_path_buf());
         resolved.join("bin").join(ENGINE_BIN)
     };
-    let args = vec!["deactivate".to_string()];
+    let mut args = vec!["deactivate".to_string()];
+    if verbose {
+        args.push("--verbose".to_string());
+    }
     invoke_engine(&engine_path, &args, target_host, sudo_options, ssh_options)
 }
 
