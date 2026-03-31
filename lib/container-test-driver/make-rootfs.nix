@@ -64,10 +64,6 @@ in
         mkdir -p $out/usr/local/bin
         install -m755 ${nixArtifacts.nix-installer} $out/usr/local/bin/nix-installer
 
-        # Include Nix tarball for offline installation
-        mkdir -p $out/usr/local/share/nix
-        cp ${nixArtifacts.nixTarball} $out/usr/local/share/nix/nix.tar.xz
-
         # Create marker to indicate Nix needs installation
         touch $out/.nix-not-installed
 

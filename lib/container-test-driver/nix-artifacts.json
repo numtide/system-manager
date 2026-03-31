@@ -1,11 +1,7 @@
 {
-  "nixVersion": "2.33.0",
+  "nixVersion": "2.34.1",
   "nix-installer": {
-    "x86_64-linux": "sha256-+GTcBIJ56ulEaP/xja+oLajdGb+bHDka9WQkU4XIMNM=",
-    "aarch64-linux": "sha256-ociEB/P9kJAzUSxQCLmqOJEQpGuqvTQk+cEVtG6YIS4="
-  },
-  "nixTarball": {
-    "x86_64-linux": "00cgpm2l3mcmxqwvsvak0qwd498x9azm588czb5p3brmcvin3bsl",
-    "aarch64-linux": "1v3z0qdfm6sa053qn39ijn2g9vsh1nrhykwsxx7piwlnvysn4hsw"
+    "x86_64-linux": "0sqx5daavyz0srbgm9srg113pkqckyzxsz251d98cvr6vs7grkc7",
+    "aarch64-linux": "1svf37zavqr50hj20swnjfzn5scx6gby6fj7i2f1135clsjpzpr2"
   }
 }
