@@ -137,8 +137,11 @@ pub fn activate(
 
 pub fn deactivate(old_state: EtcFilesState) -> EtcActivationResult {
     let files = old_state.files.clone();
-    let final_state = delete_paths(&files, old_state);
-
+    let mut final_state = delete_paths(&files, old_state);
+    for file_to_restore in &final_state.backed_up_files.clone() {
+        let _ = restore_backup(file_to_restore)
+            .map(|_| final_state.backed_up_files.remove(&file_to_restore.clone()));
+    }
     log::info!("Done");
     Ok(final_state)
 }
