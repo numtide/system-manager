@@ -1,3 +1,4 @@
+pub mod etc_tree;
 use anyhow::{anyhow, Context};
 use im::HashMap;
 use regex;
@@ -297,13 +298,14 @@ fn create_etc_file(
     // We did not find a proper way to do that from the Nix static env,
     // hardcoding this condition in the activation instead.
     let target_is_in_systemd_dir = is_inside_systemd_dependency_dir(&target);
+
     if file.mode == "symlink" {
         // On some symlinks, target.exists() returns false. Not sure why.
         let exists = target.exists() || target.is_symlink();
         if exists {
             // If the target exists and has been created by a previous system-manager activation,
             // replace it.
-            if old_state.files.contains(&target) {
+            if old_state.contains(&target) {
                 log::debug!(
                     "{} is managed by system-manager. Deleting.",
                     &target.display()
@@ -319,7 +321,12 @@ fn create_etc_file(
                         source: e.into(),
                     }
                 })?;
-                state.files.insert(target);
+                // Check whether this file is a backup or plain link in the old state.
+                if old_state.files.contains(&target) {
+                    state.files.insert(target);
+                } else {
+                    state.backed_up_files.insert(target);
+                }
             } else if file.replace_existing || target_is_in_systemd_dir {
                 log::debug!(
                     "{} already exists but it's set to replace. Backup and link again.",
@@ -333,6 +340,7 @@ fn create_etc_file(
                 );
             }
         } else {
+            // Target do not exist on the filesystem
             log::debug!("Symlink {} => {}", file.source, target.display());
             unix::fs::symlink(file.source.store_path, &target).map_err(|e| {
                 ActivationError::WithPartialResult {
@@ -381,7 +389,6 @@ fn backup_and_link(
         source: e.into(),
     })?;
     dir_state.backed_up_files.insert(target.to_owned());
-    dir_state.files.insert(target.to_owned());
     Ok(dir_state)
 }
 
@@ -453,14 +460,14 @@ fn copy_file(
     old_state: &EtcFilesState,
     mut new_state: EtcFilesState,
 ) -> EtcActivationResult {
-    let exists = target.exists();
-    if exists && !old_state.files.contains(target) {
-        if entry.replace_existing {
+    let exists = target.exists() || target.is_symlink();
+    let exists_and_need_backup = exists && !old_state.contains(target) && entry.replace_existing;
+    if exists && !old_state.contains(target) {
+        if exists_and_need_backup {
             backup_existing_file(target).map_err(|e| ActivationError::WithPartialResult {
                 result: new_state.clone(),
                 source: e,
             })?;
-            new_state.backed_up_files.insert(target.clone());
         } else {
             let error = anyhow!("File {} already exists, ignoring. Set replaceExisting if you want to back it up and override it.", target.display());
             return Err(ActivationError::WithPartialResult {
@@ -495,6 +502,11 @@ fn copy_file(
         Some(find_gid(entry).map_err(|e| to_activation_result(e, &new_state))?),
     )
     .map_err(|e| to_activation_result(e, &new_state))?;
-    new_state.files.insert(target.clone());
+    // Update the state depending whether or not we backed up a file before
+    if exists_and_need_backup || (old_state.backed_up_files.contains(target)) {
+        new_state.backed_up_files.insert(target.clone());
+    } else {
+        new_state.files.insert(target.clone());
+    }
     Ok(new_state)
 }
