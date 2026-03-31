@@ -64,3 +64,33 @@ The `pre-populate` subcommand puts all files defined by the given generation in 
 ### sudo
 
 The `sudo` subcommand grants sudo access to System Manager, while running under the current user. All created files will be owned by the current user.
+
+## Global options
+
+### --target-host
+
+Specifies a remote host to deploy to via SSH. When set, System Manager copies the closure and runs the engine on the remote machine.
+
+### --ssh-option
+
+Passes additional SSH options to both `ssh` and `nix-copy-closure` when deploying to a remote host with `--target-host`.
+Can be specified multiple times.
+
+For `nix-copy-closure`, the values are appended to the `NIX_SSHOPTS` environment variable, preserving any pre-existing value.
+
+```sh
+nix run 'github:numtide/system-manager' -- \
+  --target-host user@host \
+  --ssh-option "-o ProxyJump=relay@bastion" \
+  --ssh-option "-p 2222" \
+  switch --flake . --sudo
+```
+
+Note that options containing spaces must be quoted, as in the example above.
+
+One limitation of this approach is that we don't currently support options that include spaces in their values, such as `--ssh-option '-o ProxyCommand=sh -c ...'`.
+Use a custom SSH config file to work around this, and specify it with `--ssh-option '-F /path/to/config'`.
+
+### --nix-option
+
+Passes additional options to Nix commands. Takes two arguments per invocation (key and value).

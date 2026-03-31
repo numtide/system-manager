@@ -109,6 +109,9 @@ struct Args {
 
     #[clap(long = "nix-option", num_args = 2, global = true)]
     nix_options: Option<Vec<String>>,
+
+    #[arg(long = "ssh-option", global = true, allow_hyphen_values = true)]
+    ssh_options: Vec<String>,
 }
 
 #[derive(clap::Args, Debug)]
@@ -268,6 +271,7 @@ fn go(args: Args) -> Result<()> {
         target_host,
         legacy_use_remote_sudo,
         nix_options,
+        ssh_options,
     } = args;
 
     if legacy_use_remote_sudo {
@@ -302,12 +306,13 @@ fn go(args: Args) -> Result<()> {
                 &target_host,
                 &sudo_options,
                 &nix_options,
+                &ssh_options,
             )
             .and_then(print_store_path)
         }
 
         Action::Build { build_args } => {
-            build(&target_host, &build_args, &nix_options).and_then(print_store_path)
+            build(&target_host, &build_args, &nix_options, &ssh_options).and_then(print_store_path)
         }
 
         Action::Deactivate {
@@ -315,7 +320,7 @@ fn go(args: Args) -> Result<()> {
             sudo_args,
         } => {
             let sudo_options = sudo_args.to_sudo_options(legacy_use_remote_sudo)?;
-            deactivate(maybe_store_path, &target_host, &sudo_options)
+            deactivate(maybe_store_path, &target_host, &sudo_options, &ssh_options)
         }
 
         Action::Register {
@@ -328,6 +333,7 @@ fn go(args: Args) -> Result<()> {
                 &target_host,
                 &sudo_options,
                 &nix_options,
+                &ssh_options,
             )
             .and_then(print_store_path)
         }
@@ -387,9 +393,15 @@ fn go(args: Args) -> Result<()> {
             let mut nix_build_options = NixBuildOptions::from(&build_args);
             let sudo_options = sudo_args.to_sudo_options(legacy_use_remote_sudo)?;
             let store_path = do_build(&mut nix_build_options, &nix_options)?;
-            copy_closure(&store_path, &target_host)?;
-            invoke_engine_register(&store_path, &target_host, &sudo_options)?;
-            invoke_engine_activate(&store_path, ephemeral, &target_host, &sudo_options)
+            copy_closure(&store_path, &target_host, &ssh_options)?;
+            invoke_engine_register(&store_path, &target_host, &sudo_options, &ssh_options)?;
+            invoke_engine_activate(
+                &store_path,
+                ephemeral,
+                &target_host,
+                &sudo_options,
+                &ssh_options,
+            )
         }
 
         Action::Activate {
@@ -398,8 +410,14 @@ fn go(args: Args) -> Result<()> {
             sudo_args,
         } => {
             let sudo_options = sudo_args.to_sudo_options(legacy_use_remote_sudo)?;
-            copy_closure(&store_path, &target_host)?;
-            invoke_engine_activate(&store_path, ephemeral, &target_host, &sudo_options)
+            copy_closure(&store_path, &target_host, &ssh_options)?;
+            invoke_engine_activate(
+                &store_path,
+                ephemeral,
+                &target_host,
+                &sudo_options,
+                &ssh_options,
+            )
         }
     }
 }
@@ -446,10 +464,11 @@ fn build(
     target_host: &Option<String>,
     build_args: &BuildArgs,
     nix_options: &NixOptions,
+    ssh_options: &[String],
 ) -> Result<StorePath> {
     let mut nix_build_options = NixBuildOptions::from(build_args);
     let store_path = do_build(&mut nix_build_options, nix_options)?;
-    copy_closure(&store_path, target_host)?;
+    copy_closure(&store_path, target_host, ssh_options)?;
     Ok(store_path)
 }
 
@@ -465,6 +484,7 @@ fn register(
     target_host: &Option<String>,
     sudo_options: &SudoOptions,
     nix_options: &NixOptions,
+    ssh_options: &[String],
 ) -> Result<StorePath> {
     match args {
         StoreOrFlakeArgs {
@@ -480,8 +500,8 @@ fn register(
         } => {
             let mut nix_build_options = NixBuildOptions { flake_uri, refresh };
             let store_path = do_build(&mut nix_build_options, nix_options)?;
-            copy_closure(&store_path, target_host)?;
-            invoke_engine_register(&store_path, target_host, sudo_options)?;
+            copy_closure(&store_path, target_host, ssh_options)?;
+            invoke_engine_register(&store_path, target_host, sudo_options, ssh_options)?;
             Ok(store_path)
         }
         StoreOrFlakeArgs {
@@ -495,8 +515,8 @@ fn register(
                 },
             refresh: _,
         } => {
-            copy_closure(&store_path, target_host)?;
-            invoke_engine_register(&store_path, target_host, sudo_options)?;
+            copy_closure(&store_path, target_host, ssh_options)?;
+            invoke_engine_register(&store_path, target_host, sudo_options, ssh_options)?;
             Ok(store_path)
         }
         _ => {
@@ -511,6 +531,7 @@ fn prepopulate(
     target_host: &Option<String>,
     sudo_options: &SudoOptions,
     nix_options: &NixOptions,
+    ssh_options: &[String],
 ) -> Result<StorePath> {
     match args {
         StoreOrFlakeArgs {
@@ -526,9 +547,15 @@ fn prepopulate(
         } => {
             let mut nix_build_options = NixBuildOptions { flake_uri, refresh };
             let store_path = do_build(&mut nix_build_options, nix_options)?;
-            copy_closure(&store_path, target_host)?;
-            invoke_engine_register(&store_path, target_host, sudo_options)?;
-            invoke_engine_prepopulate(&store_path, ephemeral, target_host, sudo_options)?;
+            copy_closure(&store_path, target_host, ssh_options)?;
+            invoke_engine_register(&store_path, target_host, sudo_options, ssh_options)?;
+            invoke_engine_prepopulate(
+                &store_path,
+                ephemeral,
+                target_host,
+                sudo_options,
+                ssh_options,
+            )?;
             Ok(store_path)
         }
         StoreOrFlakeArgs {
@@ -540,9 +567,15 @@ fn prepopulate(
             refresh: _,
         } => {
             let store_path = StorePath::try_from(store_path_or_active_profile(maybe_store_path))?;
-            copy_closure(&store_path, target_host)?;
-            invoke_engine_register(&store_path, target_host, sudo_options)?;
-            invoke_engine_prepopulate(&store_path, ephemeral, target_host, sudo_options)?;
+            copy_closure(&store_path, target_host, ssh_options)?;
+            invoke_engine_register(&store_path, target_host, sudo_options, ssh_options)?;
+            invoke_engine_prepopulate(
+                &store_path,
+                ephemeral,
+                target_host,
+                sudo_options,
+                ssh_options,
+            )?;
             Ok(store_path)
         }
         _ => {
@@ -555,9 +588,10 @@ fn deactivate(
     maybe_store_path: Option<StorePath>,
     target_host: &Option<String>,
     sudo_options: &SudoOptions,
+    ssh_options: &[String],
 ) -> Result<()> {
     let store_path = store_path_or_active_profile(maybe_store_path);
-    invoke_engine_deactivate(&store_path, target_host, sudo_options)
+    invoke_engine_deactivate(&store_path, target_host, sudo_options, ssh_options)
 }
 
 // --- Engine invocation functions ---
@@ -567,6 +601,7 @@ fn invoke_engine_register(
     store_path: &StorePath,
     target_host: &Option<String>,
     sudo_options: &SudoOptions,
+    ssh_options: &[String],
 ) -> Result<()> {
     let engine_path = store_path.store_path.join("bin").join(ENGINE_BIN);
     let args = vec![
@@ -574,7 +609,7 @@ fn invoke_engine_register(
         "--store-path".to_string(),
         store_path.to_string(),
     ];
-    invoke_engine(&engine_path, &args, target_host, sudo_options)
+    invoke_engine(&engine_path, &args, target_host, sudo_options, ssh_options)
 }
 
 /// Invoke the engine's activate subcommand
@@ -583,6 +618,7 @@ fn invoke_engine_activate(
     ephemeral: bool,
     target_host: &Option<String>,
     sudo_options: &SudoOptions,
+    ssh_options: &[String],
 ) -> Result<()> {
     let engine_path = store_path.store_path.join("bin").join(ENGINE_BIN);
     let mut args = vec![
@@ -593,7 +629,7 @@ fn invoke_engine_activate(
     if ephemeral {
         args.push("--ephemeral".to_string());
     }
-    invoke_engine(&engine_path, &args, target_host, sudo_options)
+    invoke_engine(&engine_path, &args, target_host, sudo_options, ssh_options)
 }
 
 /// Invoke the engine's prepopulate subcommand
@@ -602,6 +638,7 @@ fn invoke_engine_prepopulate(
     ephemeral: bool,
     target_host: &Option<String>,
     sudo_options: &SudoOptions,
+    ssh_options: &[String],
 ) -> Result<()> {
     let engine_path = store_path.store_path.join("bin").join(ENGINE_BIN);
     let mut args = vec![
@@ -612,7 +649,7 @@ fn invoke_engine_prepopulate(
     if ephemeral {
         args.push("--ephemeral".to_string());
     }
-    invoke_engine(&engine_path, &args, target_host, sudo_options)
+    invoke_engine(&engine_path, &args, target_host, sudo_options, ssh_options)
 }
 
 /// Invoke the engine's deactivate subcommand
@@ -620,6 +657,7 @@ fn invoke_engine_deactivate(
     store_path: &Path,
     target_host: &Option<String>,
     sudo_options: &SudoOptions,
+    ssh_options: &[String],
 ) -> Result<()> {
     // For deactivate, we need to find the engine in the profile
     // If we have a specific store path, use it; otherwise use the active profile
@@ -634,7 +672,7 @@ fn invoke_engine_deactivate(
         resolved.join("bin").join(ENGINE_BIN)
     };
     let args = vec!["deactivate".to_string()];
-    invoke_engine(&engine_path, &args, target_host, sudo_options)
+    invoke_engine(&engine_path, &args, target_host, sudo_options, ssh_options)
 }
 
 /// Core engine invocation - handles local/remote and sudo
@@ -643,9 +681,10 @@ fn invoke_engine(
     args: &[String],
     target_host: &Option<String>,
     sudo_options: &SudoOptions,
+    ssh_options: &[String],
 ) -> Result<()> {
     let status = if let Some(host) = target_host {
-        invoke_engine_remote(engine_path, args, host, sudo_options)?
+        invoke_engine_remote(engine_path, args, host, sudo_options, ssh_options)?
     } else {
         invoke_engine_local(engine_path, args, sudo_options)?
     };
@@ -709,8 +748,14 @@ fn invoke_engine_remote(
     args: &[String],
     target_host: &str,
     sudo_options: &SudoOptions,
+    ssh_options: &[String],
 ) -> Result<process::ExitStatus> {
     let mut cmd = process::Command::new("ssh");
+    for opt in ssh_options {
+        for option in opt.split_whitespace() {
+            cmd.arg(option);
+        }
+    }
     cmd.arg(target_host).arg("--");
 
     if sudo_options.is_enabled() {
@@ -745,15 +790,32 @@ fn invoke_engine_remote(
     }
 }
 
-fn copy_closure(store_path: &StorePath, target_host: &Option<String>) -> Result<()> {
-    target_host
-        .as_ref()
-        .map_or(Ok(()), |target| do_copy_closure(store_path, target))
+fn copy_closure(
+    store_path: &StorePath,
+    target_host: &Option<String>,
+    ssh_options: &[String],
+) -> Result<()> {
+    target_host.as_ref().map_or(Ok(()), |target| {
+        do_copy_closure(store_path, target, ssh_options)
+    })
 }
 
-fn do_copy_closure(store_path: &StorePath, target_host: &str) -> Result<()> {
+fn do_copy_closure(
+    store_path: &StorePath,
+    target_host: &str,
+    ssh_options: &[String],
+) -> Result<()> {
     log::info!("Copying closure to target host...");
-    let status = process::Command::new("nix-copy-closure")
+    let mut cmd = process::Command::new("nix-copy-closure");
+    if !ssh_options.is_empty() {
+        let mut sshopts = std::env::var("NIX_SSHOPTS").unwrap_or_default();
+        if !sshopts.is_empty() {
+            sshopts.push(' ');
+        }
+        sshopts.push_str(&ssh_options.join(" "));
+        cmd.env("NIX_SSHOPTS", sshopts);
+    }
+    let status = cmd
         .arg("--to")
         .arg(target_host)
         .arg("--use-substitutes")
@@ -858,5 +920,47 @@ mod tests {
         .expect("failed to parse args");
 
         assert_eq!(args.target_host.as_deref(), Some("admin@web.example.com"));
+    }
+
+    #[test]
+    fn ssh_option_parses_multiple_values() {
+        let args = Args::try_parse_from([
+            "system-manager",
+            "--target-host",
+            "user@host",
+            "--ssh-option",
+            "-o ProxyJump=relay",
+            "--ssh-option",
+            "-p 2222",
+            "switch",
+            "--flake",
+            ".#test",
+        ])
+        .expect("failed to parse args");
+
+        assert_eq!(args.ssh_options, vec!["-o ProxyJump=relay", "-p 2222"]);
+    }
+
+    #[test]
+    fn ssh_option_after_subcommand() {
+        let args = Args::try_parse_from([
+            "system-manager",
+            "switch",
+            "--flake",
+            ".#test",
+            "--ssh-option",
+            "-p 2222",
+        ])
+        .expect("failed to parse args");
+
+        assert_eq!(args.ssh_options, vec!["-p 2222"]);
+    }
+
+    #[test]
+    fn ssh_option_defaults_to_empty() {
+        let args = Args::try_parse_from(["system-manager", "switch", "--flake", ".#test"])
+            .expect("failed to parse args");
+
+        assert!(args.ssh_options.is_empty());
     }
 }

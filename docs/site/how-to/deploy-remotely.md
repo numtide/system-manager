@@ -62,6 +62,41 @@ nix run 'github:numtide/system-manager' -- --target-host admin@db.example.com \
   --sudo
 ```
 
+## Passing SSH options
+
+When you need to use a non-standard port, a jump host, or other SSH options, use the `--ssh-option` flag.
+It can be specified multiple times and applies to both `ssh` and `nix-copy-closure`.
+
+Deploy through a bastion host:
+
+```bash
+nix run 'github:numtide/system-manager' -- \
+  --target-host user@internal-host \
+  --ssh-option "-o ProxyJump=user@bastion" \
+  switch --flake . --sudo
+```
+
+Deploy to a host on a non-standard SSH port:
+
+```bash
+nix run 'github:numtide/system-manager' -- \
+  --target-host user@remote-host \
+  --ssh-option "-p 2222" \
+  switch --flake . --sudo
+```
+
+Multiple options can be combined:
+
+```bash
+nix run 'github:numtide/system-manager' -- \
+  --target-host user@internal-host \
+  --ssh-option "-o ProxyJump=user@bastion:443" \
+  --ssh-option "-p 2222" \
+  switch --flake . --sudo
+```
+
+If you already set `NIX_SSHOPTS` in your environment, `--ssh-option` values are appended to it rather than replacing it.
+
 ## SSH Configuration Tips
 
 To connect successfully, you have a couple of options for handling SSH authentication.
