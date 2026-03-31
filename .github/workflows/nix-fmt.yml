@@ -1,0 +1,21 @@
+name: nix-fmt
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  nix-fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: NixOS/nix-installer-action@main
+        with:
+          extra-conf: |
+            extra-substituters = https://cache.numtide.com
+            extra-trusted-public-keys = niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=
+            accept-flake-config = true
+      - name: nix fmt check
+        run: nix develop --command nix fmt -- --ci
