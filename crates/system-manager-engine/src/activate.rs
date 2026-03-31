@@ -3,14 +3,17 @@ pub(crate) mod services;
 mod tmp_files;
 pub(crate) mod users;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
+use serde_json::error::Category;
 use std::collections::HashSet;
 use std::fs::DirBuilder;
+use std::io::Seek;
 use std::path::{Path, PathBuf};
 use std::{fs, io, process};
 use thiserror::Error;
 
+use crate::activate::etc_files::etc_tree::StateV0;
 use crate::{StorePath, STATE_FILE_NAME, SYSTEM_MANAGER_STATE_DIR};
 
 #[derive(Error, Debug)]
@@ -42,30 +45,68 @@ pub enum FileStatus {
 
 type EtcTree = HashSet<PathBuf>;
 type BackedUpFiles = HashSet<PathBuf>;
-#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EtcFilesState {
     pub files: EtcTree,
     pub backed_up_files: BackedUpFiles,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct State {
-    pub(crate) file_tree: EtcFilesState,
-    pub(crate) services: services::Services,
+impl EtcFilesState {
+    pub fn contains(&self, path: &Path) -> bool {
+        // Union of backed up files + regular files appearing in old state.
+        let mut all_files_old_state = self.files.clone();
+        all_files_old_state.extend(self.backed_up_files.clone());
+        all_files_old_state.contains(path)
+    }
 }
 
-impl State {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StateV1 {
+    pub(crate) file_tree: EtcFilesState,
+    pub(crate) services: services::Services,
+    pub(crate) version: u32,
+}
+
+impl Default for StateV1 {
+    fn default() -> Self {
+        Self {
+            file_tree: EtcFilesState::default(),
+            services: services::Services::default(),
+            version: 1,
+        }
+    }
+}
+
+impl StateV1 {
     pub fn from_file(state_file: &Path) -> Result<Self> {
         if state_file.is_file() {
             log::info!("Reading state info from {}", state_file.display());
-            let reader = io::BufReader::new(fs::File::open(state_file)?);
-            serde_json::from_reader(reader).or_else(|e| {
-                log::error!("Error reading the state file, ignoring.");
-                log::error!("{e:?}");
-                Ok(Self::default())
-            })
+            let mut reader = io::BufReader::new(fs::File::open(state_file)?);
+            // if state is v1
+            let rv1: serde_json::Result<StateV1> = serde_json::from_reader(&mut reader);
+            match rv1 {
+                Ok(v1) => Ok(v1),
+                Err(e) => {
+                    // State might be v0. Let's try to parse it.
+                    if e.classify() == Category::Data {
+                        reader.rewind()?;
+                        let filetree: StateV0 =
+                            serde_json::from_reader(&mut reader).map_err(|e| {
+                                anyhow!(
+                                    "Cannot parse state, it doesn't match any supported format: {}",
+                                    e
+                                )
+                            })?;
+                        Ok(filetree.into())
+                    } else {
+                        // State is
+                        Err(anyhow!("Unexpected serde_json error: {}", e))
+                    }
+                }
+            }
+            // else parse v0 then migrate
         } else {
             Ok(Self::default())
         }
@@ -93,7 +134,7 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
     }
 
     let state_file = &get_state_file()?;
-    let old_state = State::from_file(state_file)?;
+    let old_state = StateV1::from_file(state_file)?;
 
     log::info!("Activating etc files...");
 
@@ -118,15 +159,17 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
 
             log::info!("Activating systemd services...");
             let final_state = match services::activate(store_path, old_state.services, ephemeral) {
-                Ok(services) => State {
+                Ok(services) => StateV1 {
                     file_tree: etc_tree,
                     services,
+                    version: Default::default(),
                 },
                 Err(ActivationError::WithPartialResult { result, source }) => {
                     log::error!("Error during activation: {source:?}");
-                    State {
+                    StateV1 {
                         file_tree: etc_tree,
                         services: result,
+                        version: Default::default(),
                     }
                 }
             };
@@ -141,7 +184,7 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
         Err(ActivationError::WithPartialResult { result, source }) => {
             log::error!("Error during activation: {source:?}");
             log::debug!("Resulting file tree: {:?}", result);
-            let final_state = State {
+            let final_state = StateV1 {
                 file_tree: result,
                 ..old_state
             };
@@ -163,7 +206,7 @@ pub fn prepopulate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
     }
 
     let state_file = &get_state_file()?;
-    let old_state = State::from_file(state_file)?;
+    let old_state = StateV1::from_file(state_file)?;
 
     log::info!("Activating etc files...");
 
@@ -171,22 +214,24 @@ pub fn prepopulate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
         Ok(etc_tree) => {
             log::info!("Registering systemd services...");
             match services::get_active_services(store_path, old_state.services) {
-                Ok(services) => State {
+                Ok(services) => StateV1 {
                     file_tree: etc_tree,
                     services,
+                    version: Default::default(),
                 },
                 Err(ActivationError::WithPartialResult { result, source }) => {
                     log::error!("Error during activation: {source:?}");
-                    State {
+                    StateV1 {
                         file_tree: etc_tree,
                         services: result,
+                        version: Default::default(),
                     }
                 }
             }
         }
         Err(ActivationError::WithPartialResult { result, source }) => {
             log::error!("Error during activation: {source:?}");
-            State {
+            StateV1 {
                 file_tree: result,
                 ..old_state
             }
