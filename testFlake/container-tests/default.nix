@@ -71,9 +71,9 @@ let
         sops-nix
         ;
     };
-  testFiles = lib.filterAttrs (
-    name: type: name != "default.nix" && lib.hasSuffix ".nix" name
-  ) (builtins.readDir ./.);
+  testFiles = lib.filterAttrs (name: type: name != "default.nix" && lib.hasSuffix ".nix" name) (
+    builtins.readDir ./.
+  );
 
 in
 lib.foldlAttrs (
