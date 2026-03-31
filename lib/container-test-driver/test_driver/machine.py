@@ -330,11 +330,9 @@ class Machine(testinfra.host.Host):
 
         with self.nested("Installing Nix via nix-installer"):
             # Run nix-installer in multi-user mode with daemon
-            # Use local tarball for offline installation (no network in sandbox)
             result = self.execute(
                 "/usr/local/bin/nix-installer install linux "
                 "--no-confirm "
-                "--nix-package-url file:///usr/local/share/nix/nix.tar.xz "
                 "--extra-conf 'sandbox = false'",
                 timeout=300,
             )

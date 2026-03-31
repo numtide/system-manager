@@ -19,18 +19,4 @@ in
       }
     else
       throw "Unsupported system: ${system}";
-
-  nixTarball =
-    if system == "x86_64-linux" then
-      builtins.fetchurl {
-        url = "https://releases.nixos.org/nix/nix-${nixVersion}/nix-${nixVersion}-x86_64-linux.tar.xz";
-        sha256 = data.nixTarball.x86_64-linux;
-      }
-    else if system == "aarch64-linux" then
-      builtins.fetchurl {
-        url = "https://releases.nixos.org/nix/nix-${nixVersion}/nix-${nixVersion}-aarch64-linux.tar.xz";
-        sha256 = data.nixTarball.aarch64-linux;
-      }
-    else
-      throw "Unsupported system: ${system}";
 }
