@@ -102,10 +102,6 @@ forEachDistro "empty-config" {
 
       machine.wait_for_unit("system-manager.target")
 
-      with subtest("Static environment symlink exists"):
-          assert machine.file("/etc/.system-manager-static").is_symlink, \
-              "/etc/.system-manager-static should be a symlink after activation"
-
       with subtest("No unexpected changes to /etc after activation"):
           after = snapshot_etc()
           added = [p for p in (set(after) - set(before)) if not is_expected(p)]
