@@ -338,7 +338,7 @@ fn create_etc_file(
                 state = backup_and_link(&target, &file.source.store_path, state)?;
             } else {
                 log::warn!(
-                    "{} already exists. Set replaceExisting if you're willing to override it.",
+                    "Error while creating file in /etc: Unmanaged path already exists in filesystem, please remove it and run system-manager again: {}\nSet replaceExisting if you're willing to override it.",
                     target.display()
                 );
             }
