@@ -54,10 +54,7 @@ pub struct EtcFilesState {
 
 impl EtcFilesState {
     pub fn contains(&self, path: &Path) -> bool {
-        // Union of backed up files + regular files appearing in old state.
-        let mut all_files_old_state = self.files.clone();
-        all_files_old_state.extend(self.backed_up_files.clone());
-        all_files_old_state.contains(path)
+        self.files.contains(path) || self.backed_up_files.contains(path)
     }
 }
 
