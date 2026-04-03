@@ -96,9 +96,10 @@ impl StateV1 {
                                     e
                                 )
                             })?;
+                        log::info!("The state is in the V0 format. Migrating it to the V1 format.");
                         Ok(filetree.into())
                     } else {
-                        // State is
+                        // We don't know what that state is.
                         Err(anyhow!("Unexpected serde_json error: {}", e))
                     }
                 }
