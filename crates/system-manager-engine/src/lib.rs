@@ -16,7 +16,6 @@ pub const PROFILE_NAME: &str = "system-manager";
 pub const GCROOT_PATH: &str = "/nix/var/nix/gcroots/system-manager-current";
 pub const SYSTEM_MANAGER_STATE_DIR: &str = "/var/lib/system-manager/state";
 pub const STATE_FILE_NAME: &str = "system-manager-state.json";
-pub const SYSTEM_MANAGER_STATIC_NAME: &str = ".system-manager-static";
 
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 #[serde(from = "String", into = "String", rename_all = "camelCase")]
