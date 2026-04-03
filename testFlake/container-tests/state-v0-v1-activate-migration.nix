@@ -1,6 +1,7 @@
 {
   forEachDistro,
   system,
+  system-manager-v1-1-0,
   ...
 }:
 
@@ -32,8 +33,7 @@ forEachDistro "state-v0-v1-migration-activate" (
         };
       };
     };
-    v0SystemManagerFlake = builtins.getFlake "github:numtide/system-manager/62a1be911f9e24bdb357377587c73544c2aec719";
-    v0TopLevel = v0SystemManagerFlake.lib.makeSystemConfig {
+    v0TopLevel = system-manager-v1-1-0.lib.makeSystemConfig {
       modules = [
         module
         {

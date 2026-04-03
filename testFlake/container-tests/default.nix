@@ -6,6 +6,7 @@
   hostPkgs,
   nixpkgs,
   sops-nix,
+  system-manager-v1-1-0,
 }:
 
 let
@@ -69,6 +70,7 @@ let
         lib
         hostPkgs
         sops-nix
+        system-manager-v1-1-0
         ;
     };
   testFiles = lib.filterAttrs (name: type: name != "default.nix" && lib.hasSuffix ".nix" name) (

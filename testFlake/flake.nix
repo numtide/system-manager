@@ -8,6 +8,7 @@
 
   inputs = {
     system-manager.url = "path:..";
+    system-manager-v1-1-0.url = "github:numtide/system-manager/v1.1.0";
     nixpkgs.follows = "system-manager/nixpkgs";
     nix-vm-test = {
       url = "github:numtide/nix-vm-test";
@@ -24,6 +25,7 @@
       nixpkgs,
       nix-vm-test,
       sops-nix,
+      system-manager-v1-1-0,
     }:
     let
       testedSystems = [
@@ -54,6 +56,7 @@
           hostPkgs = nixpkgs.legacyPackages.${system};
           inherit system-manager;
           inherit sops-nix;
+          inherit system-manager-v1-1-0;
         };
     in
     {
