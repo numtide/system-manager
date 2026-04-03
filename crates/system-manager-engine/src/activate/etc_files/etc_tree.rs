@@ -59,15 +59,17 @@ impl From<FileTree> for EtcFilesState {
             for nested in elem.nested.clone() {
                 paths_to_go.push(nested.1);
             }
-            match elem.status {
-                FileStatus::Managed => {
-                    etc_files.files.insert(elem.path);
-                }
-                FileStatus::ManagedWithBackup => {
-                    etc_files.backed_up_files.insert(elem.path);
-                }
-                FileStatus::Unmanaged => {}
-            };
+            if !elem.path.is_dir() {
+                match elem.status {
+                    FileStatus::Managed => {
+                        etc_files.files.insert(elem.path);
+                    }
+                    FileStatus::ManagedWithBackup => {
+                        etc_files.backed_up_files.insert(elem.path);
+                    }
+                    FileStatus::Unmanaged => {}
+                };
+            }
             i += 1;
         }
         etc_files
