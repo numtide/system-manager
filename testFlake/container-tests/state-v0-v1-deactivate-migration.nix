@@ -8,11 +8,14 @@
 forEachDistro "state-v0-v1-migration-deactivate" (
   let
     module = {
+      # Required for v1.1.0.
+      nix.enable = false;
+
       environment.etc = {
         "a/bar" = {
           text = "bar";
           mode = "0700";
-          user = "user";
+          user = "root";
           group = "root";
         };
         "a/link" = {
@@ -22,7 +25,7 @@ forEachDistro "state-v0-v1-migration-deactivate" (
         "b/bar" = {
           text = "bar";
           mode = "0700";
-          user = "user";
+          user = "root";
           group = "root";
           replaceExisting = true;
         };
@@ -69,7 +72,11 @@ forEachDistro "state-v0-v1-migration-deactivate" (
             assert file.contains(content), f"{path} should contain {content}"
 
         # Let's activate the profile with a v0 state file (using an old system-manager checkout)
-        machine.succeed("${v0TopLevel}/bin/activate")
+        activation_logs = machine.succeed("${v0TopLevel}/bin/activate")
+        for line in activation_logs.split("\n"):
+              assert not "ERROR" in line, line
+        machine.wait_for_unit("system-manager.target")
+
         with subtest("Verify correct files are created"):
             check_file("/etc/a/bar", "bar")
             check_file("/etc/a/link", "link")
@@ -77,7 +84,9 @@ forEachDistro "state-v0-v1-migration-deactivate" (
             check_file("/etc/b/link", "link")
 
         # Let's try to deactivate the machine with the new binary, making sure the state migration works.
-        machine.succeed("${toplevel}/bin/deactivate")
+        deactivation_logs = machine.succeed("${toplevel}/bin/deactivate")
+        for line in activation_logs.split("\n"):
+              assert ((not "ERROR" in line) and (not "WARN" in line)), line
         with subtest("v1 deactivation restores the backups from a v0 generated state"):
             machine.succeed("test -f /etc/b/bar")
             machine.succeed("test -f /etc/b/link")
