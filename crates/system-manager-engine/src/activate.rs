@@ -160,14 +160,14 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
                 Ok(services) => StateV1 {
                     file_tree: etc_tree,
                     services,
-                    version: Default::default(),
+                    version: 1,
                 },
                 Err(ActivationError::WithPartialResult { result, source }) => {
                     log::error!("Error during activation: {source:?}");
                     StateV1 {
                         file_tree: etc_tree,
                         services: result,
-                        version: Default::default(),
+                        version: 1,
                     }
                 }
             };
@@ -215,14 +215,14 @@ pub fn prepopulate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
                 Ok(services) => StateV1 {
                     file_tree: etc_tree,
                     services,
-                    version: Default::default(),
+                    version: 1,
                 },
                 Err(ActivationError::WithPartialResult { result, source }) => {
                     log::error!("Error during activation: {source:?}");
                     StateV1 {
                         file_tree: etc_tree,
                         services: result,
-                        version: Default::default(),
+                        version: 1,
                     }
                 }
             }
