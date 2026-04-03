@@ -97,6 +97,14 @@ impl StateV1 {
                                 )
                             })?;
                         log::info!("The state is in the V0 format. Migrating it to the V1 format.");
+                        // Backup the old state, just in case. Better be safe than sorry.
+                        let mut backup_path = state_file.to_owned();
+                        backup_path.add_extension("v0back");
+                        log::info!(
+                            "Create a backup of the v0 state at {}.",
+                            &backup_path.display()
+                        );
+                        fs::copy(state_file, backup_path)?;
                         Ok(filetree.into())
                     } else {
                         // We don't know what that state is.
