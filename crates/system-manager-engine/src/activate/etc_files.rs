@@ -493,7 +493,11 @@ fn copy_file(
             source: e.into(),
         }
     }
-    log::warn!("copy {} to {}", source.display(), target.display());
+    if exists && old_state.contains(target) {
+        log::debug!("remove {}, we're managing it.", target.display());
+        fs::remove_file(target).map_err(|e| to_activation_result(e, &new_state))?;
+    }
+    log::debug!("copy {} to {}", source.display(), target.display());
     fs::copy(source, target).map_err(|e| to_activation_result(e, &new_state))?;
     let mode_int =
         u32::from_str_radix(&entry.mode, 8).map_err(|e| to_activation_result(e, &new_state))?;
