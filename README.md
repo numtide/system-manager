@@ -232,6 +232,11 @@ System Manager is currently only supported on NixOS and Ubuntu. However, it can 
 Nix should be installed with the [nix-installer](https://github.com/NixOS/nix-installer).
 System manager is tested against Nix 2.32 and above installed via nix-installer.
 
+## Sponsors
+
+This work is being sponsored by [MSF](https://www.msf.org/) (Doctors Without Borders) to help improve the management of Linux servers in remote environments.
+MSF is an international, independent medical humanitarian organisation that provides medical assistance to people affected by conflict, epidemics, disasters, or exclusion from healthcare.
+
 ## Commercial support
 
 Looking for help or customization?
