@@ -22,7 +22,7 @@ impl From<StateV0> for StateV1 {
         StateV1 {
             file_tree,
             services,
-            version: Default::default(),
+            version: 1,
         }
     }
 }
