@@ -83,6 +83,9 @@ forEachDistro "state-v0-v1-migration-deactivate" (
             check_file("/etc/b/bar", "bar")
             check_file("/etc/b/link", "link")
 
+        # Let's activate the profile with a v0 state file (using an old system-manager checkout)
+        activation_logs = machine.succeed("${v0TopLevel}/bin/activate")
+
         # Let's try to deactivate the machine with the new binary, making sure the state migration works.
         deactivation_logs = machine.succeed("${toplevel}/bin/deactivate")
         for line in activation_logs.split("\n"):
