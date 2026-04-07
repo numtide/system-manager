@@ -104,6 +104,11 @@ pub struct NixOptions {
     options: Vec<(String, String)>,
 }
 
+pub struct NixBuildOptions {
+    pub flake_uri: String,
+    pub refresh: bool,
+}
+
 impl NixOptions {
     pub fn new(options: Vec<(String, String)>) -> Self {
         Self { options }
