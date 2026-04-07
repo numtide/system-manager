@@ -878,6 +878,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#passing-ssh-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Passing SSH options
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#ssh-configuration-tips" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1946,6 +1957,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#passing-ssh-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Passing SSH options
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#ssh-configuration-tips" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2202,44 +2224,77 @@
 <a id="__codelineno-4-10" name="__codelineno-4-10"></a><span class="w">  </span>--flake<span class="w"> </span>.#database<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-4-11" name="__codelineno-4-11"></a><span class="w">  </span>--sudo
 </code></pre></div></td></tr></table></div>
+<h2 id="passing-ssh-options">Passing SSH options<a class="headerlink" href="#passing-ssh-options" title="Permanent link">&para;</a></h2>
+<p>When you need to use a non-standard port, a jump host, or other SSH options, use the <code>--ssh-option</code> flag.
+It can be specified multiple times and applies to both <code>ssh</code> and <code>nix-copy-closure</code>.</p>
+<p>Deploy through a bastion host:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span>
+<span class="normal"><a href="#__codelineno-5-2">2</a></span>
+<span class="normal"><a href="#__codelineno-5-3">3</a></span>
+<span class="normal"><a href="#__codelineno-5-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1"></a>nix<span class="w"> </span>run<span class="w"> </span><span class="s1">&#39;github:numtide/system-manager&#39;</span><span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2"></a><span class="w">  </span>--target-host<span class="w"> </span>user@internal-host<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3"></a><span class="w">  </span>--ssh-option<span class="w"> </span><span class="s2">&quot;-o ProxyJump=user@bastion&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4"></a><span class="w">  </span>switch<span class="w"> </span>--flake<span class="w"> </span>.<span class="w"> </span>--sudo
+</code></pre></div></td></tr></table></div>
+<p>Deploy to a host on a non-standard SSH port:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1">1</a></span>
+<span class="normal"><a href="#__codelineno-6-2">2</a></span>
+<span class="normal"><a href="#__codelineno-6-3">3</a></span>
+<span class="normal"><a href="#__codelineno-6-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1"></a>nix<span class="w"> </span>run<span class="w"> </span><span class="s1">&#39;github:numtide/system-manager&#39;</span><span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2"></a><span class="w">  </span>--target-host<span class="w"> </span>user@remote-host<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3"></a><span class="w">  </span>--ssh-option<span class="w"> </span><span class="s2">&quot;-p 2222&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4"></a><span class="w">  </span>switch<span class="w"> </span>--flake<span class="w"> </span>.<span class="w"> </span>--sudo
+</code></pre></div></td></tr></table></div>
+<p>Multiple options can be combined:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1">1</a></span>
+<span class="normal"><a href="#__codelineno-7-2">2</a></span>
+<span class="normal"><a href="#__codelineno-7-3">3</a></span>
+<span class="normal"><a href="#__codelineno-7-4">4</a></span>
+<span class="normal"><a href="#__codelineno-7-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1"></a>nix<span class="w"> </span>run<span class="w"> </span><span class="s1">&#39;github:numtide/system-manager&#39;</span><span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2"></a><span class="w">  </span>--target-host<span class="w"> </span>user@internal-host<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3"></a><span class="w">  </span>--ssh-option<span class="w"> </span><span class="s2">&quot;-o ProxyJump=user@bastion:443&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4"></a><span class="w">  </span>--ssh-option<span class="w"> </span><span class="s2">&quot;-p 2222&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5"></a><span class="w">  </span>switch<span class="w"> </span>--flake<span class="w"> </span>.<span class="w"> </span>--sudo
+</code></pre></div></td></tr></table></div>
+<p>If you already set <code>NIX_SSHOPTS</code> in your environment, <code>--ssh-option</code> values are appended to it rather than replacing it.</p>
 <h2 id="ssh-configuration-tips">SSH Configuration Tips<a class="headerlink" href="#ssh-configuration-tips" title="Permanent link">&para;</a></h2>
 <p>To connect successfully, you have a couple of options for handling SSH authentication.</p>
 <h3 id="option-1-ssh-config-entry">Option 1: SSH Config Entry<a class="headerlink" href="#option-1-ssh-config-entry" title="Permanent link">&para;</a></h3>
 <p>For easier deployment, add your hosts to <code>~/.ssh/config</code>:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span>
-<span class="normal"><a href="#__codelineno-5-2">2</a></span>
-<span class="normal"><a href="#__codelineno-5-3">3</a></span>
-<span class="normal"><a href="#__codelineno-5-4">4</a></span>
-<span class="normal"><a href="#__codelineno-5-5">5</a></span>
-<span class="normal"><a href="#__codelineno-5-6">6</a></span>
-<span class="normal"><a href="#__codelineno-5-7">7</a></span>
-<span class="normal"><a href="#__codelineno-5-8">8</a></span>
-<span class="normal"><a href="#__codelineno-5-9">9</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1"></a>Host webserver
-<a id="__codelineno-5-2" name="__codelineno-5-2"></a>  HostName web.example.com
-<a id="__codelineno-5-3" name="__codelineno-5-3"></a>  User admin
-<a id="__codelineno-5-4" name="__codelineno-5-4"></a>  IdentityFile ~/.ssh/deploy_key
-<a id="__codelineno-5-5" name="__codelineno-5-5"></a>
-<a id="__codelineno-5-6" name="__codelineno-5-6"></a>Host dbserver
-<a id="__codelineno-5-7" name="__codelineno-5-7"></a>  HostName db.example.com
-<a id="__codelineno-5-8" name="__codelineno-5-8"></a>  User admin
-<a id="__codelineno-5-9" name="__codelineno-5-9"></a>  IdentityFile ~/.ssh/deploy_key
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1">1</a></span>
+<span class="normal"><a href="#__codelineno-8-2">2</a></span>
+<span class="normal"><a href="#__codelineno-8-3">3</a></span>
+<span class="normal"><a href="#__codelineno-8-4">4</a></span>
+<span class="normal"><a href="#__codelineno-8-5">5</a></span>
+<span class="normal"><a href="#__codelineno-8-6">6</a></span>
+<span class="normal"><a href="#__codelineno-8-7">7</a></span>
+<span class="normal"><a href="#__codelineno-8-8">8</a></span>
+<span class="normal"><a href="#__codelineno-8-9">9</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1"></a>Host webserver
+<a id="__codelineno-8-2" name="__codelineno-8-2"></a>  HostName web.example.com
+<a id="__codelineno-8-3" name="__codelineno-8-3"></a>  User admin
+<a id="__codelineno-8-4" name="__codelineno-8-4"></a>  IdentityFile ~/.ssh/deploy_key
+<a id="__codelineno-8-5" name="__codelineno-8-5"></a>
+<a id="__codelineno-8-6" name="__codelineno-8-6"></a>Host dbserver
+<a id="__codelineno-8-7" name="__codelineno-8-7"></a>  HostName db.example.com
+<a id="__codelineno-8-8" name="__codelineno-8-8"></a>  User admin
+<a id="__codelineno-8-9" name="__codelineno-8-9"></a>  IdentityFile ~/.ssh/deploy_key
 </code></pre></div></td></tr></table></div>
 <p>Then deploy with just:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1">1</a></span>
-<span class="normal"><a href="#__codelineno-6-2">2</a></span>
-<span class="normal"><a href="#__codelineno-6-3">3</a></span>
-<span class="normal"><a href="#__codelineno-6-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1"></a>nix<span class="w"> </span>run<span class="w"> </span><span class="s1">&#39;github:numtide/system-manager&#39;</span><span class="w"> </span>--<span class="w"> </span>--target-host<span class="w"> </span>webserver<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2"></a>switch<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3"></a><span class="w">  </span>--flake<span class="w"> </span>.<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4"></a><span class="w">  </span>--sudo
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1">1</a></span>
+<span class="normal"><a href="#__codelineno-9-2">2</a></span>
+<span class="normal"><a href="#__codelineno-9-3">3</a></span>
+<span class="normal"><a href="#__codelineno-9-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1"></a>nix<span class="w"> </span>run<span class="w"> </span><span class="s1">&#39;github:numtide/system-manager&#39;</span><span class="w"> </span>--<span class="w"> </span>--target-host<span class="w"> </span>webserver<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2"></a>switch<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3"></a><span class="w">  </span>--flake<span class="w"> </span>.<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4"></a><span class="w">  </span>--sudo
 </code></pre></div></td></tr></table></div>
 <h3 id="option-2-ssh-agent">Option 2: SSH Agent<a class="headerlink" href="#option-2-ssh-agent" title="Permanent link">&para;</a></h3>
 <p>If you prefer not to modify your SSH config, you can load your key into the SSH agent before running System Manager:
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1">1</a></span>
-<span class="normal"><a href="#__codelineno-7-2">2</a></span>
-<span class="normal"><a href="#__codelineno-7-3">3</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="nb">eval</span><span class="w"> </span><span class="k">$(</span>ssh-agent<span class="w"> </span>-s<span class="k">)</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2"></a>ssh-add<span class="w"> </span>/home/ubuntu/.ssh/my.pem
-<a id="__codelineno-7-3" name="__codelineno-7-3"></a>nix<span class="w"> </span>run<span class="w"> </span>github:numtide/system-manager<span class="w"> </span>--<span class="w"> </span>--target-host<span class="w"> </span><span class="s1">&#39;ubuntu@172.31.40.14&#39;</span><span class="w"> </span>switch<span class="w"> </span>--flake<span class="w"> </span>.<span class="w"> </span>--sudo
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1">1</a></span>
+<span class="normal"><a href="#__codelineno-10-2">2</a></span>
+<span class="normal"><a href="#__codelineno-10-3">3</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="nb">eval</span><span class="w"> </span><span class="k">$(</span>ssh-agent<span class="w"> </span>-s<span class="k">)</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2"></a>ssh-add<span class="w"> </span>/home/ubuntu/.ssh/my.pem
+<a id="__codelineno-10-3" name="__codelineno-10-3"></a>nix<span class="w"> </span>run<span class="w"> </span>github:numtide/system-manager<span class="w"> </span>--<span class="w"> </span>--target-host<span class="w"> </span><span class="s1">&#39;ubuntu@172.31.40.14&#39;</span><span class="w"> </span>switch<span class="w"> </span>--flake<span class="w"> </span>.<span class="w"> </span>--sudo
 </code></pre></div></td></tr></table></div></p>
 <p>This approach is particularly useful for automation scripts, as we'll see in the next section.</p>
 <div class="admonition warning">
@@ -2251,103 +2306,54 @@
 <h2 id="deploying-to-multiple-systems">Deploying to Multiple Systems<a class="headerlink" href="#deploying-to-multiple-systems" title="Permanent link">&para;</a></h2>
 <p>One of the major benefits of System Manager is the ability to manage entire fleets of machines with consistent configurations. Rather than manually connecting to each server, you can script deployments to dozens or even hundreds of systems.</p>
 <p>Here's a basic example that deploys to multiple systems:
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1"> 1</a></span>
-<span class="normal"><a href="#__codelineno-8-2"> 2</a></span>
-<span class="normal"><a href="#__codelineno-8-3"> 3</a></span>
-<span class="normal"><a href="#__codelineno-8-4"> 4</a></span>
-<span class="normal"><a href="#__codelineno-8-5"> 5</a></span>
-<span class="normal"><a href="#__codelineno-8-6"> 6</a></span>
-<span class="normal"><a href="#__codelineno-8-7"> 7</a></span>
-<span class="normal"><a href="#__codelineno-8-8"> 8</a></span>
-<span class="normal"><a href="#__codelineno-8-9"> 9</a></span>
-<span class="normal"><a href="#__codelineno-8-10">10</a></span>
-<span class="normal"><a href="#__codelineno-8-11">11</a></span>
-<span class="normal"><a href="#__codelineno-8-12">12</a></span>
-<span class="normal"><a href="#__codelineno-8-13">13</a></span>
-<span class="normal"><a href="#__codelineno-8-14">14</a></span>
-<span class="normal"><a href="#__codelineno-8-15">15</a></span>
-<span class="normal"><a href="#__codelineno-8-16">16</a></span>
-<span class="normal"><a href="#__codelineno-8-17">17</a></span>
-<span class="normal"><a href="#__codelineno-8-18">18</a></span>
-<span class="normal"><a href="#__codelineno-8-19">19</a></span>
-<span class="normal"><a href="#__codelineno-8-20">20</a></span>
-<span class="normal"><a href="#__codelineno-8-21">21</a></span>
-<span class="normal"><a href="#__codelineno-8-22">22</a></span>
-<span class="normal"><a href="#__codelineno-8-23">23</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="ch">#!/bin/bash</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2"></a><span class="nb">set</span><span class="w"> </span>-e
-<a id="__codelineno-8-3" name="__codelineno-8-3"></a>
-<a id="__codelineno-8-4" name="__codelineno-8-4"></a><span class="c1"># Start the SSH agent and add the key</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5"></a><span class="nb">eval</span><span class="w"> </span><span class="k">$(</span>ssh-agent<span class="w"> </span>-s<span class="k">)</span>
-<a id="__codelineno-8-6" name="__codelineno-8-6"></a>ssh-add<span class="w"> </span>~/.ssh/my.pem
-<a id="__codelineno-8-7" name="__codelineno-8-7"></a>
-<a id="__codelineno-8-8" name="__codelineno-8-8"></a><span class="c1"># List of target hosts (using private IP addresses in this example)</span>
-<a id="__codelineno-8-9" name="__codelineno-8-9"></a><span class="nv">HOSTS</span><span class="o">=(</span>
-<a id="__codelineno-8-10" name="__codelineno-8-10"></a><span class="w">    </span><span class="s2">&quot;ubuntu@172.31.40.14&quot;</span>
-<a id="__codelineno-8-11" name="__codelineno-8-11"></a><span class="w">    </span><span class="s2">&quot;ubuntu@172.31.28.157&quot;</span>
-<a id="__codelineno-8-12" name="__codelineno-8-12"></a><span class="w">    </span><span class="s2">&quot;ubuntu@172.31.25.67&quot;</span>
-<a id="__codelineno-8-13" name="__codelineno-8-13"></a><span class="o">)</span>
-<a id="__codelineno-8-14" name="__codelineno-8-14"></a>
-<a id="__codelineno-8-15" name="__codelineno-8-15"></a><span class="c1"># Deploy to each host</span>
-<a id="__codelineno-8-16" name="__codelineno-8-16"></a><span class="k">for</span><span class="w"> </span>host<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">HOSTS</span><span class="p">[@]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
-<a id="__codelineno-8-17" name="__codelineno-8-17"></a><span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Deploying to </span><span class="nv">$host</span><span class="s2">...&quot;</span>
-<a id="__codelineno-8-18" name="__codelineno-8-18"></a><span class="w">    </span>nix<span class="w"> </span>run<span class="w"> </span>github:numtide/system-manager<span class="w"> </span>--<span class="w"> </span>--target-host<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$host</span><span class="s2">&quot;</span><span class="w"> </span>switch<span class="w"> </span>--flake<span class="w"> </span>.<span class="w"> </span>--sudo
-<a id="__codelineno-8-19" name="__codelineno-8-19"></a><span class="k">done</span>
-<a id="__codelineno-8-20" name="__codelineno-8-20"></a>
-<a id="__codelineno-8-21" name="__codelineno-8-21"></a><span class="c1"># Clean up the SSH agent</span>
-<a id="__codelineno-8-22" name="__codelineno-8-22"></a>ssh-agent<span class="w"> </span>-k
-<a id="__codelineno-8-23" name="__codelineno-8-23"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Deployment complete!&quot;</span>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-11-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-11-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-11-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-11-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-11-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-11-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-11-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-11-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-11-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-11-10">10</a></span>
+<span class="normal"><a href="#__codelineno-11-11">11</a></span>
+<span class="normal"><a href="#__codelineno-11-12">12</a></span>
+<span class="normal"><a href="#__codelineno-11-13">13</a></span>
+<span class="normal"><a href="#__codelineno-11-14">14</a></span>
+<span class="normal"><a href="#__codelineno-11-15">15</a></span>
+<span class="normal"><a href="#__codelineno-11-16">16</a></span>
+<span class="normal"><a href="#__codelineno-11-17">17</a></span>
+<span class="normal"><a href="#__codelineno-11-18">18</a></span>
+<span class="normal"><a href="#__codelineno-11-19">19</a></span>
+<span class="normal"><a href="#__codelineno-11-20">20</a></span>
+<span class="normal"><a href="#__codelineno-11-21">21</a></span>
+<span class="normal"><a href="#__codelineno-11-22">22</a></span>
+<span class="normal"><a href="#__codelineno-11-23">23</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="ch">#!/bin/bash</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2"></a><span class="nb">set</span><span class="w"> </span>-e
+<a id="__codelineno-11-3" name="__codelineno-11-3"></a>
+<a id="__codelineno-11-4" name="__codelineno-11-4"></a><span class="c1"># Start the SSH agent and add the key</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5"></a><span class="nb">eval</span><span class="w"> </span><span class="k">$(</span>ssh-agent<span class="w"> </span>-s<span class="k">)</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6"></a>ssh-add<span class="w"> </span>~/.ssh/my.pem
+<a id="__codelineno-11-7" name="__codelineno-11-7"></a>
+<a id="__codelineno-11-8" name="__codelineno-11-8"></a><span class="c1"># List of target hosts (using private IP addresses in this example)</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9"></a><span class="nv">HOSTS</span><span class="o">=(</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10"></a><span class="w">    </span><span class="s2">&quot;ubuntu@172.31.40.14&quot;</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11"></a><span class="w">    </span><span class="s2">&quot;ubuntu@172.31.28.157&quot;</span>
+<a id="__codelineno-11-12" name="__codelineno-11-12"></a><span class="w">    </span><span class="s2">&quot;ubuntu@172.31.25.67&quot;</span>
+<a id="__codelineno-11-13" name="__codelineno-11-13"></a><span class="o">)</span>
+<a id="__codelineno-11-14" name="__codelineno-11-14"></a>
+<a id="__codelineno-11-15" name="__codelineno-11-15"></a><span class="c1"># Deploy to each host</span>
+<a id="__codelineno-11-16" name="__codelineno-11-16"></a><span class="k">for</span><span class="w"> </span>host<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">HOSTS</span><span class="p">[@]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<a id="__codelineno-11-17" name="__codelineno-11-17"></a><span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Deploying to </span><span class="nv">$host</span><span class="s2">...&quot;</span>
+<a id="__codelineno-11-18" name="__codelineno-11-18"></a><span class="w">    </span>nix<span class="w"> </span>run<span class="w"> </span>github:numtide/system-manager<span class="w"> </span>--<span class="w"> </span>--target-host<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$host</span><span class="s2">&quot;</span><span class="w"> </span>switch<span class="w"> </span>--flake<span class="w"> </span>.<span class="w"> </span>--sudo
+<a id="__codelineno-11-19" name="__codelineno-11-19"></a><span class="k">done</span>
+<a id="__codelineno-11-20" name="__codelineno-11-20"></a>
+<a id="__codelineno-11-21" name="__codelineno-11-21"></a><span class="c1"># Clean up the SSH agent</span>
+<a id="__codelineno-11-22" name="__codelineno-11-22"></a>ssh-agent<span class="w"> </span>-k
+<a id="__codelineno-11-23" name="__codelineno-11-23"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Deployment complete!&quot;</span>
 </code></pre></div></td></tr></table></div></p>
 <h3 id="reading-hosts-from-a-file">Reading Hosts from a File<a class="headerlink" href="#reading-hosts-from-a-file" title="Permanent link">&para;</a></h3>
 <p>For larger deployments, or when you want to separate your host inventory from your scripts, you can read the target addresses from an external file:
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1"> 1</a></span>
-<span class="normal"><a href="#__codelineno-9-2"> 2</a></span>
-<span class="normal"><a href="#__codelineno-9-3"> 3</a></span>
-<span class="normal"><a href="#__codelineno-9-4"> 4</a></span>
-<span class="normal"><a href="#__codelineno-9-5"> 5</a></span>
-<span class="normal"><a href="#__codelineno-9-6"> 6</a></span>
-<span class="normal"><a href="#__codelineno-9-7"> 7</a></span>
-<span class="normal"><a href="#__codelineno-9-8"> 8</a></span>
-<span class="normal"><a href="#__codelineno-9-9"> 9</a></span>
-<span class="normal"><a href="#__codelineno-9-10">10</a></span>
-<span class="normal"><a href="#__codelineno-9-11">11</a></span>
-<span class="normal"><a href="#__codelineno-9-12">12</a></span>
-<span class="normal"><a href="#__codelineno-9-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="ch">#!/bin/bash</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2"></a><span class="nb">set</span><span class="w"> </span>-e
-<a id="__codelineno-9-3" name="__codelineno-9-3"></a>
-<a id="__codelineno-9-4" name="__codelineno-9-4"></a><span class="nb">eval</span><span class="w"> </span><span class="k">$(</span>ssh-agent<span class="w"> </span>-s<span class="k">)</span>
-<a id="__codelineno-9-5" name="__codelineno-9-5"></a>ssh-add<span class="w"> </span>~/.ssh/my.pem
-<a id="__codelineno-9-6" name="__codelineno-9-6"></a>
-<a id="__codelineno-9-7" name="__codelineno-9-7"></a><span class="k">while</span><span class="w"> </span><span class="nv">IFS</span><span class="o">=</span><span class="w"> </span><span class="nb">read</span><span class="w"> </span>-r<span class="w"> </span>host<span class="p">;</span><span class="w"> </span><span class="k">do</span>
-<a id="__codelineno-9-8" name="__codelineno-9-8"></a><span class="w">    </span><span class="o">[[</span><span class="w"> </span>-z<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$host</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$host</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">=</span>~<span class="w"> </span>^#<span class="w"> </span><span class="o">]]</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="k">continue</span><span class="w">  </span><span class="c1"># Skip empty lines and comments</span>
-<a id="__codelineno-9-9" name="__codelineno-9-9"></a><span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Deploying to </span><span class="nv">$host</span><span class="s2">...&quot;</span>
-<a id="__codelineno-9-10" name="__codelineno-9-10"></a><span class="w">    </span>nix<span class="w"> </span>run<span class="w"> </span>github:numtide/system-manager<span class="w"> </span>--<span class="w"> </span>--target-host<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$host</span><span class="s2">&quot;</span><span class="w"> </span>switch<span class="w"> </span>--flake<span class="w"> </span>.<span class="w"> </span>--sudo
-<a id="__codelineno-9-11" name="__codelineno-9-11"></a><span class="k">done</span><span class="w"> </span>&lt;<span class="w"> </span>hosts.txt
-<a id="__codelineno-9-12" name="__codelineno-9-12"></a>
-<a id="__codelineno-9-13" name="__codelineno-9-13"></a>ssh-agent<span class="w"> </span>-k
-</code></pre></div></td></tr></table></div></p>
-<p>Where <code>hosts.txt</code> looks like:
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1">1</a></span>
-<span class="normal"><a href="#__codelineno-10-2">2</a></span>
-<span class="normal"><a href="#__codelineno-10-3">3</a></span>
-<span class="normal"><a href="#__codelineno-10-4">4</a></span>
-<span class="normal"><a href="#__codelineno-10-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="c1"># Production servers</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2"></a>ubuntu@172.31.40.14
-<a id="__codelineno-10-3" name="__codelineno-10-3"></a>ubuntu@172.31.40.15
-<a id="__codelineno-10-4" name="__codelineno-10-4"></a><span class="c1"># Staging</span>
-<a id="__codelineno-10-5" name="__codelineno-10-5"></a>ubuntu@172.31.40.20
-</code></pre></div></td></tr></table></div></p>
-<p>This makes it easy to maintain different host lists for different environments, or to generate the list dynamically from your infrastructure tooling.</p>
-<h2 id="handling-ssh-host-key-verification">Handling SSH Host Key Verification<a class="headerlink" href="#handling-ssh-host-key-verification" title="Permanent link">&para;</a></h2>
-<p>If this is the first time you've connected to the remote systems via SSH, you'll encounter the familiar host key verification prompt:
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-11-1">1</a></span>
-<span class="normal"><a href="#__codelineno-11-2">2</a></span>
-<span class="normal"><a href="#__codelineno-11-3">3</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1"></a>The authenticity of host &#39;172.31.25.67 (172.31.25.67)&#39; can&#39;t be established.
-<a id="__codelineno-11-2" name="__codelineno-11-2"></a>ED25519 key fingerprint is SHA256:rfG7uEi06BL+A2qXa+MWRx/k3JCZCyDjfUcpSBQ1zBI.
-<a id="__codelineno-11-3" name="__codelineno-11-3"></a>Are you sure you want to continue connecting (yes/no/[fingerprint])?
-</code></pre></div></td></tr></table></div></p>
-<p>This will interrupt automated scripts. There are some different approaches to handle this.</p>
-<h3 id="approach-1-pre-scan-host-keys">Approach 1: Pre-scan Host Keys<a class="headerlink" href="#approach-1-pre-scan-host-keys" title="Permanent link">&para;</a></h3>
-<p>You can scan and add all host keys to your <code>known_hosts</code> file before deploying. This is explicit and works regardless of your SSH configuration:
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-12-1"> 1</a></span>
 <span class="normal"><a href="#__codelineno-12-2"> 2</a></span>
 <span class="normal"><a href="#__codelineno-12-3"> 3</a></span>
@@ -2360,109 +2366,43 @@
 <span class="normal"><a href="#__codelineno-12-10">10</a></span>
 <span class="normal"><a href="#__codelineno-12-11">11</a></span>
 <span class="normal"><a href="#__codelineno-12-12">12</a></span>
-<span class="normal"><a href="#__codelineno-12-13">13</a></span>
-<span class="normal"><a href="#__codelineno-12-14">14</a></span>
-<span class="normal"><a href="#__codelineno-12-15">15</a></span>
-<span class="normal"><a href="#__codelineno-12-16">16</a></span>
-<span class="normal"><a href="#__codelineno-12-17">17</a></span>
-<span class="normal"><a href="#__codelineno-12-18">18</a></span>
-<span class="normal"><a href="#__codelineno-12-19">19</a></span>
-<span class="normal"><a href="#__codelineno-12-20">20</a></span>
-<span class="normal"><a href="#__codelineno-12-21">21</a></span>
-<span class="normal"><a href="#__codelineno-12-22">22</a></span>
-<span class="normal"><a href="#__codelineno-12-23">23</a></span>
-<span class="normal"><a href="#__codelineno-12-24">24</a></span>
-<span class="normal"><a href="#__codelineno-12-25">25</a></span>
-<span class="normal"><a href="#__codelineno-12-26">26</a></span>
-<span class="normal"><a href="#__codelineno-12-27">27</a></span>
-<span class="normal"><a href="#__codelineno-12-28">28</a></span>
-<span class="normal"><a href="#__codelineno-12-29">29</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="ch">#!/bin/bash</span>
+<span class="normal"><a href="#__codelineno-12-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="ch">#!/bin/bash</span>
 <a id="__codelineno-12-2" name="__codelineno-12-2"></a><span class="nb">set</span><span class="w"> </span>-e
 <a id="__codelineno-12-3" name="__codelineno-12-3"></a>
 <a id="__codelineno-12-4" name="__codelineno-12-4"></a><span class="nb">eval</span><span class="w"> </span><span class="k">$(</span>ssh-agent<span class="w"> </span>-s<span class="k">)</span>
 <a id="__codelineno-12-5" name="__codelineno-12-5"></a>ssh-add<span class="w"> </span>~/.ssh/my.pem
 <a id="__codelineno-12-6" name="__codelineno-12-6"></a>
-<a id="__codelineno-12-7" name="__codelineno-12-7"></a><span class="c1"># Target hosts</span>
-<a id="__codelineno-12-8" name="__codelineno-12-8"></a><span class="nv">HOSTS</span><span class="o">=(</span>
-<a id="__codelineno-12-9" name="__codelineno-12-9"></a><span class="w">    </span><span class="s2">&quot;ubuntu@172.31.40.14&quot;</span>
-<a id="__codelineno-12-10" name="__codelineno-12-10"></a><span class="w">    </span><span class="s2">&quot;ubuntu@172.31.28.157&quot;</span>
-<a id="__codelineno-12-11" name="__codelineno-12-11"></a><span class="w">    </span><span class="s2">&quot;ubuntu@172.31.25.67&quot;</span>
-<a id="__codelineno-12-12" name="__codelineno-12-12"></a><span class="o">)</span>
-<a id="__codelineno-12-13" name="__codelineno-12-13"></a>
-<a id="__codelineno-12-14" name="__codelineno-12-14"></a><span class="c1"># Pre-scan and trust all host keys</span>
-<a id="__codelineno-12-15" name="__codelineno-12-15"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Scanning host keys...&quot;</span>
-<a id="__codelineno-12-16" name="__codelineno-12-16"></a><span class="k">for</span><span class="w"> </span>host<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">HOSTS</span><span class="p">[@]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
-<a id="__codelineno-12-17" name="__codelineno-12-17"></a><span class="w">    </span><span class="nv">ip</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">host</span><span class="p">#*@</span><span class="si">}</span><span class="s2">&quot;</span><span class="w">  </span><span class="c1"># Extract IP from ubuntu@172.31.x.x</span>
-<a id="__codelineno-12-18" name="__codelineno-12-18"></a><span class="w">    </span>ssh-keyscan<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$ip</span><span class="s2">&quot;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.ssh/known_hosts<span class="w"> </span><span class="m">2</span>&gt;/dev/null
-<a id="__codelineno-12-19" name="__codelineno-12-19"></a><span class="k">done</span>
-<a id="__codelineno-12-20" name="__codelineno-12-20"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Host keys added to known_hosts&quot;</span>
-<a id="__codelineno-12-21" name="__codelineno-12-21"></a>
-<a id="__codelineno-12-22" name="__codelineno-12-22"></a><span class="c1"># Deploy to each host</span>
-<a id="__codelineno-12-23" name="__codelineno-12-23"></a><span class="k">for</span><span class="w"> </span>host<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">HOSTS</span><span class="p">[@]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
-<a id="__codelineno-12-24" name="__codelineno-12-24"></a><span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Deploying to </span><span class="nv">$host</span><span class="s2">...&quot;</span>
-<a id="__codelineno-12-25" name="__codelineno-12-25"></a><span class="w">    </span>nix<span class="w"> </span>run<span class="w"> </span>github:numtide/system-manager<span class="w"> </span>--<span class="w"> </span>--target-host<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$host</span><span class="s2">&quot;</span><span class="w"> </span>switch<span class="w"> </span>--flake<span class="w"> </span>.<span class="w"> </span>--sudo
-<a id="__codelineno-12-26" name="__codelineno-12-26"></a><span class="k">done</span>
-<a id="__codelineno-12-27" name="__codelineno-12-27"></a>
-<a id="__codelineno-12-28" name="__codelineno-12-28"></a>ssh-agent<span class="w"> </span>-k
-<a id="__codelineno-12-29" name="__codelineno-12-29"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Deployment complete!&quot;</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7"></a><span class="k">while</span><span class="w"> </span><span class="nv">IFS</span><span class="o">=</span><span class="w"> </span><span class="nb">read</span><span class="w"> </span>-r<span class="w"> </span>host<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8"></a><span class="w">    </span><span class="o">[[</span><span class="w"> </span>-z<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$host</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$host</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">=</span>~<span class="w"> </span>^#<span class="w"> </span><span class="o">]]</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="k">continue</span><span class="w">  </span><span class="c1"># Skip empty lines and comments</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9"></a><span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Deploying to </span><span class="nv">$host</span><span class="s2">...&quot;</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10"></a><span class="w">    </span>nix<span class="w"> </span>run<span class="w"> </span>github:numtide/system-manager<span class="w"> </span>--<span class="w"> </span>--target-host<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$host</span><span class="s2">&quot;</span><span class="w"> </span>switch<span class="w"> </span>--flake<span class="w"> </span>.<span class="w"> </span>--sudo
+<a id="__codelineno-12-11" name="__codelineno-12-11"></a><span class="k">done</span><span class="w"> </span>&lt;<span class="w"> </span>hosts.txt
+<a id="__codelineno-12-12" name="__codelineno-12-12"></a>
+<a id="__codelineno-12-13" name="__codelineno-12-13"></a>ssh-agent<span class="w"> </span>-k
 </code></pre></div></td></tr></table></div></p>
-<h3 id="approach-2-wildcard-ssh-config">Approach 2: Wildcard SSH Config<a class="headerlink" href="#approach-2-wildcard-ssh-config" title="Permanent link">&para;</a></h3>
-<p>If your servers are all within a predictable subnet (common in cloud environments like AWS VPCs), you can use a wildcard pattern in your SSH config to handle authentication and host key verification automatically:</p>
-<p>Add this to <code>~/.ssh/config</code>:
+<p>Where <code>hosts.txt</code> looks like:
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-13-1">1</a></span>
 <span class="normal"><a href="#__codelineno-13-2">2</a></span>
 <span class="normal"><a href="#__codelineno-13-3">3</a></span>
-<span class="normal"><a href="#__codelineno-13-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1"></a>Host 172.31.*
-<a id="__codelineno-13-2" name="__codelineno-13-2"></a>    User ubuntu
-<a id="__codelineno-13-3" name="__codelineno-13-3"></a>    IdentityFile ~/.ssh/my.pem
-<a id="__codelineno-13-4" name="__codelineno-13-4"></a>    StrictHostKeyChecking accept-new
+<span class="normal"><a href="#__codelineno-13-4">4</a></span>
+<span class="normal"><a href="#__codelineno-13-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1"></a><span class="c1"># Production servers</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2"></a>ubuntu@172.31.40.14
+<a id="__codelineno-13-3" name="__codelineno-13-3"></a>ubuntu@172.31.40.15
+<a id="__codelineno-13-4" name="__codelineno-13-4"></a><span class="c1"># Staging</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5"></a>ubuntu@172.31.40.20
 </code></pre></div></td></tr></table></div></p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p><code>StrictHostKeyChecking accept-new</code> automatically trusts and saves host keys for servers you've never connected to before, without asking for confirmation. However, it will still warn you if a previously-saved key changes, which could indicate a security issue or a reinstalled server.</p>
-</div>
-<p>With this configuration in place, your deployment script becomes much simpler—no agent setup or key scanning required:
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-14-1"> 1</a></span>
-<span class="normal"><a href="#__codelineno-14-2"> 2</a></span>
-<span class="normal"><a href="#__codelineno-14-3"> 3</a></span>
-<span class="normal"><a href="#__codelineno-14-4"> 4</a></span>
-<span class="normal"><a href="#__codelineno-14-5"> 5</a></span>
-<span class="normal"><a href="#__codelineno-14-6"> 6</a></span>
-<span class="normal"><a href="#__codelineno-14-7"> 7</a></span>
-<span class="normal"><a href="#__codelineno-14-8"> 8</a></span>
-<span class="normal"><a href="#__codelineno-14-9"> 9</a></span>
-<span class="normal"><a href="#__codelineno-14-10">10</a></span>
-<span class="normal"><a href="#__codelineno-14-11">11</a></span>
-<span class="normal"><a href="#__codelineno-14-12">12</a></span>
-<span class="normal"><a href="#__codelineno-14-13">13</a></span>
-<span class="normal"><a href="#__codelineno-14-14">14</a></span>
-<span class="normal"><a href="#__codelineno-14-15">15</a></span>
-<span class="normal"><a href="#__codelineno-14-16">16</a></span>
-<span class="normal"><a href="#__codelineno-14-17">17</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1"></a><span class="ch">#!/bin/bash</span>
-<a id="__codelineno-14-2" name="__codelineno-14-2"></a><span class="nb">set</span><span class="w"> </span>-e
-<a id="__codelineno-14-3" name="__codelineno-14-3"></a>
-<a id="__codelineno-14-4" name="__codelineno-14-4"></a><span class="c1"># Target hosts - just the IPs, credentials come from SSH config</span>
-<a id="__codelineno-14-5" name="__codelineno-14-5"></a><span class="nv">HOSTS</span><span class="o">=(</span>
-<a id="__codelineno-14-6" name="__codelineno-14-6"></a><span class="w">    </span><span class="s2">&quot;172.31.40.14&quot;</span>
-<a id="__codelineno-14-7" name="__codelineno-14-7"></a><span class="w">    </span><span class="s2">&quot;172.31.28.157&quot;</span>
-<a id="__codelineno-14-8" name="__codelineno-14-8"></a><span class="w">    </span><span class="s2">&quot;172.31.25.67&quot;</span>
-<a id="__codelineno-14-9" name="__codelineno-14-9"></a><span class="o">)</span>
-<a id="__codelineno-14-10" name="__codelineno-14-10"></a>
-<a id="__codelineno-14-11" name="__codelineno-14-11"></a><span class="c1"># Deploy to each host</span>
-<a id="__codelineno-14-12" name="__codelineno-14-12"></a><span class="k">for</span><span class="w"> </span>host<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">HOSTS</span><span class="p">[@]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
-<a id="__codelineno-14-13" name="__codelineno-14-13"></a><span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Deploying to </span><span class="nv">$host</span><span class="s2">...&quot;</span>
-<a id="__codelineno-14-14" name="__codelineno-14-14"></a><span class="w">    </span>nix<span class="w"> </span>run<span class="w"> </span>github:numtide/system-manager<span class="w"> </span>--<span class="w"> </span>--target-host<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$host</span><span class="s2">&quot;</span><span class="w"> </span>switch<span class="w"> </span>--flake<span class="w"> </span>.<span class="w"> </span>--sudo
-<a id="__codelineno-14-15" name="__codelineno-14-15"></a><span class="k">done</span>
-<a id="__codelineno-14-16" name="__codelineno-14-16"></a>
-<a id="__codelineno-14-17" name="__codelineno-14-17"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Deployment complete!&quot;</span>
+<p>This makes it easy to maintain different host lists for different environments, or to generate the list dynamically from your infrastructure tooling.</p>
+<h2 id="handling-ssh-host-key-verification">Handling SSH Host Key Verification<a class="headerlink" href="#handling-ssh-host-key-verification" title="Permanent link">&para;</a></h2>
+<p>If this is the first time you've connected to the remote systems via SSH, you'll encounter the familiar host key verification prompt:
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-14-1">1</a></span>
+<span class="normal"><a href="#__codelineno-14-2">2</a></span>
+<span class="normal"><a href="#__codelineno-14-3">3</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1"></a>The authenticity of host &#39;172.31.25.67 (172.31.25.67)&#39; can&#39;t be established.
+<a id="__codelineno-14-2" name="__codelineno-14-2"></a>ED25519 key fingerprint is SHA256:rfG7uEi06BL+A2qXa+MWRx/k3JCZCyDjfUcpSBQ1zBI.
+<a id="__codelineno-14-3" name="__codelineno-14-3"></a>Are you sure you want to continue connecting (yes/no/[fingerprint])?
 </code></pre></div></td></tr></table></div></p>
-<div class="admonition tip">
-<p class="admonition-title">Tip</p>
-<p>The pre-scanning approach works well if you want to keep everything in a single self-contained script, which is ideal for CI/CD pipelines and automation systems where you may not have control over the SSH config.</p>
-</div>
-<h2 id="deploying-from-a-remote-flake">Deploying from a Remote Flake<a class="headerlink" href="#deploying-from-a-remote-flake" title="Permanent link">&para;</a></h2>
-<p>So far, all examples have used <code>--flake .</code> to reference configuration files on your local machine. But you can also host your Nix configuration in a remote Git repository and deploy directly from there. This is powerful for CI/CD workflows where the configuration lives in version control and deployments are triggered automatically.</p>
-<p>Simply replace the <code>.</code> with a flake URL pointing to your repository:
+<p>This will interrupt automated scripts. There are some different approaches to handle this.</p>
+<h3 id="approach-1-pre-scan-host-keys">Approach 1: Pre-scan Host Keys<a class="headerlink" href="#approach-1-pre-scan-host-keys" title="Permanent link">&para;</a></h3>
+<p>You can scan and add all host keys to your <code>known_hosts</code> file before deploying. This is explicit and works regardless of your SSH configuration:
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-15-1"> 1</a></span>
 <span class="normal"><a href="#__codelineno-15-2"> 2</a></span>
 <span class="normal"><a href="#__codelineno-15-3"> 3</a></span>
@@ -2512,14 +2452,129 @@
 <a id="__codelineno-15-19" name="__codelineno-15-19"></a><span class="k">done</span>
 <a id="__codelineno-15-20" name="__codelineno-15-20"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Host keys added to known_hosts&quot;</span>
 <a id="__codelineno-15-21" name="__codelineno-15-21"></a>
-<a id="__codelineno-15-22" name="__codelineno-15-22"></a><span class="c1"># Deploy to each host from a remote flake</span>
+<a id="__codelineno-15-22" name="__codelineno-15-22"></a><span class="c1"># Deploy to each host</span>
 <a id="__codelineno-15-23" name="__codelineno-15-23"></a><span class="k">for</span><span class="w"> </span>host<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">HOSTS</span><span class="p">[@]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
 <a id="__codelineno-15-24" name="__codelineno-15-24"></a><span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Deploying to </span><span class="nv">$host</span><span class="s2">...&quot;</span>
-<a id="__codelineno-15-25" name="__codelineno-15-25"></a><span class="w">    </span>nix<span class="w"> </span>run<span class="w"> </span>github:numtide/system-manager<span class="w"> </span>--<span class="w"> </span>--target-host<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$host</span><span class="s2">&quot;</span><span class="w"> </span>switch<span class="w"> </span>--flake<span class="w"> </span>git+https://github.com/numtide/system-manager-test#default<span class="w"> </span>--sudo
+<a id="__codelineno-15-25" name="__codelineno-15-25"></a><span class="w">    </span>nix<span class="w"> </span>run<span class="w"> </span>github:numtide/system-manager<span class="w"> </span>--<span class="w"> </span>--target-host<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$host</span><span class="s2">&quot;</span><span class="w"> </span>switch<span class="w"> </span>--flake<span class="w"> </span>.<span class="w"> </span>--sudo
 <a id="__codelineno-15-26" name="__codelineno-15-26"></a><span class="k">done</span>
 <a id="__codelineno-15-27" name="__codelineno-15-27"></a>
 <a id="__codelineno-15-28" name="__codelineno-15-28"></a>ssh-agent<span class="w"> </span>-k
 <a id="__codelineno-15-29" name="__codelineno-15-29"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Deployment complete!&quot;</span>
+</code></pre></div></td></tr></table></div></p>
+<h3 id="approach-2-wildcard-ssh-config">Approach 2: Wildcard SSH Config<a class="headerlink" href="#approach-2-wildcard-ssh-config" title="Permanent link">&para;</a></h3>
+<p>If your servers are all within a predictable subnet (common in cloud environments like AWS VPCs), you can use a wildcard pattern in your SSH config to handle authentication and host key verification automatically:</p>
+<p>Add this to <code>~/.ssh/config</code>:
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-16-1">1</a></span>
+<span class="normal"><a href="#__codelineno-16-2">2</a></span>
+<span class="normal"><a href="#__codelineno-16-3">3</a></span>
+<span class="normal"><a href="#__codelineno-16-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1"></a>Host 172.31.*
+<a id="__codelineno-16-2" name="__codelineno-16-2"></a>    User ubuntu
+<a id="__codelineno-16-3" name="__codelineno-16-3"></a>    IdentityFile ~/.ssh/my.pem
+<a id="__codelineno-16-4" name="__codelineno-16-4"></a>    StrictHostKeyChecking accept-new
+</code></pre></div></td></tr></table></div></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code>StrictHostKeyChecking accept-new</code> automatically trusts and saves host keys for servers you've never connected to before, without asking for confirmation. However, it will still warn you if a previously-saved key changes, which could indicate a security issue or a reinstalled server.</p>
+</div>
+<p>With this configuration in place, your deployment script becomes much simpler—no agent setup or key scanning required:
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-17-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-17-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-17-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-17-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-17-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-17-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-17-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-17-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-17-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-17-10">10</a></span>
+<span class="normal"><a href="#__codelineno-17-11">11</a></span>
+<span class="normal"><a href="#__codelineno-17-12">12</a></span>
+<span class="normal"><a href="#__codelineno-17-13">13</a></span>
+<span class="normal"><a href="#__codelineno-17-14">14</a></span>
+<span class="normal"><a href="#__codelineno-17-15">15</a></span>
+<span class="normal"><a href="#__codelineno-17-16">16</a></span>
+<span class="normal"><a href="#__codelineno-17-17">17</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1"></a><span class="ch">#!/bin/bash</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2"></a><span class="nb">set</span><span class="w"> </span>-e
+<a id="__codelineno-17-3" name="__codelineno-17-3"></a>
+<a id="__codelineno-17-4" name="__codelineno-17-4"></a><span class="c1"># Target hosts - just the IPs, credentials come from SSH config</span>
+<a id="__codelineno-17-5" name="__codelineno-17-5"></a><span class="nv">HOSTS</span><span class="o">=(</span>
+<a id="__codelineno-17-6" name="__codelineno-17-6"></a><span class="w">    </span><span class="s2">&quot;172.31.40.14&quot;</span>
+<a id="__codelineno-17-7" name="__codelineno-17-7"></a><span class="w">    </span><span class="s2">&quot;172.31.28.157&quot;</span>
+<a id="__codelineno-17-8" name="__codelineno-17-8"></a><span class="w">    </span><span class="s2">&quot;172.31.25.67&quot;</span>
+<a id="__codelineno-17-9" name="__codelineno-17-9"></a><span class="o">)</span>
+<a id="__codelineno-17-10" name="__codelineno-17-10"></a>
+<a id="__codelineno-17-11" name="__codelineno-17-11"></a><span class="c1"># Deploy to each host</span>
+<a id="__codelineno-17-12" name="__codelineno-17-12"></a><span class="k">for</span><span class="w"> </span>host<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">HOSTS</span><span class="p">[@]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<a id="__codelineno-17-13" name="__codelineno-17-13"></a><span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Deploying to </span><span class="nv">$host</span><span class="s2">...&quot;</span>
+<a id="__codelineno-17-14" name="__codelineno-17-14"></a><span class="w">    </span>nix<span class="w"> </span>run<span class="w"> </span>github:numtide/system-manager<span class="w"> </span>--<span class="w"> </span>--target-host<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$host</span><span class="s2">&quot;</span><span class="w"> </span>switch<span class="w"> </span>--flake<span class="w"> </span>.<span class="w"> </span>--sudo
+<a id="__codelineno-17-15" name="__codelineno-17-15"></a><span class="k">done</span>
+<a id="__codelineno-17-16" name="__codelineno-17-16"></a>
+<a id="__codelineno-17-17" name="__codelineno-17-17"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Deployment complete!&quot;</span>
+</code></pre></div></td></tr></table></div></p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>The pre-scanning approach works well if you want to keep everything in a single self-contained script, which is ideal for CI/CD pipelines and automation systems where you may not have control over the SSH config.</p>
+</div>
+<h2 id="deploying-from-a-remote-flake">Deploying from a Remote Flake<a class="headerlink" href="#deploying-from-a-remote-flake" title="Permanent link">&para;</a></h2>
+<p>So far, all examples have used <code>--flake .</code> to reference configuration files on your local machine. But you can also host your Nix configuration in a remote Git repository and deploy directly from there. This is powerful for CI/CD workflows where the configuration lives in version control and deployments are triggered automatically.</p>
+<p>Simply replace the <code>.</code> with a flake URL pointing to your repository:
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-18-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-18-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-18-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-18-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-18-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-18-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-18-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-18-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-18-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-18-10">10</a></span>
+<span class="normal"><a href="#__codelineno-18-11">11</a></span>
+<span class="normal"><a href="#__codelineno-18-12">12</a></span>
+<span class="normal"><a href="#__codelineno-18-13">13</a></span>
+<span class="normal"><a href="#__codelineno-18-14">14</a></span>
+<span class="normal"><a href="#__codelineno-18-15">15</a></span>
+<span class="normal"><a href="#__codelineno-18-16">16</a></span>
+<span class="normal"><a href="#__codelineno-18-17">17</a></span>
+<span class="normal"><a href="#__codelineno-18-18">18</a></span>
+<span class="normal"><a href="#__codelineno-18-19">19</a></span>
+<span class="normal"><a href="#__codelineno-18-20">20</a></span>
+<span class="normal"><a href="#__codelineno-18-21">21</a></span>
+<span class="normal"><a href="#__codelineno-18-22">22</a></span>
+<span class="normal"><a href="#__codelineno-18-23">23</a></span>
+<span class="normal"><a href="#__codelineno-18-24">24</a></span>
+<span class="normal"><a href="#__codelineno-18-25">25</a></span>
+<span class="normal"><a href="#__codelineno-18-26">26</a></span>
+<span class="normal"><a href="#__codelineno-18-27">27</a></span>
+<span class="normal"><a href="#__codelineno-18-28">28</a></span>
+<span class="normal"><a href="#__codelineno-18-29">29</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1"></a><span class="ch">#!/bin/bash</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2"></a><span class="nb">set</span><span class="w"> </span>-e
+<a id="__codelineno-18-3" name="__codelineno-18-3"></a>
+<a id="__codelineno-18-4" name="__codelineno-18-4"></a><span class="nb">eval</span><span class="w"> </span><span class="k">$(</span>ssh-agent<span class="w"> </span>-s<span class="k">)</span>
+<a id="__codelineno-18-5" name="__codelineno-18-5"></a>ssh-add<span class="w"> </span>~/.ssh/my.pem
+<a id="__codelineno-18-6" name="__codelineno-18-6"></a>
+<a id="__codelineno-18-7" name="__codelineno-18-7"></a><span class="c1"># Target hosts</span>
+<a id="__codelineno-18-8" name="__codelineno-18-8"></a><span class="nv">HOSTS</span><span class="o">=(</span>
+<a id="__codelineno-18-9" name="__codelineno-18-9"></a><span class="w">    </span><span class="s2">&quot;ubuntu@172.31.40.14&quot;</span>
+<a id="__codelineno-18-10" name="__codelineno-18-10"></a><span class="w">    </span><span class="s2">&quot;ubuntu@172.31.28.157&quot;</span>
+<a id="__codelineno-18-11" name="__codelineno-18-11"></a><span class="w">    </span><span class="s2">&quot;ubuntu@172.31.25.67&quot;</span>
+<a id="__codelineno-18-12" name="__codelineno-18-12"></a><span class="o">)</span>
+<a id="__codelineno-18-13" name="__codelineno-18-13"></a>
+<a id="__codelineno-18-14" name="__codelineno-18-14"></a><span class="c1"># Pre-scan and trust all host keys</span>
+<a id="__codelineno-18-15" name="__codelineno-18-15"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Scanning host keys...&quot;</span>
+<a id="__codelineno-18-16" name="__codelineno-18-16"></a><span class="k">for</span><span class="w"> </span>host<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">HOSTS</span><span class="p">[@]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<a id="__codelineno-18-17" name="__codelineno-18-17"></a><span class="w">    </span><span class="nv">ip</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">host</span><span class="p">#*@</span><span class="si">}</span><span class="s2">&quot;</span><span class="w">  </span><span class="c1"># Extract IP from ubuntu@172.31.x.x</span>
+<a id="__codelineno-18-18" name="__codelineno-18-18"></a><span class="w">    </span>ssh-keyscan<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$ip</span><span class="s2">&quot;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.ssh/known_hosts<span class="w"> </span><span class="m">2</span>&gt;/dev/null
+<a id="__codelineno-18-19" name="__codelineno-18-19"></a><span class="k">done</span>
+<a id="__codelineno-18-20" name="__codelineno-18-20"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Host keys added to known_hosts&quot;</span>
+<a id="__codelineno-18-21" name="__codelineno-18-21"></a>
+<a id="__codelineno-18-22" name="__codelineno-18-22"></a><span class="c1"># Deploy to each host from a remote flake</span>
+<a id="__codelineno-18-23" name="__codelineno-18-23"></a><span class="k">for</span><span class="w"> </span>host<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">HOSTS</span><span class="p">[@]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<a id="__codelineno-18-24" name="__codelineno-18-24"></a><span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Deploying to </span><span class="nv">$host</span><span class="s2">...&quot;</span>
+<a id="__codelineno-18-25" name="__codelineno-18-25"></a><span class="w">    </span>nix<span class="w"> </span>run<span class="w"> </span>github:numtide/system-manager<span class="w"> </span>--<span class="w"> </span>--target-host<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$host</span><span class="s2">&quot;</span><span class="w"> </span>switch<span class="w"> </span>--flake<span class="w"> </span>git+https://github.com/numtide/system-manager-test#default<span class="w"> </span>--sudo
+<a id="__codelineno-18-26" name="__codelineno-18-26"></a><span class="k">done</span>
+<a id="__codelineno-18-27" name="__codelineno-18-27"></a>
+<a id="__codelineno-18-28" name="__codelineno-18-28"></a>ssh-agent<span class="w"> </span>-k
+<a id="__codelineno-18-29" name="__codelineno-18-29"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Deployment complete!&quot;</span>
 </code></pre></div></td></tr></table></div></p>
 <div class="admonition warning">
 <p class="admonition-title">Keep Your Flake Lock Updated</p>
@@ -2552,7 +2607,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="January 28, 2026 15:12:27 UTC">January 28, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="March 31, 2026 09:51:44 UTC">March 31, 2026</span>
   </span>
 
     

@@ -1235,6 +1235,56 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#global-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Global options
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Global options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#-target-host" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        --target-host
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#-ssh-option" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        --ssh-option
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#-nix-option" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        --nix-option
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1973,6 +2023,56 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#global-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Global options
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Global options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#-target-host" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        --target-host
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#-ssh-option" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        --ssh-option
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#-nix-option" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        --nix-option
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2077,6 +2177,28 @@
 <p>The <code>pre-populate</code> subcommand puts all files defined by the given generation in place, but does not start the services. This is useful in scripts.</p>
 <h3 id="sudo">sudo<a class="headerlink" href="#sudo" title="Permanent link">&para;</a></h3>
 <p>The <code>sudo</code> subcommand grants sudo access to System Manager, while running under the current user. All created files will be owned by the current user.</p>
+<h2 id="global-options">Global options<a class="headerlink" href="#global-options" title="Permanent link">&para;</a></h2>
+<h3 id="-target-host">--target-host<a class="headerlink" href="#-target-host" title="Permanent link">&para;</a></h3>
+<p>Specifies a remote host to deploy to via SSH. When set, System Manager copies the closure and runs the engine on the remote machine.</p>
+<h3 id="-ssh-option">--ssh-option<a class="headerlink" href="#-ssh-option" title="Permanent link">&para;</a></h3>
+<p>Passes additional SSH options to both <code>ssh</code> and <code>nix-copy-closure</code> when deploying to a remote host with <code>--target-host</code>.
+Can be specified multiple times.</p>
+<p>For <code>nix-copy-closure</code>, the values are appended to the <code>NIX_SSHOPTS</code> environment variable, preserving any pre-existing value.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span>
+<span class="normal"><a href="#__codelineno-3-2">2</a></span>
+<span class="normal"><a href="#__codelineno-3-3">3</a></span>
+<span class="normal"><a href="#__codelineno-3-4">4</a></span>
+<span class="normal"><a href="#__codelineno-3-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1"></a>nix<span class="w"> </span>run<span class="w"> </span><span class="s1">&#39;github:numtide/system-manager&#39;</span><span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="w">  </span>--target-host<span class="w"> </span>user@host<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3"></a><span class="w">  </span>--ssh-option<span class="w"> </span><span class="s2">&quot;-o ProxyJump=relay@bastion&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4"></a><span class="w">  </span>--ssh-option<span class="w"> </span><span class="s2">&quot;-p 2222&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5"></a><span class="w">  </span>switch<span class="w"> </span>--flake<span class="w"> </span>.<span class="w"> </span>--sudo
+</code></pre></div></td></tr></table></div>
+<p>Note that options containing spaces must be quoted, as in the example above.</p>
+<p>One limitation of this approach is that we don't currently support options that include spaces in their values, such as <code>--ssh-option '-o ProxyCommand=sh -c ...'</code>.
+Use a custom SSH config file to work around this, and specify it with <code>--ssh-option '-F /path/to/config'</code>.</p>
+<h3 id="-nix-option">--nix-option<a class="headerlink" href="#-nix-option" title="Permanent link">&para;</a></h3>
+<p>Passes additional options to Nix commands. Takes two arguments per invocation (key and value).</p>
 
 
 
@@ -2099,7 +2221,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="January 21, 2026 16:32:06 UTC">January 21, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="March 31, 2026 09:51:44 UTC">March 31, 2026</span>
   </span>
 
     
