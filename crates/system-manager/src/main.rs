@@ -384,9 +384,9 @@ fn go(args: Args) -> Result<()> {
             activation_args: ActivationArgs { ephemeral },
             sudo_args,
         } => {
-            let nix_build_options = NixBuildOptions::from(&build_args);
+            let mut nix_build_options = NixBuildOptions::from(&build_args);
             let sudo_options = sudo_args.to_sudo_options(legacy_use_remote_sudo)?;
-            let store_path = do_build(&nix_build_options, &nix_options)?;
+            let store_path = do_build(&mut nix_build_options, &nix_options)?;
             copy_closure(&store_path, &target_host)?;
             invoke_engine_register(&store_path, &target_host, &sudo_options)?;
             invoke_engine_activate(&store_path, ephemeral, &target_host, &sudo_options)
@@ -447,13 +447,16 @@ fn build(
     build_args: &BuildArgs,
     nix_options: &NixOptions,
 ) -> Result<StorePath> {
-    let nix_build_options = NixBuildOptions::from(build_args);
-    let store_path = do_build(&nix_build_options, nix_options)?;
+    let mut nix_build_options = NixBuildOptions::from(build_args);
+    let store_path = do_build(&mut nix_build_options, nix_options)?;
     copy_closure(&store_path, target_host)?;
     Ok(store_path)
 }
 
-fn do_build(nix_build_options: &NixBuildOptions, nix_options: &NixOptions) -> Result<StorePath> {
+fn do_build(
+    nix_build_options: &mut NixBuildOptions,
+    nix_options: &NixOptions,
+) -> Result<StorePath> {
     system_manager_engine::register::build(nix_build_options, nix_options)
 }
 
@@ -475,8 +478,8 @@ fn register(
                 },
             refresh,
         } => {
-            let nix_build_options = NixBuildOptions { flake_uri, refresh };
-            let store_path = do_build(&nix_build_options, nix_options)?;
+            let mut nix_build_options = NixBuildOptions { flake_uri, refresh };
+            let store_path = do_build(&mut nix_build_options, nix_options)?;
             copy_closure(&store_path, target_host)?;
             invoke_engine_register(&store_path, target_host, sudo_options)?;
             Ok(store_path)
@@ -521,8 +524,8 @@ fn prepopulate(
                 },
             refresh,
         } => {
-            let nix_build_options = NixBuildOptions { flake_uri, refresh };
-            let store_path = do_build(&nix_build_options, nix_options)?;
+            let mut nix_build_options = NixBuildOptions { flake_uri, refresh };
+            let store_path = do_build(&mut nix_build_options, nix_options)?;
             copy_closure(&store_path, target_host)?;
             invoke_engine_register(&store_path, target_host, sudo_options)?;
             invoke_engine_prepopulate(&store_path, ephemeral, target_host, sudo_options)?;
