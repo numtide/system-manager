@@ -6,6 +6,8 @@ use std::mem;
 use std::path::Path;
 use std::{fs, process, str};
 
+use crate::NixBuildOptions;
+
 use super::{
     create_store_link, NixOptions, StorePath, FLAKE_ATTR, GCROOT_PATH, PROFILE_DIR, PROFILE_NAME,
 };
@@ -66,13 +68,17 @@ fn create_gcroot(gcroot_path: &str, profile_path: &Path) -> Result<()> {
     create_store_link(&store_path, Path::new(gcroot_path))
 }
 
-pub fn build(flake_uri: &str, nix_options: &NixOptions, refresh: bool) -> Result<StorePath> {
-    let full_flake_uri = find_flake_attr(flake_uri, nix_options)?;
+pub fn build(nix_build_options: &NixBuildOptions, nix_options: &NixOptions) -> Result<StorePath> {
+    let full_flake_uri = find_flake_attr(&nix_build_options.flake_uri, nix_options)?;
 
     log::info!("Building new system-manager generation...");
     log::info!("Running nix build...");
-    let store_path =
-        run_nix_build(full_flake_uri.as_ref(), nix_options, refresh).and_then(get_store_path)?;
+    let store_path = run_nix_build(
+        full_flake_uri.as_ref(),
+        nix_options,
+        nix_build_options.refresh,
+    )
+    .and_then(get_store_path)?;
     log::info!("Built system-manager profile {store_path}");
     Ok(store_path)
 }

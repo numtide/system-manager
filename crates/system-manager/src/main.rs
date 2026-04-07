@@ -16,7 +16,7 @@ use std::mem;
 use std::path::{Path, PathBuf};
 use std::process::{self, ExitCode};
 
-use system_manager_engine::{NixOptions, StorePath, PROFILE_DIR};
+use system_manager_engine::{NixBuildOptions, NixOptions, StorePath, PROFILE_DIR};
 
 /// The bytes for the NixOS flake template is included in the binary to avoid unnecessary
 /// network calls when initializing a system-manager configuration from the command line.
@@ -158,6 +158,15 @@ struct BuildArgs {
     refresh: bool,
 }
 
+impl From<&BuildArgs> for NixBuildOptions {
+    fn from(build_args: &BuildArgs) -> Self {
+        Self {
+            flake_uri: build_args.flake_uri.clone(),
+            refresh: build_args.refresh,
+        }
+    }
+}
+
 #[derive(clap::Args, Debug)]
 struct ActivationArgs {
     #[arg(long, action)]
@@ -186,6 +195,10 @@ struct StoreOrFlakeArgs {
 
     #[command(flatten)]
     optional_flake_uri_arg: OptionalFlakeUriArg,
+
+    #[arg(long, action)]
+    /// Bypass the flake evaluation cache and fetch remote flakes fresh
+    refresh: bool,
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -293,9 +306,9 @@ fn go(args: Args) -> Result<()> {
             .and_then(print_store_path)
         }
 
-        Action::Build {
-            build_args: BuildArgs { flake_uri, refresh },
-        } => build(&flake_uri, &target_host, &nix_options, refresh).and_then(print_store_path),
+        Action::Build { build_args } => {
+            build(&target_host, &build_args, &nix_options).and_then(print_store_path)
+        }
 
         Action::Deactivate {
             optional_store_path_args: OptionalStorePathArg { maybe_store_path },
@@ -367,12 +380,13 @@ fn go(args: Args) -> Result<()> {
         }
 
         Action::Switch {
-            build_args: BuildArgs { flake_uri, refresh },
+            build_args,
             activation_args: ActivationArgs { ephemeral },
             sudo_args,
         } => {
+            let nix_build_options = NixBuildOptions::from(&build_args);
             let sudo_options = sudo_args.to_sudo_options(legacy_use_remote_sudo)?;
-            let store_path = do_build(&flake_uri, &nix_options, refresh)?;
+            let store_path = do_build(&nix_build_options, &nix_options)?;
             copy_closure(&store_path, &target_host)?;
             invoke_engine_register(&store_path, &target_host, &sudo_options)?;
             invoke_engine_activate(&store_path, ephemeral, &target_host, &sudo_options)
@@ -429,18 +443,18 @@ fn read_sudo_password() -> Result<String> {
 }
 
 fn build(
-    flake_uri: &str,
     target_host: &Option<String>,
+    build_args: &BuildArgs,
     nix_options: &NixOptions,
-    refresh: bool,
 ) -> Result<StorePath> {
-    let store_path = do_build(flake_uri, nix_options, refresh)?;
+    let nix_build_options = NixBuildOptions::from(build_args);
+    let store_path = do_build(&nix_build_options, nix_options)?;
     copy_closure(&store_path, target_host)?;
     Ok(store_path)
 }
 
-fn do_build(flake_uri: &str, nix_options: &NixOptions, refresh: bool) -> Result<StorePath> {
-    system_manager_engine::register::build(flake_uri, nix_options, refresh)
+fn do_build(nix_build_options: &NixBuildOptions, nix_options: &NixOptions) -> Result<StorePath> {
+    system_manager_engine::register::build(nix_build_options, nix_options)
 }
 
 fn register(
@@ -459,8 +473,10 @@ fn register(
                 OptionalFlakeUriArg {
                     maybe_flake_uri: Some(flake_uri),
                 },
+            refresh,
         } => {
-            let store_path = do_build(&flake_uri, nix_options, false)?;
+            let nix_build_options = NixBuildOptions { flake_uri, refresh };
+            let store_path = do_build(&nix_build_options, nix_options)?;
             copy_closure(&store_path, target_host)?;
             invoke_engine_register(&store_path, target_host, sudo_options)?;
             Ok(store_path)
@@ -474,6 +490,7 @@ fn register(
                 OptionalFlakeUriArg {
                     maybe_flake_uri: None,
                 },
+            refresh: _,
         } => {
             copy_closure(&store_path, target_host)?;
             invoke_engine_register(&store_path, target_host, sudo_options)?;
@@ -502,8 +519,10 @@ fn prepopulate(
                 OptionalFlakeUriArg {
                     maybe_flake_uri: Some(flake_uri),
                 },
+            refresh,
         } => {
-            let store_path = do_build(&flake_uri, nix_options, false)?;
+            let nix_build_options = NixBuildOptions { flake_uri, refresh };
+            let store_path = do_build(&nix_build_options, nix_options)?;
             copy_closure(&store_path, target_host)?;
             invoke_engine_register(&store_path, target_host, sudo_options)?;
             invoke_engine_prepopulate(&store_path, ephemeral, target_host, sudo_options)?;
@@ -515,6 +534,7 @@ fn prepopulate(
                 OptionalFlakeUriArg {
                     maybe_flake_uri: None,
                 },
+            refresh: _,
         } => {
             let store_path = StorePath::try_from(store_path_or_active_profile(maybe_store_path))?;
             copy_closure(&store_path, target_host)?;
