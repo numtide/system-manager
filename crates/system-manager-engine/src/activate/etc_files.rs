@@ -124,7 +124,7 @@ pub fn activate(
         .collect();
     entries.append(&mut non_static_entries);
     // Create dirs and link/copy entries
-    new_state = create_etc_files(entries, new_state.clone(), &old_state)?;
+    new_state = create_etc_files(entries, new_state.clone(), &old_state, &etc_dir)?;
     // Delete unecessary files
     let files_to_delete: HashSet<PathBuf> = old_state
         .files
@@ -277,6 +277,26 @@ fn list_static_entries(config_entries: &EtcFilesConfig) -> anyhow::Result<Vec<Et
     Ok(files)
 }
 
+fn create_etc_files(
+    mut files: Vec<EtcFile>,
+    mut state: EtcFilesState,
+    old_state: &EtcFilesState,
+    etc_dir: &Path,
+) -> EtcActivationResult {
+    files.sort_by(|a, b| a.target.cmp(&b.target));
+    for file in files {
+        let target = file.target.clone();
+        state = match create_etc_file(file, state, old_state, etc_dir) {
+            Ok(state) => state,
+            Err(ActivationError::WithPartialResult { result, source }) => {
+                log::warn!("Can't link/copy {} to : {}", target.display(), source);
+                result
+            }
+        }
+    }
+    Ok(state)
+}
+
 /// Create a single etc file.
 ///
 /// We separated this from `create_etc_files` to catch any error on a file boundary
@@ -285,8 +305,9 @@ fn create_etc_file(
     file: EtcFile,
     mut state: EtcFilesState,
     old_state: &EtcFilesState,
+    etc_dir: &Path,
 ) -> EtcActivationResult {
-    let target = PathBuf::from("/etc").join(&file.target);
+    let target = PathBuf::from(etc_dir).join(&file.target);
     log::debug!(
         "Creating {} to {} ({})",
         file.source,
@@ -356,25 +377,6 @@ fn create_etc_file(
     } else {
         log::debug!("{} is a regular file", file.source);
         state = copy_file(&file.source.store_path, &target, &file, old_state, state)?;
-    }
-    Ok(state)
-}
-
-fn create_etc_files(
-    mut files: Vec<EtcFile>,
-    mut state: EtcFilesState,
-    old_state: &EtcFilesState,
-) -> EtcActivationResult {
-    files.sort_by(|a, b| a.target.cmp(&b.target));
-    for file in files {
-        let target = file.target.clone();
-        state = match create_etc_file(file, state, old_state) {
-            Ok(state) => state,
-            Err(ActivationError::WithPartialResult { result, source }) => {
-                log::warn!("Can't link/copy {} to : {}", target.display(), source);
-                result
-            }
-        }
     }
     Ok(state)
 }
