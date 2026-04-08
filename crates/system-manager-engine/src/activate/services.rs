@@ -73,7 +73,8 @@ pub fn activate(
         .into_iter()
         .partition(|(_, cfg)| cfg.masked);
 
-    let services_to_stop = old_services.clone().relative_complement(active.clone());
+    let services_to_stop =
+        get_services_to_stop(old_services.clone().relative_complement(active.clone()));
     let services_to_reload = get_services_to_reload(active.clone(), old_services.clone());
 
     let service_manager = systemd::ServiceManager::new_session()
@@ -154,6 +155,21 @@ fn get_services_to_reload(services: Services, old_services: Services) -> Service
         }
     });
     services_to_reload
+}
+
+fn get_services_to_stop(services_to_stop: Services) -> Services {
+    let mut services_to_stop = services_to_stop;
+    services_to_stop.retain(|name, service| {
+        if let Some(ref path) = service.store_path {
+            let unit_data = parse_unit(Path::new(&path.store_path)).ok();
+            if !parse_systemd_bool(unit_data.as_ref(), "Unit", "X-StopOnRemoval", true) {
+                log::info!("Skipping stop of {name}: X-StopOnRemoval=false");
+                return false;
+            }
+        }
+        true
+    });
+    services_to_stop
 }
 
 fn systemd_system_dir(ephemeral: bool) -> PathBuf {
