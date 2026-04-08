@@ -255,7 +255,7 @@ fn list_static_entries(config_entries: &EtcFilesConfig) -> anyhow::Result<Vec<Et
                     source: StorePath {
                         store_path: canon_path,
                     },
-                    target: PathBuf::from("/etc").join(target),
+                    target,
                     uid: 0,
                     gid: 0,
                     group: "".to_string(),
