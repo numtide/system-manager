@@ -22,10 +22,11 @@ pub struct ServiceConfig {
 
 pub type Services = HashMap<String, ServiceConfig>;
 
-fn unit_has_directive(store_path: &StorePath, directive: &str) -> bool {
-    fs::read_to_string(&store_path.store_path)
-        .map(|content| content.contains(directive))
-        .unwrap_or(false)
+fn unit_directive(store_path: &StorePath, section: &str, key: &str) -> Option<String> {
+    let entry = freedesktop_entry_parser::parse_entry(&store_path.store_path)
+        .inspect_err(|e| log::debug!("unable to parse unit file {:?}: {e}", store_path.store_path))
+        .ok()?;
+    entry.section(section)?.attr(key).last().cloned()
 }
 
 fn print_services(services: &Services) -> String {
@@ -144,7 +145,8 @@ fn get_services_to_reload(services: Services, old_services: Services) -> Service
                 return false;
             }
             if let Some(ref path) = service.store_path {
-                if unit_has_directive(path, "X-RestartIfChanged=false") {
+                if unit_directive(path, "Service", "X-RestartIfChanged").as_deref() == Some("false")
+                {
                     log::info!("Skipping restart of {name}: X-RestartIfChanged=false");
                     return false;
                 }
