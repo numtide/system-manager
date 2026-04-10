@@ -2,6 +2,7 @@ pub mod activate;
 pub mod deactivate;
 pub mod register;
 mod systemd;
+pub mod unit_info;
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};

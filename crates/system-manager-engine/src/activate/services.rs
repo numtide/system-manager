@@ -7,6 +7,7 @@ use std::{fs, io};
 
 use super::ActivationResult;
 use crate::activate::ActivationError;
+use crate::unit_info::{parse_systemd_bool, parse_unit};
 use crate::{create_link, etc_dir, systemd, StorePath};
 
 type ServiceActivationResult = ActivationResult<Services>;
@@ -21,13 +22,6 @@ pub struct ServiceConfig {
 }
 
 pub type Services = HashMap<String, ServiceConfig>;
-
-fn unit_directive(store_path: &StorePath, section: &str, key: &str) -> Option<String> {
-    let entry = freedesktop_entry_parser::parse_entry(&store_path.store_path)
-        .inspect_err(|e| log::debug!("unable to parse unit file {:?}: {e}", store_path.store_path))
-        .ok()?;
-    entry.section(section)?.attr(key).last().cloned()
-}
 
 fn print_services(services: &Services) -> String {
     let out = itertools::intersperse(
@@ -145,8 +139,10 @@ fn get_services_to_reload(services: Services, old_services: Services) -> Service
                 return false;
             }
             if let Some(ref path) = service.store_path {
-                if unit_directive(path, "Service", "X-RestartIfChanged").as_deref() == Some("false")
-                {
+                let unit_info = parse_unit(&path.store_path)
+                    .inspect_err(|e| log::debug!("unable to parse unit file {path}: {e}"))
+                    .ok();
+                if !parse_systemd_bool(unit_info.as_ref(), "Service", "X-RestartIfChanged", true) {
                     log::info!("Skipping restart of {name}: X-RestartIfChanged=false");
                     return false;
                 }
