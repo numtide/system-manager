@@ -13,7 +13,11 @@ let
   systemd-lib = utils.systemdUtils.lib;
 
   substituteTarget =
-    target: if target == "multi-user.target" then "system-manager.target" else target;
+    target:
+    if target == "multi-user.target" || target == "timers.target" then
+      "system-manager.target"
+    else
+      target;
 in
 {
   options.systemd = {
