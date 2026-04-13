@@ -91,6 +91,14 @@ forEachDistro "ssh" {
           machine.succeed('ssh -i /etc/privatekey -o "StrictHostKeyChecking no" root@localhost echo ok')
           machine.succeed('echo "ls /" | sftp -i /etc/privatekey root@localhost')
 
+      with subtest("dpkg update do not remove system-managed owned files"):
+          sshd_sum_before_dpkg = sshd_config.sha256sum
+          machine.succeed("dpkg-reconfigure openssh-server --frontend=noninteractive")
+          sshd_config_new = machine.file("/etc/ssh/sshd_config")
+          assert sshd_config_new.exists, "/etc/ssh/sshd_config should exist"
+          assert sshd_config_new.sha256sum == sshd_sum_before_dpkg, \
+            "it seems like dpkg overwote /etc/ssh/sshd_config"
+
       with subtest("deactivation removes known hosts file"):
           machine.succeed("${toplevel}/bin/deactivate")
           machine.fail("test -f /etc/ssh/ssh_known_hosts")
