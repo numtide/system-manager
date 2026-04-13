@@ -107,7 +107,7 @@ pub fn activate(
         Ok(e) => e,
         Err(e) => {
             return Err(ActivationError::WithPartialResult {
-                result: new_state.clone(),
+                result: old_state,
                 source: e,
             })
         }
