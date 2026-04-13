@@ -3,7 +3,6 @@
 # with backup on systems where those entries already exist.
 {
   forEachDistro,
-  system-manager,
   ...
 }:
 
@@ -82,10 +81,12 @@ forEachDistro "existing-files" {
       backup_symlink = machine.succeed("cat /etc/force-symlink-test.system-manager-backup").strip()
       assert backup_symlink == "original symlink content", f"Expected original symlink backup, got: {backup_symlink}"
 
-      # Verify .wants symlink was replaced (auto-backup for systemd dependency dirs)
-      machine.succeed("test -L /etc/systemd/system/timers.target.wants/existing.timer")
-      backup_wants = machine.succeed("readlink /etc/systemd/system/timers.target.wants/existing.timer.system-manager-backup").strip()
-      assert "fake-existing.timer" in backup_wants, f"Expected backup of original .wants symlink, got: {backup_wants}"
+      # Verify the timer is pulled in via system-manager.target
+      machine.succeed("test -L /etc/systemd/system/system-manager.target.wants/existing.timer")
+
+      # Verify the pre-existing timers.target.wants symlink is left untouched
+      existing_wants = machine.succeed("readlink /etc/systemd/system/timers.target.wants/existing.timer").strip()
+      assert "fake-existing.timer" in existing_wants, f"Expected pre-existing .wants symlink untouched, got: {existing_wants}"
 
       # Verify the timer unit content matches the declared config
       timer_content = machine.succeed("cat /etc/systemd/system/existing.timer")
@@ -105,9 +106,9 @@ forEachDistro "existing-files" {
       assert restored_symlink == "original symlink content", f"Expected restored original, got: {restored_symlink}"
       machine.fail("test -e /etc/force-symlink-test.system-manager-backup")
 
+      # Pre-existing timers.target.wants symlink should still be present (never touched)
       restored_wants = machine.succeed("readlink /etc/systemd/system/timers.target.wants/existing.timer").strip()
-      assert "fake-existing.timer" in restored_wants, f"Expected restored .wants symlink, got: {restored_wants}"
-      machine.fail("test -e /etc/systemd/system/timers.target.wants/existing.timer.system-manager-backup")
+      assert "fake-existing.timer" in restored_wants, f"Expected pre-existing .wants symlink, got: {restored_wants}"
 
       # Verify no-replace-test was never touched
       no_replace_after = machine.succeed("cat /etc/no-replace-test").strip()
