@@ -1,0 +1,32 @@
+{
+  "debian-13": {
+    "aarch64-linux": {
+      "sha256": "02jhbgc97kapbdnk8ny6ql12g9xvi34jpirp5kxzgcz1b5wabwg4",
+      "url": "https://cloud.debian.org/images/cloud/trixie/20260413-2447/debian-13-genericcloud-arm64-20260413-2447.tar.xz"
+    },
+    "x86_64-linux": {
+      "sha256": "049a06pb4bqpmy6qp3jgzblrwim9i492153mcglm53jngh48r5p5",
+      "url": "https://cloud.debian.org/images/cloud/trixie/20260413-2447/debian-13-genericcloud-amd64-20260413-2447.tar.xz"
+    }
+  },
+  "ubuntu-22_04": {
+    "aarch64-linux": {
+      "sha256": "1aya4ainn5289bhczbx97dxv7ck8ng3kmz8yiicz8ynvyfg6mvrq",
+      "url": "https://cloud-images.ubuntu.com/releases/jammy/release-20260227/ubuntu-22.04-server-cloudimg-arm64-root.tar.xz"
+    },
+    "x86_64-linux": {
+      "sha256": "05gw1sspv9d4m5yazc8105yc2vr3y9xkwnwilnzn774w9nivwib3",
+      "url": "https://cloud-images.ubuntu.com/releases/jammy/release-20260227/ubuntu-22.04-server-cloudimg-amd64-root.tar.xz"
+    }
+  },
+  "ubuntu-24_04": {
+    "aarch64-linux": {
+      "sha256": "1l4l0llfffspzgnmwhax0fcnjn8ih8n4azhfaghng2hh1xvr4a17",
+      "url": "https://cloud-images.ubuntu.com/releases/noble/release-20251026/ubuntu-24.04-server-cloudimg-arm64-root.tar.xz"
+    },
+    "x86_64-linux": {
+      "sha256": "0y3d55f5qy7bxm3mfmnxzpmwp88d7iiszc57z5b9npc6xgwi28np",
+      "url": "https://cloud-images.ubuntu.com/releases/noble/release-20251026/ubuntu-24.04-server-cloudimg-amd64-root.tar.xz"
+    }
+  }
+}
