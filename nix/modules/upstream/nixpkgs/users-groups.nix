@@ -887,6 +887,7 @@ in
         video.gid = lib.mkDefault 44;
         dialout.gid = lib.mkDefault 20;
         nogroup.gid = lib.mkDefault 65534;
+        keys.gid = lib.mkDefault 96;
         users.gid = lib.mkDefault 100;
         nixbld.gid = lib.mkDefault ids.gids.nixbld;
         utmp.gid = lib.mkDefault 43;
