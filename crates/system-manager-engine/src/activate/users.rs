@@ -60,14 +60,22 @@ pub fn lock_managed_users() -> Result<()> {
 }
 
 /// Resolves a base shell path (after prefix stripping) to an existing FHS location.
+///
+/// For nologin, always prefer `/usr/sbin/nologin` regardless of whether the
+/// original base path also happens to resolve: on merged-usr distributions
+/// (e.g. fedora) `/bin` is a symlink to `/usr/bin`, so a base of
+/// `/bin/nologin` would `exists()`-check true via `/usr/bin/nologin` and we
+/// would restore the wrong path, leaving `/etc/passwd` with `/bin/nologin`
+/// instead of the `/usr/sbin/nologin` every distro ships.
 fn resolve_shell(base: &str) -> Result<&str> {
-    if Path::new(base).exists() {
-        return Ok(base);
-    }
-
     match base {
-        "/bin/nologin" | "/sbin/nologin" => {
-            for fallback in ["/usr/sbin/nologin", "/usr/bin/nologin", "/bin/nologin"] {
+        "/bin/nologin" | "/sbin/nologin" | "/usr/sbin/nologin" | "/usr/bin/nologin" => {
+            for fallback in [
+                "/usr/sbin/nologin",
+                "/usr/bin/nologin",
+                "/sbin/nologin",
+                "/bin/nologin",
+            ] {
                 if Path::new(fallback).exists() {
                     return Ok(fallback);
                 }
@@ -75,6 +83,9 @@ fn resolve_shell(base: &str) -> Result<&str> {
             anyhow::bail!("No valid nologin shell found for base path '{}'", base);
         }
         _ => {
+            if Path::new(base).exists() {
+                return Ok(base);
+            }
             for fallback in ["/bin/sh", "/usr/bin/sh"] {
                 if Path::new(fallback).exists() {
                     return Ok(fallback);
