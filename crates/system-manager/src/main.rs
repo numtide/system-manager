@@ -850,6 +850,7 @@ fn do_copy_closure(
     target_host: &str,
     ssh_options: &[String],
 ) -> Result<()> {
+    ensure_nix_on_target(target_host, ssh_options)?;
     log::info!("Copying closure to target host...");
     let mut cmd = process::Command::new("nix-copy-closure");
     if !ssh_options.is_empty() {
@@ -873,6 +874,28 @@ fn do_copy_closure(
         Ok(())
     } else {
         anyhow::bail!("Error copying closure, {}", status);
+    }
+}
+
+fn ensure_nix_on_target(target_host: &str, ssh_options: &[String]) -> Result<()> {
+    let mut cmd = process::Command::new("ssh");
+    cmd.args(ssh_options)
+        .arg(target_host)
+        .arg("command -v nix-store")
+        .stdout(process::Stdio::null())
+        .stderr(process::Stdio::null());
+    match cmd.status() {
+        Ok(status) if status.success() => Ok(()),
+        Ok(_) => anyhow::bail!(
+            "Nix is not installed on target host '{target_host}' \
+             (nix-store not found in PATH). \
+             system-manager requires Nix on the target to receive the closure. \
+             Install it by running on the target host:\n\
+             \n    curl -sSfL https://artifacts.nixos.org/nix-installer | sh -s -- install --no-confirm\n"
+        ),
+        Err(e) => Err(anyhow::Error::from(e).context(format!(
+            "Failed to run ssh to check for Nix on target host '{target_host}'"
+        ))),
     }
 }
 
