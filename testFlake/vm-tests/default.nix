@@ -17,8 +17,8 @@ let
       filter = v: v == "13";
     };
     fedora = {
-      # Only Fedora 41
-      filter = v: v == "41";
+      # Only Fedora 43
+      filter = v: v == "43";
     };
   };
 

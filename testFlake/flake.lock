@@ -129,15 +129,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1776165142,
-        "narHash": "sha256-bmPLrDLMb2QjGhWzDHvahyq4nuoSoYEMsgmo+qHiq1k=",
+        "lastModified": 1776289539,
+        "narHash": "sha256-Opze91tWTXeE+5hzChVZ9K5NMPt39uO+jfAOHn3DRJs=",
         "owner": "numtide",
         "repo": "nix-vm-test",
-        "rev": "f88465397ca010133084f07cb6f73875223c449d",
+        "rev": "dfa6ba3d23d79add9dcca93f6b7f7e8199214897",
         "type": "github"
       },
       "original": {
         "owner": "numtide",
+        "ref": "feat/fedora-43",
         "repo": "nix-vm-test",
         "type": "github"
       }
