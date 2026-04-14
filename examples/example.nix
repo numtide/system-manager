@@ -3,6 +3,18 @@
   config = {
     services.nginx.enable = true;
 
+    system.autoUpgrade = {
+      enable = true;
+      flake = "github:numtide/system-manager";
+      flags = [
+        "--nix-option"
+        "accept-flake-config"
+        "true"
+      ];
+      dates = "hourly";
+      randomizedDelaySec = "10min";
+    };
+
     environment = {
       systemPackages = [
         pkgs.ripgrep

@@ -7,6 +7,7 @@
 }:
 {
   imports = [
+    ./auto-upgrade.nix
     ./environment.nix
     ./etc.nix
     ./systemd.nix
