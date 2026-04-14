@@ -16,6 +16,10 @@ let
       # Only Debian 13 (trixie)
       filter = v: v == "13";
     };
+    fedora = {
+      # Only Fedora 41
+      filter = v: v == "41";
+    };
   };
 
   forEachImage =
