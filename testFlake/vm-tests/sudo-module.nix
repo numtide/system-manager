@@ -1,12 +1,12 @@
 # Test sudo module: sudoers generation, no Nix-built sudo in PATH/wrappers,
 # and host sudo works with the generated config.
 {
-  forEachUbuntuImage,
+  forEachImage,
   system-manager,
   ...
 }:
 
-forEachUbuntuImage "sudo-module" {
+forEachImage "sudo-module" {
   modules = [
     (
       { ... }:

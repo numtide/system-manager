@@ -2,12 +2,12 @@
 # This must run in a VM because setting SUID bits and file capabilities
 # requires privileges that the nix build sandbox seccomp filter blocks.
 {
-  forEachUbuntuImage,
+  forEachImage,
   system-manager,
   ...
 }:
 
-forEachUbuntuImage "security-wrappers" {
+forEachImage "security-wrappers" {
   modules = [
     (
       { pkgs, ... }:

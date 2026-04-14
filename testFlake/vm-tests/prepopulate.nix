@@ -1,11 +1,11 @@
 {
-  forEachUbuntuImage,
+  forEachImage,
   newConfig,
   system-manager,
   ...
 }:
 
-forEachUbuntuImage "prepopulate" {
+forEachImage "prepopulate" {
   modules = [
     ../../examples/example.nix
   ];

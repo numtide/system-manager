@@ -2,13 +2,13 @@
 # This test runs the engine directly via SSH from the host (test driver) to the VM
 # It tests that the engine can be invoked remotely, which is the core of --target-host
 {
-  forEachUbuntuImage,
+  forEachImage,
   system-manager,
   system,
   ...
 }:
 
-forEachUbuntuImage "target-host" {
+forEachImage "target-host" {
   modules = [
     ../../examples/example.nix
   ];

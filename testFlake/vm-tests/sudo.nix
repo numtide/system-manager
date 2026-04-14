@@ -3,13 +3,13 @@
 # 1. Running system-manager as non-root without --sudo fails
 # 2. Running system-manager with --sudo succeeds
 {
-  forEachUbuntuImage,
+  forEachImage,
   system-manager,
   system,
   ...
 }:
 
-forEachUbuntuImage "sudo" {
+forEachImage "sudo" {
   modules = [
     ../../examples/example.nix
   ];

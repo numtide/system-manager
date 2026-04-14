@@ -1,11 +1,11 @@
 {
-  forEachUbuntuImage,
+  forEachImage,
   newConfig,
   system-manager,
   ...
 }:
 
-forEachUbuntuImage "example" {
+forEachImage "example" {
   modules = [
     ../../examples/example.nix
   ];
