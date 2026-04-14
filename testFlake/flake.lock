@@ -131,6 +131,8 @@
       "locked": {
         "lastModified": 1776243694,
         "narHash": "sha256-bmPLrDLMb2QjGhWzDHvahyq4nuoSoYEMsgmo+qHiq1k=",
+        "lastModified": 1776165142,
+        "narHash": "sha256-bmPLrDLMb2QjGhWzDHvahyq4nuoSoYEMsgmo+qHiq1k=",
         "owner": "numtide",
         "repo": "nix-vm-test",
         "rev": "797184bcad6205f0360250298598de38cf781df0",
