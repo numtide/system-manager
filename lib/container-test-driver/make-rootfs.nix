@@ -10,6 +10,7 @@ in
     {
       name,
       cloudImg,
+      cloudImgFormat,
       excludePatterns ? [ ],
       extraDirs ? [ ],
       extraSetup ? "",
@@ -21,19 +22,38 @@ in
         map (p: "--exclude='${p}'") excludePatterns
       );
       mkdirCommands = builtins.concatStringsSep "\n    " (map (d: "mkdir -p $out/${d}") extraDirs);
+      extractCommand =
+        if cloudImgFormat == "tar" then
+          ''
+            tar --exclude='dev/*' \
+                ${excludeArgs} \
+                ${tarExtraFlags} \
+                ${tarCompression}xf ${cloudImg} -C $out
+          ''
+        else if cloudImgFormat == "qcow2" then
+          ''
+            LIBGUESTFS_BACKEND=direct \
+              guestfish --ro -a ${cloudImg} -i tar-out / - \
+              | tar --exclude='dev/*' \
+                    ${excludeArgs} \
+                    -C $out -x
+          ''
+        else
+          throw "buildRootfs: unsupported cloudImgFormat '${cloudImgFormat}' (expected 'tar' or 'qcow2')";
+      nativeBuildInputs = [
+        pkgs.xz
+      ]
+      ++ pkgs.lib.optionals (cloudImgFormat == "qcow2") [ pkgs.libguestfs-with-appliance ];
     in
     pkgs.runCommand "rootfs-${name}"
       {
-        nativeBuildInputs = [ pkgs.xz ];
+        inherit nativeBuildInputs;
       }
       ''
         mkdir -p $out
 
         # Extract cloud image, excluding container-incompatible services
-        tar --exclude='dev/*' \
-            ${excludeArgs} \
-            ${tarExtraFlags} \
-            ${tarCompression}xf ${cloudImg} -C $out
+        ${extractCommand}
 
         # Ensure build user can modify all extracted files
         chmod -R u+rwX $out
