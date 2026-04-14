@@ -196,7 +196,7 @@ with subtest("Verify service is responding"):
 
 The test framework:
 
-1. Builds a container image (Ubuntu 22.04, Ubuntu 24.04, or Debian 13) with the nix-installer binary included
+1. Builds a container image (Ubuntu 22.04, Ubuntu 24.04, Debian 13, or Fedora 43) with the nix-installer binary included
 2. Starts the container using systemd-nspawn within the Nix build sandbox
 3. Installs Nix via nix-installer at container startup (multi-user mode with daemon)
 4. Copies your system-manager profile closure into the container via `nix copy`

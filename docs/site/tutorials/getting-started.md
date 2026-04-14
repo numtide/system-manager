@@ -2,7 +2,7 @@
 
 If you've heard of NixOS, you've probably heard that it lets you define your entire system in configuration files and then reproduce that system anywhere with a single command. System Manager brings that same declarative model to other Linux distributions*, with no reinstalling, no switching operating systems, and no special prerequisites beyond having Nix installed.
 
-*Presently, System Manager is tested on Ubuntu and Debian, and is limited to only Linux distributions based on systemd.
+*Presently, System Manager is tested on Ubuntu, Debian, and Fedora, and is limited to only Linux distributions based on systemd.
 
 # Initializing Your System
 
