@@ -73,4 +73,21 @@ in
     };
     maskableService = "unattended-upgrades.service";
   };
+
+  debian-13 = {
+    # x86_64-linux only: the qcow2 extraction path uses libguestfs-with-appliance,
+    # whose appliance subpackage is not available on aarch64 in nixpkgs.
+    systems = [ "x86_64-linux" ];
+    rootfs = makeRootfs.buildRootfs {
+      name = "debian-13";
+      cloudImgFormat = "qcow2";
+      cloudImg = builtins.fetchurl {
+        url = "https://cloud.debian.org/images/cloud/trixie/20260413-2447/debian-13-genericcloud-amd64-20260413-2447.qcow2";
+        sha256 = "0iclqh20da7mm1ijhks66iqy2dz1shpipia1zwpgxpya1c4gg182";
+      };
+      excludePatterns = ubuntuExcludePatterns;
+      extraDirs = [ "var/lib/apt/lists/partial" ];
+    };
+    maskableService = "unattended-upgrades.service";
+  };
 }
