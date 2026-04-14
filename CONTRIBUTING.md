@@ -46,21 +46,56 @@ Before creating a new issue, please [search existing issues](https://github.com/
 
 ## Adding New Distributions
 
-System Manager officially supports Ubuntu and NixOS. To add support for another distribution:
+System Manager officially supports Ubuntu, Debian, and NixOS.
+Promoting a new distribution to officially-supported status means it is exercised by CI on every PR and a regression in it blocks the build.
 
-1. Initialize a new flake with distribution checks disabled:
-   ```sh
-   nix run 'github:numtide/system-manager' -- init --flake --allow-any-distro
-   ```
+### Trying a distribution informally
 
-2. Switch to the new configuration:
-   ```sh
-   nix run 'github:numtide/system-manager' -- switch --flake '.'
-   ```
+If you just want to run System Manager on an untested distribution without contributing it back, initialize a flake and disable the OS check by setting `system-manager.allowAnyDistro = true` in your configuration module:
 
-3. Debug any errors that occur. Refer to the FAQ, GitHub issues, or open a discussion for help.
+```nix
+{
+  config.system-manager.allowAnyDistro = true;
+}
+```
 
-4. Once stable, the distribution can be added to the `supportedIds` list in the [system-manager module](./nix/modules/default.nix).
+Then iterate with `nix run 'github:numtide/system-manager' -- switch --flake '.'` and debug any errors using the FAQ, GitHub issues, or a discussion.
+Once the distribution is stable for your use case, consider upstreaming it via the steps below.
+
+### Adding official support
+
+Adding a distribution touches four areas: the OS allow-list, the container test driver, the VM test driver, and the documentation.
+
+**1. Add the distribution ID to the OS allow-list.**
+Edit `nix/modules/default.nix` and append the `/etc/os-release` `ID` value to the `supportedIds` list inside the `osVersion` pre-activation assertion.
+The check is bypassed when users set `system-manager.allowAnyDistro = true`, but the allow-list is what controls the default.
+
+**2. Add a container test entry.**
+Container tests live under `testFlake/container-tests/` and are parameterized over every distribution declared in `lib/container-test-driver/distros.nix`.
+Adding a new entry there causes all existing tests to automatically generate a `container-<distro>-*` variant via `forEachDistro`.
+
+The entry must supply `systems`, a `rootfs` derivation built by `lib.container-test-driver.make-rootfs.buildRootfs`, and a `maskableService` (a systemd unit that test scripts may mask, typically `unattended-upgrades.service` or equivalent).
+
+`buildRootfs` accepts two upstream image formats via `cloudImgFormat`.
+The default `"tar"` consumes a flat root tarball such as Ubuntu's `*-server-cloudimg-amd64-root.tar.xz` and is the simplest path.
+The `"qcow2"` branch extracts the rootfs from a cloud disk image using `guestfish tar-out`; this pulls in `libguestfs-with-appliance`, which restricts the entry to `x86_64-linux` because the appliance subpackage is not built for aarch64 in nixpkgs.
+Pin a specific dated build directory upstream rather than `latest/` and obtain the SHA256 with `nix-prefetch-url`.
+
+Reuse the existing `excludePatterns` (which strip container-incompatible systemd units) and `extraDirs` (per-package-manager directories like `var/lib/apt/lists/partial`) as a starting point and trim or extend them based on the first build.
+
+**3. Add a VM test entry.**
+VM tests live under `testFlake/vm-tests/` and iterate over distributions exposed by `nix-vm-test`.
+Edit the `distros` attrset in `testFlake/vm-tests/default.nix` to add a key matching the `nix-vm-test` distribution name (`ubuntu`, `debian`, `fedora`, `rocky`).
+Each entry takes a `filter` predicate that selects which versions to exercise — use it to skip versions you do not want in the matrix.
+If `nix-vm-test` does not yet support the distribution, support must be added there first.
+
+**4. Run the test matrix and triage failures.**
+Build the new check attributes via `nix build .#checks.x86_64-linux.container-<distro>-*` and `vm-<distro>-*-*` and triage any failures.
+Prefer fixing tests to be distribution-agnostic over skipping them.
+
+**5. Update documentation.**
+The user-facing platform statement lives in `docs/site/reference/supported-platforms.md`, with secondary mentions in `README.md`, `docs/site/how-to/install.md`, `docs/site/tutorials/getting-started.md`, and `docs/site/how-to/test-configuration.md`.
+Mention the new distribution alongside the existing supported ones.
 
 ## Creating an Ad-Hoc Release
 
