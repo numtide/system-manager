@@ -48,7 +48,7 @@
 
         etc = {
           "profile.d/system-manager-path.sh".source = pkgs.writeText "system-manager-path.sh" ''
-            export PATH=${pathDir}/bin/:''${PATH}
+            export PATH=${pathDir}/bin:''${PATH}
             ${config.environment.extraInit}
           '';
 
