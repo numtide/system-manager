@@ -13,7 +13,7 @@ forEachImage "sudo" {
   modules = [
     ../../examples/example.nix
   ];
-  extraPathsToRegister = [
+  extraPathsToRegister = _distroName: [
     system-manager.packages.x86_64-linux.default
   ];
   testScriptFunction =

@@ -12,7 +12,7 @@ forEachImage "target-host" {
   modules = [
     ../../examples/example.nix
   ];
-  extraPathsToRegister = [
+  extraPathsToRegister = _distroName: [
     system-manager.packages.x86_64-linux.default
   ];
   # Use driver instead of sandboxed since we need network access from the test script

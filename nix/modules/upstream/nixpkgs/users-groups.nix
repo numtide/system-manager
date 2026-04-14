@@ -862,42 +862,62 @@ in
           uid = ids.uids.nobody;
           isSystemUser = true;
           description = "Unprivileged account (don't use!)";
-          group = "nogroup";
+          # Fedora ships gid 65534 as `nobody`, Debian/Ubuntu ship it as
+          # `nogroup`. Both names must work on both distros, but we set
+          # the primary group to match what the distro already has so
+          # userborn does not try to rename an existing group.
+          group = if config.system-manager.targetDistro == "fedora" then "nobody" else "nogroup";
         };
       };
 
-      # GIDs are set to match Debian/Ubuntu defaults to avoid conflicts.
-      # NixOS uses different GIDs which conflict with existing system groups.
+      # GIDs are set to match the target distribution's defaults so
+      # userborn's mutable-users mode doesn't try to create groups that
+      # already exist at those GIDs under a different name.
       #
-      # To add a user to a group via extraGroups, the group must be declared here.
-      # For pre-existing system groups, declare them with the matching GID.
-      users.groups = {
-        root.gid = lib.mkDefault 0;
-        wheel.gid = lib.mkDefault 900;
-        sudo.gid = lib.mkDefault 27;
-        disk.gid = lib.mkDefault 6;
-        kmem.gid = lib.mkDefault 15;
-        tty.gid = lib.mkDefault 5;
-        floppy.gid = lib.mkDefault 25;
-        uucp.gid = lib.mkDefault 10;
-        lp.gid = lib.mkDefault 7;
-        cdrom.gid = lib.mkDefault 24;
-        tape.gid = lib.mkDefault 26;
-        audio.gid = lib.mkDefault 29;
-        video.gid = lib.mkDefault 44;
-        dialout.gid = lib.mkDefault 20;
-        nogroup.gid = lib.mkDefault 65534;
-        keys.gid = lib.mkDefault 96;
-        users.gid = lib.mkDefault 100;
-        nixbld.gid = lib.mkDefault ids.gids.nixbld;
-        utmp.gid = lib.mkDefault 43;
-        adm.gid = lib.mkDefault 4;
-        input.gid = lib.mkDefault 996;
-        kvm.gid = lib.mkDefault 994;
-        render.gid = lib.mkDefault 993;
-        sgx.gid = lib.mkDefault 995;
-        shadow.gid = lib.mkDefault 42;
-      };
+      # To add a user to a group via extraGroups, the group must be
+      # declared here. For pre-existing system groups, declare them
+      # with the matching GID.
+      users.groups =
+        let
+          onFedora = config.system-manager.targetDistro == "fedora";
+        in
+        {
+          root.gid = lib.mkDefault 0;
+          sudo.gid = lib.mkDefault 27;
+          disk.gid = lib.mkDefault 6;
+          tty.gid = lib.mkDefault 5;
+          lp.gid = lib.mkDefault 7;
+          keys.gid = lib.mkDefault 96;
+          users.gid = lib.mkDefault 100;
+          nixbld.gid = lib.mkDefault ids.gids.nixbld;
+          adm.gid = lib.mkDefault 4;
+          shadow.gid = lib.mkDefault 42;
+
+          # Groups whose GID differs between Debian/Ubuntu and Fedora.
+          # Prefer the target distribution's numbering so mutable-mode
+          # userborn finds the group by name without GID collisions.
+          wheel.gid = lib.mkDefault (if onFedora then 10 else 900);
+          kmem.gid = lib.mkDefault (if onFedora then 9 else 15);
+          floppy.gid = lib.mkDefault (if onFedora then 19 else 25);
+          cdrom.gid = lib.mkDefault (if onFedora then 11 else 24);
+          tape.gid = lib.mkDefault (if onFedora then 33 else 26);
+          audio.gid = lib.mkDefault (if onFedora then 63 else 29);
+          video.gid = lib.mkDefault (if onFedora then 39 else 44);
+          dialout.gid = lib.mkDefault (if onFedora then 18 else 20);
+          utmp.gid = lib.mkDefault (if onFedora then 22 else 43);
+        }
+        // lib.optionalAttrs (!onFedora) {
+          # Debian/Ubuntu ship `nogroup` at 65534 and `uucp` at 10.
+          # Fedora ships `nobody` at 65534 and `wheel` at 10; declaring
+          # these here would race userborn against the existing groups.
+          nogroup.gid = lib.mkDefault 65534;
+          uucp.gid = lib.mkDefault 10;
+        }
+        // lib.optionalAttrs onFedora {
+          # Fedora's `nobody` group occupies 65534; declare it so the
+          # `nobody` user above can reference it by name.
+          nobody.gid = lib.mkDefault 65534;
+        };
 
       systemd.services.linger-users = lib.mkIf ((length lingeringUsers) > 0) {
         wantedBy = [ "multi-user.target" ];

@@ -1,6 +1,6 @@
 {
   forEachImage,
-  newConfig,
+  mkNewConfig,
   system-manager,
   ...
 }:
@@ -9,9 +9,12 @@ forEachImage "prepopulate" {
   modules = [
     ../../examples/example.nix
   ];
-  extraPathsToRegister = [ newConfig ];
+  extraPathsToRegister = distroName: [ (mkNewConfig distroName) ];
   testScriptFunction =
-    { toplevel, ... }:
+    { toplevel, distroName, ... }:
+    let
+      newConfig = mkNewConfig distroName;
+    in
     ''
       # Start all machines in parallel
       start_all()

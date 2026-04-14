@@ -21,7 +21,7 @@ forEachImage "security-wrappers" {
       }
     )
   ];
-  extraPathsToRegister = [ ];
+  extraPathsToRegister = _distroName: [ ];
   testScriptFunction =
     { toplevel, hostPkgs, ... }:
     ''
