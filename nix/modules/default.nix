@@ -204,6 +204,7 @@
           supportedIds = [
             "nixos"
             "ubuntu"
+            "debian"
           ];
         in
         {
