@@ -8,7 +8,6 @@ System Manager runs on Linux systems that use systemd for service management.
 |----------|--------|-------|
 | Ubuntu 22.04+ | Tested | Primary development platform |
 | Ubuntu on WSL2 | Tested | Windows Subsystem for Linux |
-| NixOS | Tested | Works alongside existing NixOS configuration |
 | Debian 13 (trixie) | Tested | Container and VM tests |
 | Fedora | Community | Should work; uses systemd |
 | Arch Linux | Community | Should work; uses systemd |

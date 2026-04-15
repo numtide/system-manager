@@ -46,7 +46,7 @@ Before creating a new issue, please [search existing issues](https://github.com/
 
 ## Adding New Distributions
 
-System Manager officially supports Ubuntu, Debian, and NixOS.
+System Manager officially supports Ubuntu and Debian.
 Promoting a new distribution to officially-supported status means it is exercised by CI on every PR and a regression in it blocks the build.
 
 ### Trying a distribution informally
