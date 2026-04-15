@@ -1,6 +1,6 @@
 {
   forEachImage,
-  newConfig,
+  mkNewConfig,
   system-manager,
   ...
 }:
@@ -9,12 +9,20 @@ forEachImage "example" {
   modules = [
     ../../examples/example.nix
   ];
-  extraPathsToRegister = [
-    newConfig
+  extraPathsToRegister = distroName: [
+    (mkNewConfig distroName)
     ../sops/age-keys.txt
   ];
   testScriptFunction =
-    { toplevel, hostPkgs, ... }:
+    {
+      toplevel,
+      hostPkgs,
+      distroName,
+      ...
+    }:
+    let
+      newConfig = mkNewConfig distroName;
+    in
     #python
     ''
       # Start all machines in parallel

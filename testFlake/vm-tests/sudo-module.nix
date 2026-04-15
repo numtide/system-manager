@@ -40,7 +40,7 @@ forEachImage "sudo-module" {
       }
     )
   ];
-  extraPathsToRegister = [ ];
+  extraPathsToRegister = _distroName: [ ];
   testScriptFunction =
     { toplevel, hostPkgs, ... }:
     ''

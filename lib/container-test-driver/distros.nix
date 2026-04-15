@@ -54,6 +54,40 @@ in
     maskableService = "unattended-upgrades.service";
   };
 
+  fedora-43 = {
+    # x86_64-linux only: the qcow2 extraction path uses libguestfs-with-appliance,
+    # whose appliance subpackage is not available on aarch64 in nixpkgs.
+    systems = [ "x86_64-linux" ];
+    rootfs = makeRootfs.buildRootfs {
+      name = "fedora-43";
+      cloudImgFormat = "qcow2";
+      cloudImg = builtins.fetchurl {
+        url = "https://dl.fedoraproject.org/pub/fedora/linux/releases/43/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2";
+        sha256 = "0bxbr2kf6ija4rg36mnspg5qbk0767bn44133zfdilkwm7478rc4";
+      };
+      excludePatterns = ubuntuExcludePatterns ++ [
+        # systemd-firstboot blocks boot waiting for interactive configuration
+        "usr/lib/systemd/system/systemd-firstboot.service"
+        # auditd/audit-rules fail inside nspawn (no audit netlink)
+        "usr/lib/systemd/system/auditd.service"
+        "usr/lib/systemd/system/audit-rules.service"
+        # NetworkManager-wait-online blocks multi-user.target inside nspawn
+        "usr/lib/systemd/system/NetworkManager-wait-online.service"
+      ];
+      extraDirs = [
+        "var/cache/dnf"
+        "var/lib/dnf"
+      ];
+      # Pre-seed firstboot markers so systemd considers the container already configured.
+      extraSetup = ''
+        : > $out/etc/machine-id
+        echo 'LANG=C.UTF-8' > $out/etc/locale.conf
+        echo 'KEYMAP=us' > $out/etc/vconsole.conf
+      '';
+    };
+    maskableService = "dnf-automatic.timer";
+  };
+
   debian-13 = {
     systems = builtins.attrNames images.debian-13;
     rootfs = makeRootfs.buildRootfs {

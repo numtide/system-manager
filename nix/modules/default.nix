@@ -131,6 +131,25 @@
       system-manager = {
         allowAnyDistro = lib.mkEnableOption "the usage of system-manager on untested distributions";
 
+        targetDistro = lib.mkOption {
+          type =
+            with lib.types;
+            nullOr (enum [
+              "ubuntu"
+              "debian"
+              "fedora"
+              "nixos"
+            ]);
+          default = null;
+          description = ''
+            The Linux distribution system-manager is being activated on.
+            When set, default users/groups are adjusted to match the
+            distribution's expectations (e.g. fedora ships `nobody` at
+            GID 65534 instead of `nogroup`, and `wheel` at GID 10 instead
+            of `uucp`). Leave `null` to apply the Debian/Ubuntu defaults.
+          '';
+        };
+
         preActivationAssertions = lib.mkOption {
           type =
             with lib.types;
@@ -205,6 +224,7 @@
             "nixos"
             "ubuntu"
             "debian"
+            "fedora"
           ];
         in
         {

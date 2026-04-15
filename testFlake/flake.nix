@@ -11,7 +11,7 @@
     system-manager-v1-1-0.url = "github:numtide/system-manager/v1.1.0";
     nixpkgs.follows = "system-manager/nixpkgs";
     nix-vm-test = {
-      url = "github:numtide/nix-vm-test";
+      url = "github:numtide/nix-vm-test/feat/fedora-43";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     sops-nix.url = "github:Mic92/sops-nix";

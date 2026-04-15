@@ -19,7 +19,7 @@ You can find the [full documentation here](https://system-manager.net/main/).
 
 ## Quick Example to Get Started
 
-We will assume you're using a non-NixOS distribution (such as Ubuntu or Debian) and you have Nix already installed, with flakes enabled.
+We will assume you're using a non-NixOS distribution (such as Ubuntu, Debian, or Fedora) and you have Nix already installed, with flakes enabled.
 
 System Manager has an "init" subcommand that can build a set of starting files for you. By default, it places the files in `~/.config/system-manager`. You can run this init subcommand by typing:
 
@@ -214,7 +214,7 @@ Then re-run System Manager and your changes will take effect; now you should hav
 
 ## Supported Systems
 
-System Manager is currently supported on NixOS, Ubuntu, and Debian. However, it can be used on other distributions by enabling the following:
+System Manager is currently supported on NixOS, Ubuntu, Debian, and Fedora. However, it can be used on other distributions by enabling the following:
 
 ```nix
 {

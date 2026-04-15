@@ -16,6 +16,10 @@ let
       # Only Debian 13 (trixie)
       filter = v: v == "13";
     };
+    fedora = {
+      # Only Fedora 43
+      filter = v: v == "43";
+    };
   };
 
   forEachImage =
@@ -23,27 +27,30 @@ let
     {
       modules,
       testScriptFunction,
-      extraPathsToRegister ? [ ],
+      extraPathsToRegister ? (_distroName: [ ]),
       projectTest ? test: test.sandboxed,
     }:
     let
-      mkToplevel = system-manager.lib.makeSystemConfig {
-        modules = modules ++ [
-          (
-            { lib, pkgs, ... }:
-            {
-              options.hostPkgs = lib.mkOption {
-                type = lib.types.raw;
-                readOnly = true;
-              };
-              config = {
-                nixpkgs.hostPlatform = system;
-                hostPkgs = pkgs;
-              };
-            }
-          )
-        ];
-      };
+      mkToplevel =
+        distroName:
+        system-manager.lib.makeSystemConfig {
+          modules = modules ++ [
+            (
+              { lib, pkgs, ... }:
+              {
+                options.hostPkgs = lib.mkOption {
+                  type = lib.types.raw;
+                  readOnly = true;
+                };
+                config = {
+                  nixpkgs.hostPlatform = system;
+                  hostPkgs = pkgs;
+                  system-manager.targetDistro = distroName;
+                };
+              }
+            )
+          ];
+        };
       mkTestForDistro =
         distroName: distroConfig:
         let
@@ -54,14 +61,14 @@ let
           map (
             imageVersion:
             let
-              toplevel = mkToplevel;
+              toplevel = mkToplevel distroName;
               inherit (toplevel.config) hostPkgs;
             in
             lib.nameValuePair "vm-${distroName}-${imageVersion}-${name}" (
               projectTest (
                 distro.${imageVersion} {
-                  testScript = testScriptFunction { inherit toplevel hostPkgs; };
-                  extraPathsToRegister = extraPathsToRegister ++ [
+                  testScript = testScriptFunction { inherit toplevel hostPkgs distroName; };
+                  extraPathsToRegister = extraPathsToRegister distroName ++ [
                     toplevel
                   ];
                   sharedDirs = { };
@@ -76,92 +83,95 @@ let
       acc // mkTestForDistro distroName distroConfig
     ) { } distros;
 
-  newConfig = system-manager.lib.makeSystemConfig {
-    modules = [
-      (
-        { lib, pkgs, ... }:
-        {
-          imports = [ sops-nix.nixosModules.sops ];
-          config = {
-            nixpkgs.hostPlatform = system;
+  mkNewConfig =
+    distroName:
+    system-manager.lib.makeSystemConfig {
+      modules = [
+        (
+          { lib, pkgs, ... }:
+          {
+            imports = [ sops-nix.nixosModules.sops ];
+            config = {
+              nixpkgs.hostPlatform = system;
+              system-manager.targetDistro = distroName;
 
-            services.nginx.enable = false;
+              services.nginx.enable = false;
 
-            environment = {
-              etc = {
-                foo_new = {
-                  text = ''
-                    This is just a test!
+              environment = {
+                etc = {
+                  foo_new = {
+                    text = ''
+                      This is just a test!
+                    '';
+                  };
+                };
+
+                systemPackages = [
+                  pkgs.fish
+                ];
+              };
+
+              systemd.services = {
+                new-service = {
+                  enable = true;
+                  description = "new-service";
+                  serviceConfig = {
+                    Type = "oneshot";
+                    RemainAfterExit = true;
+                    ExecReload = "${lib.getBin pkgs.coreutils}/bin/true";
+                  };
+                  wantedBy = [
+                    "system-manager.target"
+                    "default.target"
+                  ];
+                  script = ''
+                    sleep 2
                   '';
                 };
               };
 
-              systemPackages = [
-                pkgs.fish
-              ];
-            };
-
-            systemd.services = {
-              new-service = {
+              nix = {
                 enable = true;
-                description = "new-service";
-                serviceConfig = {
-                  Type = "oneshot";
-                  RemainAfterExit = true;
-                  ExecReload = "${lib.getBin pkgs.coreutils}/bin/true";
+                settings = {
+                  experimental-features = [
+                    "nix-command"
+                    "flakes"
+                  ];
+                  trusted-users = [ "zimbatm" ];
                 };
-                wantedBy = [
-                  "system-manager.target"
-                  "default.target"
+              };
+
+              users.users.zimbatm = {
+                isNormalUser = true;
+                extraGroups = [
+                  "wheel"
+                  "sudo"
                 ];
-                script = ''
-                  sleep 2
-                '';
+                initialPassword = "test123";
+              };
+
+              sops = {
+                age.generateKey = false;
+                age.keyFile = "/run/age-keys.txt";
+                defaultSopsFile = ../sops/secrets.yaml;
+                secrets.test = { };
+              };
+              systemd.services.sops-install-secrets = {
+                before = [ "sysinit-reactivation.target" ];
+                requiredBy = [ "sysinit-reactivation.target" ];
               };
             };
-
-            nix = {
-              enable = true;
-              settings = {
-                experimental-features = [
-                  "nix-command"
-                  "flakes"
-                ];
-                trusted-users = [ "zimbatm" ];
-              };
-            };
-
-            users.users.zimbatm = {
-              isNormalUser = true;
-              extraGroups = [
-                "wheel"
-                "sudo"
-              ];
-              initialPassword = "test123";
-            };
-
-            sops = {
-              age.generateKey = false;
-              age.keyFile = "/run/age-keys.txt";
-              defaultSopsFile = ../sops/secrets.yaml;
-              secrets.test = { };
-            };
-            systemd.services.sops-install-secrets = {
-              before = [ "sysinit-reactivation.target" ];
-              requiredBy = [ "sysinit-reactivation.target" ];
-            };
-          };
-        }
-      )
-    ];
-  };
+          }
+        )
+      ];
+    };
 
   callTest =
     file:
     import file {
       inherit
         forEachImage
-        newConfig
+        mkNewConfig
         system-manager
         system
         lib
