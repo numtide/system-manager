@@ -1,0 +1,28 @@
+name: update-images
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 5 * * 1" # runs weekly every Monday at 05:00 UTC
+
+jobs:
+  bump-images:
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Checkout the repo"
+        uses: "actions/checkout@v6"
+      - name: "Install the Nix package manager"
+        uses: "cachix/install-nix-action@master"
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: "Refresh container test cloud image pins"
+        run: tools/update-images.py
+      - name: "Create Pull Request"
+        uses: "peter-evans/create-pull-request@v8"
+        with:
+          branch: "auto_update_images"
+          title: "Bump container test cloud image pins"
+          body: |
+            Automatically refreshed the cloud image URLs and sha256 hashes in
+            `lib/container-test-driver/images.json` by running
+            `tools/update-images.py`.
+          commit-message: "chore(container-tests): bump cloud image pins"
