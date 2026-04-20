@@ -7,6 +7,7 @@
   pkg-config,
   nix,
   clippy,
+  writableTmpDirAsHomeHook,
 }:
 
 let
@@ -35,6 +36,7 @@ rustPlatform.buildRustPackage {
     clippy
     nix
     cargo
+    writableTmpDirAsHomeHook
   ];
 
   preCheck = ''
