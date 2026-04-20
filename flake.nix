@@ -124,9 +124,12 @@
       );
 
       checks = eachSystem (
-        { system, ... }:
+        { system, pkgs }:
         {
           system-manager = self.packages.${system}.default;
+          system-manager-latest-nix = pkgs.system-manager-unwrapped.override {
+            nix = pkgs.nixVersions.latest;
+          };
         }
       );
 
