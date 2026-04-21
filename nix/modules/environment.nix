@@ -1,6 +1,7 @@
 {
   lib,
   config,
+  options,
   pkgs,
   ...
 }:
@@ -73,6 +74,26 @@
           lib.filterAttrs (_: v: v != null) attrs
         );
     };
+
+    sessionVariables = lib.mkOption {
+      default = { };
+      description = ''
+        A set of environment variables used in the global environment.
+        These variables will be set by PAM early in the login process.
+
+        The value of each session variable can be either a string or a
+        list of strings. The latter is concatenated, interspersed with
+        colon characters.
+
+        Setting a variable to `null` does nothing. You can override a
+        variable set by another module to `null` to unset it.
+
+        Note: unlike NixOS, system-manager does not manage PAM on the
+        host, so these variables are not injected by pam_env into
+        non-shell sessions (e.g. graphical logins).
+      '';
+      inherit (options.environment.variables) type apply;
+    };
   };
 
   config =
@@ -86,6 +107,8 @@
         pathsToLink = [
           "/bin"
         ];
+
+        variables = config.environment.sessionVariables;
 
         etc = {
           "profile.d/system-manager-path.sh".source = pkgs.writeText "system-manager-path.sh" ''
