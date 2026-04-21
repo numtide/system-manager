@@ -30,6 +30,7 @@
       "/services/web-servers/nginx/"
       # nix settings
       "/config/nix.nix"
+      "/config/nix-flakes.nix"
       "/services/system/userborn.nix"
       "/system/build.nix"
     ];
