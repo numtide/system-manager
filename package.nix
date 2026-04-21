@@ -47,4 +47,16 @@ rustPlatform.buildRustPackage {
     # https://nix.dev/manual/nix/2.24/command-ref/new-cli/nix3-profile#profiles
     export NIX_STATE_DIR=$TMPDIR
   '';
+
+  meta = {
+    description = "Manage system configurations using Nix on any Linux distribution";
+    homepage = "https://github.com/numtide/system-manager";
+    license = lib.licenses.mit;
+    platforms = [
+      "aarch64-linux"
+      "aarch64-darwin"
+      "x86_64-linux"
+    ];
+    mainProgram = "system-manager";
+  };
 }
