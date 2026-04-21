@@ -36,12 +36,6 @@ in
       internal = true;
     };
 
-    environment.variables = lib.mkOption {
-      type = lib.types.attrsOf lib.types.str;
-      default = { };
-      internal = true;
-    };
-
     systemd.user.services = lib.mkOption {
       type = lib.types.attrs;
       default = { };
