@@ -131,6 +131,16 @@
       system-manager = {
         allowAnyDistro = lib.mkEnableOption "the usage of system-manager on untested distributions";
 
+        linkCurrentSystem = lib.mkOption {
+          type = types.bool;
+          default = true;
+          description = ''
+            Whether to create a `/run/current-system` symlink pointing at
+            `/run/system-manager`, so that NixOS modules referencing paths
+            like `/run/current-system/sw/bin` resolve correctly.
+          '';
+        };
+
         preActivationAssertions = lib.mkOption {
           type =
             with lib.types;
@@ -223,6 +233,11 @@
           '';
         };
     };
+
+    # "L" is non-destructive: tmpfiles leaves an existing /run/current-system alone
+    systemd.tmpfiles.rules = lib.mkIf config.system-manager.linkCurrentSystem [
+      "L /run/current-system - - - - /run/system-manager"
+    ];
 
     build = {
       scripts = {
