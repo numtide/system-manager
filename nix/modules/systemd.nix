@@ -223,8 +223,23 @@ in
     environment.etc =
       let
         enabledUnits = lib.filterAttrs (_: unit: unit.enable) cfg.units;
+        # The `aliases` option is part of the nixpkgs systemd unit schema and
+        # but system-manager does not implement it: we cannot emit
+        # sibling-relative alias symlinks safely because the activator
+        # canonicalises every symlink in the static env to an absolute store
+        # path, which turns the alias into a distinct unit sharing the
+        # primary's unit file (a foot-gun that can double-start services).
+        unitsWithAliases = lib.filterAttrs (_: unit: (unit.aliases or [ ]) != [ ]) enabledUnits;
+        aliasWarning =
+          "system-manager: the following units declare `aliases`, but"
+          + " system-manager does not support systemd unit aliases: the"
+          + " option is accepted yet nothing is emitted for it."
+          + " Use a second unit definition if you need the alias name"
+          + " to exist. See https://github.com/numtide/system-manager/issues/423."
+          + " Affected units: "
+          + lib.concatStringsSep ", " (lib.attrNames unitsWithAliases);
       in
-      {
+      lib.warnIf (unitsWithAliases != { }) aliasWarning {
         "systemd/system".source =
           pkgs.runCommand "system-manager-units"
             {

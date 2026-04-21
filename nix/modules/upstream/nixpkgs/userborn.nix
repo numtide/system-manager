@@ -39,6 +39,8 @@ in
 
   # REMOVE when https://github.com/NixOS/nixpkgs/pull/483684 is merged
   systemd.services.userborn = lib.mkIf config.services.userborn.enable {
+    # system-manager does not implement systemd aliases
+    aliases = lib.mkForce [ ];
     environment = {
       USERBORN_MUTABLE_USERS = "true";
       USERBORN_PREVIOUS_CONFIG = previousConfigPath;
