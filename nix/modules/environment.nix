@@ -32,6 +32,47 @@
       default = "";
       description = "Shell script code which should be called before any shell session through the host /etc/profile.";
     };
+
+    variables = lib.mkOption {
+      default = { };
+      example = {
+        EDITOR = "nvim";
+        VISUAL = "nvim";
+      };
+      description = ''
+        A set of environment variables used in the global environment.
+        These variables will be set on shell initialisation (e.g. in /etc/profile).
+
+        The value of each variable can be either a string or a list of
+        strings.  The latter is concatenated, interspersed with colon
+        characters.
+
+        Setting a variable to `null` does nothing. You can override a
+        variable set by another module to `null` to unset it.
+      '';
+      type =
+        with lib.types;
+        attrsOf (
+          nullOr (oneOf [
+            (listOf (oneOf [
+              int
+              str
+              path
+            ]))
+            int
+            str
+            path
+          ])
+        );
+      apply =
+        let
+          toStr = v: if lib.isPath v then "${v}" else toString v;
+        in
+        attrs:
+        lib.mapAttrs (_: v: if lib.isList v then lib.concatMapStringsSep ":" toStr v else toStr v) (
+          lib.filterAttrs (_: v: v != null) attrs
+        );
+    };
   };
 
   config =
@@ -48,6 +89,7 @@
 
         etc = {
           "profile.d/system-manager-path.sh".source = pkgs.writeText "system-manager-path.sh" ''
+            ${lib.concatLines (lib.mapAttrsToList (k: v: ''export ${k}="${v}"'') config.environment.variables)}
             export PATH=${pathDir}/bin:''${PATH}
             ${config.environment.extraInit}
           '';
