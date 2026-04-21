@@ -31,6 +31,7 @@
       "/config/nix.nix"
       "/config/nix-channel.nix"
       "/config/nix-flakes.nix"
+      "/misc/nixpkgs-flake.nix"
       "/services/system/userborn.nix"
       "/system/build.nix"
     ];

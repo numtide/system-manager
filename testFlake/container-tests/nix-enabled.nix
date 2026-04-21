@@ -47,9 +47,11 @@ forEachDistro "nix-enabled" {
           )
           machine.fail("test -e /run/system-manager/sw/bin/nix-channel")
 
-      with subtest("NIX_PATH is unset when no nixPath is configured"):
-          nix_path = machine.succeed("bash --login -c 'printf %s \"''${NIX_PATH-unset}\"'").strip()
-          assert nix_path == "unset", f"Expected NIX_PATH to be unset, got: {nix_path!r}"
+      with subtest("NIX_PATH points at the pinned nixpkgs flake"):
+          nix_path = machine.succeed("bash --login -c 'printf %s \"$NIX_PATH\"'").strip()
+          assert nix_path == "nixpkgs=flake:nixpkgs", (
+              f"Expected configured NIX_PATH, got: {nix_path!r}"
+          )
 
       with subtest("Deactivation restores original nix.conf and registry.json"):
           machine.succeed("${toplevel}/bin/deactivate")
