@@ -14,6 +14,10 @@ forEachDistro "environment-variables" {
           ];
           NULLED = null;
         };
+
+        environment.sessionVariables = {
+          SESSION_VAR = "from-session";
+        };
       }
     )
   ];
@@ -41,5 +45,9 @@ forEachDistro "environment-variables" {
           content = machine.succeed("cat /etc/profile.d/system-manager-path.sh")
           assert "FOO" in content, f"Expected FOO in profile script, got: {content}"
           assert "NULLED" not in content, f"Expected NULLED to be absent, got: {content}"
+
+      with subtest("sessionVariables are login shell exports"):
+          value = machine.succeed("bash --login -c 'echo $SESSION_VAR'").strip()
+          assert value == "from-session", f"Expected 'from-session', got: '{value}'"
     '';
 }
