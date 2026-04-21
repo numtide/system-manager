@@ -34,6 +34,12 @@
       description = "Shell script code which should be called before any shell session through the host /etc/profile.";
     };
 
+    extraSetup = lib.mkOption {
+      type = lib.types.lines;
+      default = "";
+      description = "Shell fragments to be run after the system environment has been created. This should only be used for things that need to modify the internals of the environment, e.g. generating MIME caches. The environment being built can be accessed at $out.";
+    };
+
     variables = lib.mkOption {
       default = { };
       example = {
@@ -144,6 +150,7 @@
               name = "system-manager-path";
               paths = config.environment.systemPackages;
               inherit (config.environment) pathsToLink;
+              postBuild = config.environment.extraSetup;
             };
           in
           ''

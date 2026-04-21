@@ -3,7 +3,7 @@
 forEachDistro "environment-variables" {
   modules = [
     (
-      { ... }:
+      { pkgs, ... }:
       {
         environment.variables = {
           FOO = "bar";
@@ -18,6 +18,11 @@ forEachDistro "environment-variables" {
         environment.sessionVariables = {
           SESSION_VAR = "from-session";
         };
+
+        environment.systemPackages = [ pkgs.hello ];
+        environment.extraSetup = ''
+          rm -f $out/bin/hello
+        '';
       }
     )
   ];
@@ -49,5 +54,8 @@ forEachDistro "environment-variables" {
       with subtest("sessionVariables are login shell exports"):
           value = machine.succeed("bash --login -c 'echo $SESSION_VAR'").strip()
           assert value == "from-session", f"Expected 'from-session', got: '{value}'"
+
+      with subtest("extraSetup removes binary from system PATH"):
+          machine.fail("test -e /run/system-manager/sw/bin/hello")
     '';
 }
