@@ -28,6 +28,15 @@
       default = [ ];
     };
 
+    extraOutputsToInstall = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = ''
+        List of additional package outputs to be symlinked into
+        `/run/system-manager/sw` and per-user profiles.
+      '';
+    };
+
     extraInit = lib.mkOption {
       type = lib.types.lines;
       default = "";
@@ -102,6 +111,17 @@
     };
   };
 
+  options.system.path = lib.mkOption {
+    type = lib.types.package;
+    internal = true;
+    description = ''
+      The top-level system environment derivation, combining
+      `environment.systemPackages` into a single buildEnv. Exposed so
+      that modules copied verbatim from NixOS (e.g. `users-groups.nix`)
+      can reference `config.system.path.{ignoreCollisions,postBuild}`.
+    '';
+  };
+
   config =
     let
       pathDir = "/run/system-manager/sw";
@@ -120,6 +140,9 @@
           "profile.d/system-manager-path.sh".source = pkgs.writeText "system-manager-path.sh" ''
             ${lib.concatLines (lib.mapAttrsToList (k: v: ''export ${k}="${v}"'') config.environment.variables)}
             export PATH=${pathDir}/bin:''${PATH}
+            if [ -d "/etc/profiles/per-user/$USER/bin" ]; then
+              export PATH="/etc/profiles/per-user/$USER/bin:$PATH"
+            fi
             ${config.environment.extraInit}
           '';
 
@@ -136,6 +159,14 @@
         };
       };
 
+      system.path = pkgs.buildEnv {
+        name = "system-manager-path";
+        paths = config.environment.systemPackages;
+        inherit (config.environment) pathsToLink extraOutputsToInstall;
+        ignoreCollisions = true;
+        postBuild = config.environment.extraSetup;
+      };
+
       systemd.services.system-manager-path = {
         enable = true;
         description = "";
@@ -144,22 +175,13 @@
           Type = "oneshot";
           RemainAfterExit = true;
         };
-        script =
-          let
-            pathDrv = pkgs.buildEnv {
-              name = "system-manager-path";
-              paths = config.environment.systemPackages;
-              inherit (config.environment) pathsToLink;
-              postBuild = config.environment.extraSetup;
-            };
-          in
-          ''
-            mkdir --parents $(dirname "${pathDir}")
-            if [ -L "${pathDir}" ]; then
-              unlink "${pathDir}"
-            fi
-            ln --symbolic --force "${pathDrv}" "${pathDir}"
-          '';
+        script = ''
+          mkdir --parents $(dirname "${pathDir}")
+          if [ -L "${pathDir}" ]; then
+            unlink "${pathDir}"
+          fi
+          ln --symbolic --force "${config.system.path}" "${pathDir}"
+        '';
       };
     };
 }
