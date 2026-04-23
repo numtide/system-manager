@@ -2076,14 +2076,9 @@
 <td>Windows Subsystem for Linux</td>
 </tr>
 <tr>
-<td>NixOS</td>
+<td>Debian 13 (trixie)</td>
 <td>Tested</td>
-<td>Works alongside existing NixOS configuration</td>
-</tr>
-<tr>
-<td>Debian</td>
-<td>Community</td>
-<td>Should work; similar to Ubuntu</td>
+<td>Container and VM tests</td>
 </tr>
 <tr>
 <td>Fedora</td>
@@ -2111,7 +2106,7 @@
 </ul>
 <h2 id="platform-detection">Platform detection<a class="headerlink" href="#platform-detection" title="Permanent link">&para;</a></h2>
 <p>System Manager checks the platform at activation time using a pre-activation assertion that reads <code>/etc/os-release</code>.
-By default, it only allows activation on Ubuntu and NixOS.</p>
+By default, it only allows activation on Ubuntu, Debian, and NixOS.</p>
 <h3 id="enabling-other-distributions">Enabling other distributions<a class="headerlink" href="#enabling-other-distributions" title="Permanent link">&para;</a></h3>
 <p>To allow System Manager to run on untested distributions, set the <code>system-manager.allowAnyDistro</code> option in your configuration:</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span>
@@ -2125,7 +2120,7 @@ By default, it only allows activation on Ubuntu and NixOS.</p>
 <a id="__codelineno-0-5" name="__codelineno-0-5"></a><span class="p">}</span>
 </code></pre></div></td></tr></table></div>
 <p>This disables the OS check entirely.
-There is no option to selectively allow specific distributions; the check is either on (default, allowing only Ubuntu and NixOS) or off.</p>
+There is no option to selectively allow specific distributions; the check is either on (default, allowing only Ubuntu, Debian, and NixOS) or off.</p>
 <h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permanent link">&para;</a></h2>
 <h3 id="not-supported">Not Supported<a class="headerlink" href="#not-supported" title="Permanent link">&para;</a></h3>
 <ul>
@@ -2166,7 +2161,7 @@ There is no option to selectively allow specific distributions; the check is eit
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="February 12, 2026 21:56:26 UTC">February 12, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="April 23, 2026 16:16:32 UTC">April 23, 2026</span>
   </span>
 
     

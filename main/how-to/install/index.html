@@ -1901,7 +1901,7 @@
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
 <p>To use System Manager, you need:</p>
 <ul>
-<li><strong>A Linux machine.</strong> We've tested System Manager with Ubuntu both as standalone and under Windows Subsystem for Linux (WSL).</li>
+<li><strong>A Linux machine.</strong> We've tested System Manager with Ubuntu (both as standalone and under Windows Subsystem for Linux) and Debian 13 (trixie).</li>
 <li><strong>At least 12GB Disk Space.</strong> However, we recommend at least 16GB, as you will be very tight for space with under 16GB. (This is primarily due to Nix; if you're using System Manager to configure, for example, small servers on the Cloud, 8GB simply won't be enough.)</li>
 <li><strong>Nix installed system-wide</strong> with flakes enabled. (System Manager doesn't work with a per-user installation of Nix)</li>
 </ul>
@@ -1961,8 +1961,10 @@ If you installed Nix using a different installer, you may need to enable flakes 
 <p class="admonition-title">Tip</p>
 <p>System Manager is still in early development. Installing locally will not immediately pick up new changes. If you decide to install locally, periodically check the GitHub repo for changes and upgrade using <code>nix profile upgrade</code>.</p>
 </div>
-<h1 id="installing-on-nixos">Installing on NixOS<a class="headerlink" href="#installing-on-nixos" title="Permanent link">&para;</a></h1>
-<p>If you're on NixOS and want to install the <code>system-manager</code> CLI as a system package, add it to your NixOS configuration:</p>
+<h1 id="version-compatibility">Version Compatibility<a class="headerlink" href="#version-compatibility" title="Permanent link">&para;</a></h1>
+<p>Occasionally, the nixpkgs version may be incompatible with the <code>main</code> branch of System Manager. If you encounter build errors, you may need to pin to a specific commit.</p>
+<h2 id="pinning-to-a-specific-version">Pinning to a Specific Version<a class="headerlink" href="#pinning-to-a-specific-version" title="Permanent link">&para;</a></h2>
+<p>For older nixpkgs versions (e.g., 24.05), you may need to pin System Manager to a compatible commit:</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1"> 1</a></span>
 <span class="normal"><a href="#__codelineno-9-2"> 2</a></span>
 <span class="normal"><a href="#__codelineno-9-3"> 3</a></span>
@@ -1974,77 +1976,18 @@ If you installed Nix using a different installer, you may need to enable flakes 
 <span class="normal"><a href="#__codelineno-9-9"> 9</a></span>
 <span class="normal"><a href="#__codelineno-9-10">10</a></span>
 <span class="normal"><a href="#__codelineno-9-11">11</a></span>
-<span class="normal"><a href="#__codelineno-9-12">12</a></span>
-<span class="normal"><a href="#__codelineno-9-13">13</a></span>
-<span class="normal"><a href="#__codelineno-9-14">14</a></span>
-<span class="normal"><a href="#__codelineno-9-15">15</a></span>
-<span class="normal"><a href="#__codelineno-9-16">16</a></span>
-<span class="normal"><a href="#__codelineno-9-17">17</a></span>
-<span class="normal"><a href="#__codelineno-9-18">18</a></span>
-<span class="normal"><a href="#__codelineno-9-19">19</a></span>
-<span class="normal"><a href="#__codelineno-9-20">20</a></span>
-<span class="normal"><a href="#__codelineno-9-21">21</a></span>
-<span class="normal"><a href="#__codelineno-9-22">22</a></span>
-<span class="normal"><a href="#__codelineno-9-23">23</a></span>
-<span class="normal"><a href="#__codelineno-9-24">24</a></span>
-<span class="normal"><a href="#__codelineno-9-25">25</a></span>
-<span class="normal"><a href="#__codelineno-9-26">26</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="c1"># flake.nix</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2"></a><span class="p">{</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3"></a>  <span class="ss">inputs</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4"></a>    nixpkgs<span class="o">.</span><span class="ss">url</span> <span class="o">=</span> <span class="s2">&quot;github:NixOS/nixpkgs/nixos-unstable&quot;</span><span class="p">;</span>
-<a id="__codelineno-9-5" name="__codelineno-9-5"></a>    <span class="ss">system-manager</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-9-6" name="__codelineno-9-6"></a>      <span class="ss">url</span> <span class="o">=</span> <span class="s2">&quot;github:numtide/system-manager&quot;</span><span class="p">;</span>
-<a id="__codelineno-9-7" name="__codelineno-9-7"></a>      inputs<span class="o">.</span>nixpkgs<span class="o">.</span><span class="ss">follows</span> <span class="o">=</span> <span class="s2">&quot;nixpkgs&quot;</span><span class="p">;</span>
-<a id="__codelineno-9-8" name="__codelineno-9-8"></a>    <span class="p">};</span>
-<a id="__codelineno-9-9" name="__codelineno-9-9"></a>  <span class="p">};</span>
-<a id="__codelineno-9-10" name="__codelineno-9-10"></a>
-<a id="__codelineno-9-11" name="__codelineno-9-11"></a>  <span class="ss">outputs</span> <span class="o">=</span> <span class="p">{</span> self<span class="p">,</span> nixpkgs<span class="p">,</span> system-manager<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
-<a id="__codelineno-9-12" name="__codelineno-9-12"></a>    <span class="k">let</span>
-<a id="__codelineno-9-13" name="__codelineno-9-13"></a>      <span class="ss">system</span> <span class="o">=</span> <span class="s2">&quot;x86_64-linux&quot;</span><span class="p">;</span>
-<a id="__codelineno-9-14" name="__codelineno-9-14"></a>    <span class="k">in</span> <span class="p">{</span>
-<a id="__codelineno-9-15" name="__codelineno-9-15"></a>      nixosConfigurations<span class="o">.</span><span class="ss">myhost</span> <span class="o">=</span> nixpkgs<span class="o">.</span>lib<span class="o">.</span>nixosSystem <span class="p">{</span>
-<a id="__codelineno-9-16" name="__codelineno-9-16"></a>        <span class="k">inherit</span> system<span class="p">;</span>
-<a id="__codelineno-9-17" name="__codelineno-9-17"></a>        <span class="ss">modules</span> <span class="o">=</span> <span class="p">[</span>
-<a id="__codelineno-9-18" name="__codelineno-9-18"></a>          <span class="p">({</span> config<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span> <span class="p">{</span>
-<a id="__codelineno-9-19" name="__codelineno-9-19"></a>            environment<span class="o">.</span><span class="ss">systemPackages</span> <span class="o">=</span> <span class="p">[</span>
-<a id="__codelineno-9-20" name="__codelineno-9-20"></a>              system-manager<span class="o">.</span>packages<span class="o">.</span><span class="si">${</span>system<span class="si">}</span><span class="o">.</span>system-manager
-<a id="__codelineno-9-21" name="__codelineno-9-21"></a>            <span class="p">];</span>
-<a id="__codelineno-9-22" name="__codelineno-9-22"></a>          <span class="p">})</span>
-<a id="__codelineno-9-23" name="__codelineno-9-23"></a>        <span class="p">];</span>
-<a id="__codelineno-9-24" name="__codelineno-9-24"></a>      <span class="p">};</span>
-<a id="__codelineno-9-25" name="__codelineno-9-25"></a>    <span class="p">};</span>
-<a id="__codelineno-9-26" name="__codelineno-9-26"></a><span class="p">}</span>
-</code></pre></div></td></tr></table></div>
-<p>Then rebuild:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1"></a>sudo<span class="w"> </span>nixos-rebuild<span class="w"> </span>switch<span class="w"> </span>--flake<span class="w"> </span>.#myhost
-</code></pre></div></td></tr></table></div>
-<h1 id="version-compatibility">Version Compatibility<a class="headerlink" href="#version-compatibility" title="Permanent link">&para;</a></h1>
-<p>Occasionally, the nixpkgs version may be incompatible with the <code>main</code> branch of System Manager. If you encounter build errors, you may need to pin to a specific commit.</p>
-<h2 id="pinning-to-a-specific-version">Pinning to a Specific Version<a class="headerlink" href="#pinning-to-a-specific-version" title="Permanent link">&para;</a></h2>
-<p>For older nixpkgs versions (e.g., 24.05), you may need to pin System Manager to a compatible commit:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-11-1"> 1</a></span>
-<span class="normal"><a href="#__codelineno-11-2"> 2</a></span>
-<span class="normal"><a href="#__codelineno-11-3"> 3</a></span>
-<span class="normal"><a href="#__codelineno-11-4"> 4</a></span>
-<span class="normal"><a href="#__codelineno-11-5"> 5</a></span>
-<span class="normal"><a href="#__codelineno-11-6"> 6</a></span>
-<span class="normal"><a href="#__codelineno-11-7"> 7</a></span>
-<span class="normal"><a href="#__codelineno-11-8"> 8</a></span>
-<span class="normal"><a href="#__codelineno-11-9"> 9</a></span>
-<span class="normal"><a href="#__codelineno-11-10">10</a></span>
-<span class="normal"><a href="#__codelineno-11-11">11</a></span>
-<span class="normal"><a href="#__codelineno-11-12">12</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="p">{</span>
-<a id="__codelineno-11-2" name="__codelineno-11-2"></a>  <span class="ss">inputs</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-11-3" name="__codelineno-11-3"></a>    nixpkgs<span class="o">.</span><span class="ss">url</span> <span class="o">=</span> <span class="s2">&quot;github:NixOS/nixpkgs/24.05&quot;</span><span class="p">;</span>
-<a id="__codelineno-11-4" name="__codelineno-11-4"></a>    <span class="ss">system-manager</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-11-5" name="__codelineno-11-5"></a>      <span class="ss">type</span> <span class="o">=</span> <span class="s2">&quot;github&quot;</span><span class="p">;</span>
-<a id="__codelineno-11-6" name="__codelineno-11-6"></a>      <span class="ss">owner</span> <span class="o">=</span> <span class="s2">&quot;numtide&quot;</span><span class="p">;</span>
-<a id="__codelineno-11-7" name="__codelineno-11-7"></a>      <span class="ss">repo</span> <span class="o">=</span> <span class="s2">&quot;system-manager&quot;</span><span class="p">;</span>
-<a id="__codelineno-11-8" name="__codelineno-11-8"></a>      <span class="ss">ref</span> <span class="o">=</span> <span class="s2">&quot;64627568a52fd5f4d24ecb504cb33a51ffec086d&quot;</span><span class="p">;</span>
-<a id="__codelineno-11-9" name="__codelineno-11-9"></a>      inputs<span class="o">.</span>nixpkgs<span class="o">.</span><span class="ss">follows</span> <span class="o">=</span> <span class="s2">&quot;nixpkgs&quot;</span><span class="p">;</span>
-<a id="__codelineno-11-10" name="__codelineno-11-10"></a>    <span class="p">};</span>
-<a id="__codelineno-11-11" name="__codelineno-11-11"></a>  <span class="p">};</span>
-<a id="__codelineno-11-12" name="__codelineno-11-12"></a><span class="p">}</span>
+<span class="normal"><a href="#__codelineno-9-12">12</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="p">{</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2"></a>  <span class="ss">inputs</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3"></a>    nixpkgs<span class="o">.</span><span class="ss">url</span> <span class="o">=</span> <span class="s2">&quot;github:NixOS/nixpkgs/24.05&quot;</span><span class="p">;</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4"></a>    <span class="ss">system-manager</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5"></a>      <span class="ss">type</span> <span class="o">=</span> <span class="s2">&quot;github&quot;</span><span class="p">;</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6"></a>      <span class="ss">owner</span> <span class="o">=</span> <span class="s2">&quot;numtide&quot;</span><span class="p">;</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7"></a>      <span class="ss">repo</span> <span class="o">=</span> <span class="s2">&quot;system-manager&quot;</span><span class="p">;</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8"></a>      <span class="ss">ref</span> <span class="o">=</span> <span class="s2">&quot;64627568a52fd5f4d24ecb504cb33a51ffec086d&quot;</span><span class="p">;</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9"></a>      inputs<span class="o">.</span>nixpkgs<span class="o">.</span><span class="ss">follows</span> <span class="o">=</span> <span class="s2">&quot;nixpkgs&quot;</span><span class="p">;</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10"></a>    <span class="p">};</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11"></a>  <span class="p">};</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12"></a><span class="p">}</span>
 </code></pre></div></td></tr></table></div>
 <p>See <a href="https://github.com/numtide/system-manager/issues/207">GitHub Issue #207</a> for updates on release versioning.</p>
 
@@ -2069,7 +2012,7 @@ If you installed Nix using a different installer, you may need to enable flakes 
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="February 3, 2026 00:05:49 UTC">February 3, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="April 23, 2026 16:16:32 UTC">April 23, 2026</span>
   </span>
 
     
