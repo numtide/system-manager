@@ -16,6 +16,8 @@
     };
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
+    home-manager.url = "github:nix-community/home-manager";
+    home-manager.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
@@ -26,6 +28,7 @@
       nix-vm-test,
       sops-nix,
       system-manager-v1-1-0,
+      home-manager,
     }:
     let
       testedSystems = [
@@ -57,6 +60,7 @@
           inherit system-manager;
           inherit sops-nix;
           inherit system-manager-v1-1-0;
+          inherit home-manager;
         };
     in
     {

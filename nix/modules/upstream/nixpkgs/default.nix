@@ -1,6 +1,7 @@
 {
   nixosModulesPath,
   lib,
+  pkgs,
   ...
 }:
 {
@@ -52,5 +53,21 @@
         default = "";
       };
 
+      # Stubs for home-manager
+      system.userActivationScripts = lib.mkOption {
+        type = lib.types.attrsOf lib.types.unspecified;
+        default = { };
+      };
+
+      fonts.fontconfig.enable = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+      };
+
+      i18n.glibcLocales = lib.mkOption {
+        type = lib.types.package;
+        default = pkgs.glibcLocales;
+        defaultText = lib.literalExpression "pkgs.glibcLocales";
+      };
     };
 }
