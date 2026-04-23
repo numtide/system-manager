@@ -8,15 +8,16 @@ This example shows how to install Docker and configure it as a systemd service.
 {
   description = "System Manager - Docker Example";
 
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    system-manager = {
-      url = "github:numtide/system-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+  nixConfig = {
+    extra-substituters = [ "https://cache.numtide.com" ];
+    extra-trusted-public-keys = [ "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=" ];
   };
 
-  outputs = { self, nixpkgs, system-manager }: {
+  inputs = {
+    system-manager.url = "github:numtide/system-manager";
+  };
+
+  outputs = { system-manager, ... }: {
     systemConfigs.default = system-manager.lib.makeSystemConfig {
       modules = [
         {

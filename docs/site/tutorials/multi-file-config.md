@@ -79,24 +79,24 @@ Modify your `flake.nix` to load all modules:
 {
   description = "Standalone System Manager configuration";
 
-  inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    system-manager = {
-      url = "github:numtide/system-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+  nixConfig = {
+    extra-substituters = [ "https://cache.numtide.com" ];
+    extra-trusted-public-keys = [ "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=" ];
   };
 
-  outputs = { self, nixpkgs, system-manager, ... }:
-    {
-      systemConfigs.default = system-manager.lib.makeSystemConfig {
-        modules = [
-          { nixpkgs.hostPlatform = "x86_64-linux"; }
-          ./modules/packages.nix
-          ./modules/services.nix
-        ];
-      };
+  inputs = {
+    system-manager.url = "github:numtide/system-manager";
+  };
+
+  outputs = { system-manager, ... }: {
+    systemConfigs.default = system-manager.lib.makeSystemConfig {
+      modules = [
+        { nixpkgs.hostPlatform = "x86_64-linux"; }
+        ./modules/packages.nix
+        ./modules/services.nix
+      ];
     };
+  };
 }
 ```
 

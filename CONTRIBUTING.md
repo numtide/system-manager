@@ -115,7 +115,6 @@ There is currently no release plan that follows nixpkgs releases, but ad-hoc rel
          owner = "numtide";
          repo = "system-manager";
          ref = "release-24.05";
-         inputs.nixpkgs.follows = "nixpkgs";
        };
      };
    }

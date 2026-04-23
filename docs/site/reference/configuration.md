@@ -297,33 +297,27 @@ If you like, you can add these settings into your flake file, such as in the fol
 {
   description = "Standalone System Manager configuration";
 
-  inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    system-manager = {
-      url = "github:numtide/system-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+  nixConfig = {
+    extra-substituters = [ "https://cache.numtide.com" ];
+    extra-trusted-public-keys = [ "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=" ];
   };
 
-  outputs =
-    {
-      self,
-      nixpkgs,
-      system-manager,
-      ...
-    }:
-    {
-      systemConfigs.default = system-manager.lib.makeSystemConfig {
-        modules = [
-            {
-                nix.settings.experimental-features = "nix-command flakes";
-                nix.settings.extra-substituters = https://cache.numtide.com;
-                nix.settings.extra-trusted-public-keys = niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=;
-            }
-            ./glow.nix
-        ];
-      };
+  inputs = {
+    system-manager.url = "github:numtide/system-manager";
+  };
+
+  outputs = { system-manager, ... }: {
+    systemConfigs.default = system-manager.lib.makeSystemConfig {
+      modules = [
+        {
+          nix.settings.experimental-features = "nix-command flakes";
+          nix.settings.extra-substituters = [ "https://cache.numtide.com" ];
+          nix.settings.extra-trusted-public-keys = [ "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=" ];
+        }
+        ./glow.nix
+      ];
     };
+  };
 }
 ```
 
@@ -344,31 +338,25 @@ As an example, here's a starting `flake.nix` file:
 {
   description = "Standalone System Manager configuration";
 
-  inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    system-manager = {
-      url = "github:numtide/system-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+  nixConfig = {
+    extra-substituters = [ "https://cache.numtide.com" ];
+    extra-trusted-public-keys = [ "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g=" ];
   };
 
-  outputs =
-    {
-      self,
-      nixpkgs,
-      system-manager,
-      ...
-    }:
-    {
-      systemConfigs.default = system-manager.lib.makeSystemConfig {
-        modules = [
-            {
-                nix.settings.experimental-features = "nix-command flakes";
-            }
-            ./glow.nix
-        ];
-      };
+  inputs = {
+    system-manager.url = "github:numtide/system-manager";
+  };
+
+  outputs = { system-manager, ... }: {
+    systemConfigs.default = system-manager.lib.makeSystemConfig {
+      modules = [
+        {
+          nix.settings.experimental-features = "nix-command flakes";
+        }
+        ./glow.nix
+      ];
     };
+  };
 }
 ```
 
