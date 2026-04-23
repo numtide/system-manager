@@ -375,6 +375,25 @@ class Machine(testinfra.host.Host):
                         if result.returncode != 0:
                             msg = f"Failed to copy {store_path}: {result.stdout}"
                             raise Error(msg)
+                    # Register the copied paths in the container's Nix DB so
+                    # commands like `nix-store --realise` (used by home-manager
+                    # activation) recognise them as valid store paths.
+                    closure_basename = closure_info_path.name
+                    # /run/host/nix is the bind-mounted host store
+                    # the registration file is generated from https://github.com/NixOS/nixpkgs/blob/a4f11cb2b676c5c134bff4d8fab3d086ca78b0da/pkgs/build-support/closure-info.nix
+                    registration = (
+                        f"/run/host/nix/{closure_basename}/registration"
+                    )
+                    result = self.execute(
+                        f"nix-store --load-db < {registration}",
+                        timeout=120,
+                    )
+                    if result.returncode != 0:
+                        msg = (
+                            "Failed to register closure with Nix DB: "
+                            f"{result.stdout}"
+                        )
+                        raise Error(msg)
                     return
 
             # Fallback: try direct copy of the profile path

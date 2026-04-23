@@ -31,3 +31,7 @@ Extend the Nginx configuration with SSL/TLS certificates for HTTPS support, incl
 ### [Custom App](custom-app.md)
 
 Deploy a custom TypeScript/Bun application behind Nginx, demonstrating how to fetch code from GitHub and run it as a systemd service. Includes a live example you can try.
+
+### [Home Manager](home-manager.md)
+
+Manage per-user dotfiles and packages with Home Manager in the same flake as your System Manager configuration, so a single activation covers both system and home.
