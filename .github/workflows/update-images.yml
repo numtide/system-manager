@@ -11,9 +11,11 @@ jobs:
       - name: "Checkout the repo"
         uses: "actions/checkout@v6"
       - name: "Install the Nix package manager"
-        uses: "cachix/install-nix-action@master"
+        uses: "NixOS/nix-installer-action@main"
         with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          extra-conf: |
+            nix-path = nixpkgs=channel:nixos-unstable
       - name: "Refresh container test cloud image pins"
         run: tools/update-images.py
       - name: "Create Pull Request"
