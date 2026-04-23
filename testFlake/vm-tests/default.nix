@@ -7,7 +7,18 @@
 }:
 
 let
-  forEachUbuntuImage =
+  distros = {
+    ubuntu = {
+      # Ubuntu 20.04 reaches end of life April 2025; drop support.
+      filter = v: v != "20_04";
+    };
+    debian = {
+      # Only Debian 13 (trixie)
+      filter = v: v == "13";
+    };
+  };
+
+  forEachImage =
     name:
     {
       modules,
@@ -16,47 +27,54 @@ let
       projectTest ? test: test.sandboxed,
     }:
     let
-      ubuntu = nix-vm-test.ubuntu;
-    in
-    lib.listToAttrs (
-      # Ubuntu 20.04 reaches end of life April 2025; drop support.
-      lib.flip map (lib.filter (v: v != "20_04") (lib.attrNames ubuntu.images)) (
-        imageVersion:
-        let
-          toplevel = (
-            system-manager.lib.makeSystemConfig {
-              modules = modules ++ [
-                (
-                  { lib, pkgs, ... }:
-                  {
-                    options.hostPkgs = lib.mkOption {
-                      type = lib.types.raw;
-                      readOnly = true;
-                    };
-                    config = {
-                      nixpkgs.hostPlatform = system;
-                      hostPkgs = pkgs;
-                    };
-                  }
-                )
-              ];
-            }
-          );
-          inherit (toplevel.config) hostPkgs;
-        in
-        lib.nameValuePair "vm-ubuntu-${imageVersion}-${name}" (
-          projectTest (
-            ubuntu.${imageVersion} {
-              testScript = testScriptFunction { inherit toplevel hostPkgs; };
-              extraPathsToRegister = extraPathsToRegister ++ [
-                toplevel
-              ];
-              sharedDirs = { };
+      mkToplevel = system-manager.lib.makeSystemConfig {
+        modules = modules ++ [
+          (
+            { lib, pkgs, ... }:
+            {
+              options.hostPkgs = lib.mkOption {
+                type = lib.types.raw;
+                readOnly = true;
+              };
+              config = {
+                nixpkgs.hostPlatform = system;
+                hostPkgs = pkgs;
+              };
             }
           )
-        )
-      )
-    );
+        ];
+      };
+      mkTestForDistro =
+        distroName: distroConfig:
+        let
+          distro = nix-vm-test.${distroName};
+          versions = lib.filter distroConfig.filter (lib.attrNames distro.images);
+        in
+        lib.listToAttrs (
+          map (
+            imageVersion:
+            let
+              toplevel = mkToplevel;
+              inherit (toplevel.config) hostPkgs;
+            in
+            lib.nameValuePair "vm-${distroName}-${imageVersion}-${name}" (
+              projectTest (
+                distro.${imageVersion} {
+                  testScript = testScriptFunction { inherit toplevel hostPkgs; };
+                  extraPathsToRegister = extraPathsToRegister ++ [
+                    toplevel
+                  ];
+                  sharedDirs = { };
+                }
+              )
+            )
+          ) versions
+        );
+    in
+    lib.foldlAttrs (
+      acc: distroName: distroConfig:
+      acc // mkTestForDistro distroName distroConfig
+    ) { } distros;
 
   newConfig = system-manager.lib.makeSystemConfig {
     modules = [
@@ -142,7 +160,7 @@ let
     file:
     import file {
       inherit
-        forEachUbuntuImage
+        forEachImage
         newConfig
         system-manager
         system

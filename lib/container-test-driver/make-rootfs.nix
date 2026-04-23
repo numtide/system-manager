@@ -10,6 +10,7 @@ in
     {
       name,
       cloudImg,
+      cloudImgFormat,
       excludePatterns ? [ ],
       extraDirs ? [ ],
       extraSetup ? "",
@@ -21,19 +22,74 @@ in
         map (p: "--exclude='${p}'") excludePatterns
       );
       mkdirCommands = builtins.concatStringsSep "\n    " (map (d: "mkdir -p $out/${d}") extraDirs);
+      excludePruneCommands = builtins.concatStringsSep "\n    " (
+        map (p: "rm -rf $out/${p}") excludePatterns
+      );
+      extractCommand =
+        if cloudImgFormat == "tar" then
+          ''
+            tar --exclude='dev/*' \
+                ${excludeArgs} \
+                ${tarExtraFlags} \
+                ${tarCompression}xf ${cloudImg} -C $out
+          ''
+        else if cloudImgFormat == "qcow2" then
+          ''
+            LIBGUESTFS_BACKEND=direct \
+              guestfish --ro -a ${cloudImg} -i tar-out / - \
+              | tar --exclude='dev/*' \
+                    ${excludeArgs} \
+                    -C $out -x
+          ''
+        else if cloudImgFormat == "disk-tarball" then
+          ''
+            set -euo pipefail
+
+            workdir=$(mktemp -d)
+            tar -C "$workdir" -xf ${cloudImg}
+            rawimg=$(ls "$workdir"/*.raw | head -n1)
+            if [ -z "$rawimg" ]; then
+              echo "disk-tarball: no *.raw file inside ${cloudImg}" >&2
+              exit 1
+            fi
+
+            # Pick the largest partition
+            read -r start size <<<"$(sfdisk -J "$rawimg" \
+              | jq -r '.partitiontable.partitions | max_by(.size) | "\(.start) \(.size)"')"
+            dd if="$rawimg" of="$workdir/root.ext4" \
+               bs=512 skip="$start" count="$size" status=none
+
+            debugfs -R "rdump / $out" "$workdir/root.ext4" >/dev/null 2>&1
+
+            # debugfs rdump has no --exclude, so apply excludePatterns via a
+            # post-extraction prune pass. Also strip /dev/* to match the tar
+            # path (which uses tar --exclude='dev/*').
+            rm -rf $out/dev/*
+            ${excludePruneCommands}
+
+            rm -rf "$workdir"
+          ''
+        else
+          throw "buildRootfs: unsupported cloudImgFormat '${cloudImgFormat}' (expected 'tar', 'qcow2', or 'disk-tarball')";
+      nativeBuildInputs = [
+        pkgs.xz
+      ]
+      ++ pkgs.lib.optionals (cloudImgFormat == "qcow2") [ pkgs.libguestfs-with-appliance ]
+      ++ pkgs.lib.optionals (cloudImgFormat == "disk-tarball") [
+        pkgs.util-linux
+        pkgs.e2fsprogs
+        pkgs.jq
+      ];
     in
     pkgs.runCommand "rootfs-${name}"
       {
-        nativeBuildInputs = [ pkgs.xz ];
+        inherit nativeBuildInputs;
       }
       ''
         mkdir -p $out
 
         # Extract cloud image, excluding container-incompatible services
-        tar --exclude='dev/*' \
-            ${excludeArgs} \
-            ${tarExtraFlags} \
-            ${tarCompression}xf ${cloudImg} -C $out
+        ${extractCommand}
 
         # Ensure build user can modify all extracted files
         chmod -R u+rwX $out

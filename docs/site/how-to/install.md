@@ -4,7 +4,7 @@
 
 To use System Manager, you need:
 
-* **A Linux machine.** We've tested System Manager with Ubuntu both as standalone and under Windows Subsystem for Linux (WSL).
+* **A Linux machine.** We've tested System Manager with Ubuntu (both as standalone and under Windows Subsystem for Linux) and Debian 13 (trixie).
 * **At least 12GB Disk Space.** However, we recommend at least 16GB, as you will be very tight for space with under 16GB. (This is primarily due to Nix; if you're using System Manager to configure, for example, small servers on the Cloud, 8GB simply won't be enough.)
 * **Nix installed system-wide** with flakes enabled. (System Manager doesn't work with a per-user installation of Nix)
 
@@ -95,45 +95,6 @@ system-manager switch --flake . --sudo
 
 !!! Tip
     System Manager is still in early development. Installing locally will not immediately pick up new changes. If you decide to install locally, periodically check the GitHub repo for changes and upgrade using `nix profile upgrade`.
-
-# Installing on NixOS
-
-If you're on NixOS and want to install the `system-manager` CLI as a system package, add it to your NixOS configuration:
-
-```nix
-# flake.nix
-{
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    system-manager = {
-      url = "github:numtide/system-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-  };
-
-  outputs = { self, nixpkgs, system-manager, ... }:
-    let
-      system = "x86_64-linux";
-    in {
-      nixosConfigurations.myhost = nixpkgs.lib.nixosSystem {
-        inherit system;
-        modules = [
-          ({ config, ... }: {
-            environment.systemPackages = [
-              system-manager.packages.${system}.system-manager
-            ];
-          })
-        ];
-      };
-    };
-}
-```
-
-Then rebuild:
-
-```sh
-sudo nixos-rebuild switch --flake .#myhost
-```
 
 # Version Compatibility
 
