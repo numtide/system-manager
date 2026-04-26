@@ -680,6 +680,7 @@ dependencies = [
  "log",
  "rpassword",
  "system-manager-engine",
+ "tempfile",
 ]
 
 [[package]]
