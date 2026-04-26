@@ -31,6 +31,8 @@ pub const STANDALONE_FLAKE_TEMPLATE: &[u8; 864] =
 /// network calls when initializing a system-manager configuration from the command line.
 pub const SYSTEM_MODULE_TEMPLATE: &[u8; 1159] = include_bytes!("../../../templates/system.nix");
 
+const HOST_PLATFORM_PLACEHOLDER: &str = "x86_64-linux";
+
 /// Name of the engine binary in the store path
 const ENGINE_BIN: &str = "system-manager-engine";
 
@@ -374,8 +376,7 @@ fn go(args: Args) -> Result<()> {
                 path.display()
             );
 
-            let system_config_filepath = path.join("system.nix");
-            init_config_file(&system_config_filepath, SYSTEM_MODULE_TEMPLATE)?;
+            let host_platform = std::env::consts::ARCH.to_owned() + "-linux";
 
             let has_flake_support = process::Command::new("nix")
                 .arg("show-config")
@@ -386,17 +387,16 @@ fn go(args: Args) -> Result<()> {
                         && out_str.contains("flakes")
                         && out_str.contains("nix-command")
                 });
-            if !no_flake && has_flake_support {
-                let flake_config_filepath = path.join("flake.nix");
-                let is_nixos = process::Command::new("nixos-version")
-                    .output()
-                    .is_ok_and(|output| !output.stdout.is_empty());
-                if is_nixos {
-                    init_config_file(&flake_config_filepath, NIXOS_FLAKE_TEMPLATE)?
-                } else {
-                    init_config_file(&flake_config_filepath, STANDALONE_FLAKE_TEMPLATE)?
-                }
-            }
+            let is_nixos = process::Command::new("nixos-version")
+                .output()
+                .is_ok_and(|output| !output.stdout.is_empty());
+
+            init_configuration(
+                &path,
+                !no_flake && has_flake_support,
+                is_nixos,
+                &host_platform,
+            )?;
             log::info!("Configuration '{}' ready for activation!", path.display());
             Ok(())
         }
@@ -472,6 +472,33 @@ fn init_config_file(filepath: &Path, buf: &[u8]) -> Result<()> {
         }
     }
     Ok(())
+}
+
+fn init_configuration(
+    path: &Path,
+    include_flake: bool,
+    is_nixos: bool,
+    host_platform: &str,
+) -> Result<()> {
+    let system_config_filepath = path.join("system.nix");
+    let system_template = render_template(SYSTEM_MODULE_TEMPLATE, host_platform);
+    init_config_file(&system_config_filepath, system_template.as_bytes())?;
+
+    if include_flake {
+        let flake_config_filepath = path.join("flake.nix");
+        let flake_template = if is_nixos {
+            render_template(NIXOS_FLAKE_TEMPLATE, host_platform)
+        } else {
+            render_template(STANDALONE_FLAKE_TEMPLATE, host_platform)
+        };
+        init_config_file(&flake_config_filepath, flake_template.as_bytes())?;
+    }
+
+    Ok(())
+}
+
+fn render_template(template: &[u8], host_platform: &str) -> String {
+    String::from_utf8_lossy(template).replace(HOST_PLATFORM_PLACEHOLDER, host_platform)
 }
 
 fn print_store_path<SP: AsRef<StorePath>>(store_path: SP) -> Result<()> {
@@ -922,6 +949,7 @@ fn handle_toplevel_error<T>(r: Result<T>) -> ExitCode {
 mod tests {
     use super::*;
     use clap::Parser;
+    use tempfile::tempdir;
 
     #[test]
     fn legacy_use_remote_sudo_flag_is_accepted() {
@@ -1030,5 +1058,13 @@ mod tests {
             .expect("failed to parse args");
 
         assert!(args.ssh_options.is_empty());
+    }
+
+    #[test]
+    fn render_template_substitutes_host_platform_in_system_module() {
+        let rendered = render_template(SYSTEM_MODULE_TEMPLATE, "aarch64-linux");
+
+        assert!(rendered.contains("nixpkgs.hostPlatform = \"aarch64-linux\";"));
+        assert!(!rendered.contains("nixpkgs.hostPlatform = \"x86_64-linux\";"));
     }
 }
