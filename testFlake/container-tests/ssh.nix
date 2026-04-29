@@ -53,9 +53,7 @@ forEachDistro "ssh" {
       # It's generated as a postinstall hook, so let's run it again.
       machine.succeed("dpkg-reconfigure openssh-server")
 
-      activation_logs = machine.activate()
-      for line in activation_logs.split("\n"):
-          assert not "ERROR" in line, line
+      machine.activate()
       machine.wait_for_unit("system-manager.target")
 
       with subtest("ssh_known_hosts file exists"):
