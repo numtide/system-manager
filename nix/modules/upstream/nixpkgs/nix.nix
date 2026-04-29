@@ -31,6 +31,7 @@
   config = lib.mkIf config.nix.enable {
 
     environment.etc."nix/nix.conf".replaceExisting = true;
+    environment.systemPackages = [ config.nix.package ];
     nix.settings.experimental-features = lib.mkDefault [
       "nix-command"
       "flakes"

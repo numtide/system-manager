@@ -30,6 +30,10 @@
       "/services/web-servers/nginx/"
       # nix settings
       "/config/nix.nix"
+      "/config/nix-channel.nix"
+      "/config/nix-flakes.nix"
+      "/config/nix-remote-build.nix"
+      "/misc/nixpkgs-flake.nix"
       "/services/system/userborn.nix"
       "/system/build.nix"
     ];
@@ -49,6 +53,13 @@
       # We try to avoid having to import the whole activationScripts module.
       system.activationScripts.users = lib.mkOption {
         type = lib.types.str;
+        default = "";
+      };
+
+      # nix-channel.nix just emits a warning in an activation script.
+      # As we don't support NixOS activation scripts, we just ignore it.
+      system.activationScripts.no-nix-channel = lib.mkOption {
+        type = lib.types.raw;
         default = "";
       };
 

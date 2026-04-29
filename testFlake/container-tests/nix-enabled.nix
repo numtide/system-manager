@@ -37,6 +37,27 @@ forEachDistro "nix-enabled" {
           assert nix_conf.exists, "/etc/nix/nix.conf should still exist after re-activation"
           assert nix_conf.contains("flakes"), "nix.conf should still contain flakes"
 
+      with subtest("/root/.nix-channels is created with the default channel"):
+          channels_file = machine.file("/root/.nix-channels")
+          assert channels_file.exists, "/root/.nix-channels should exist"
+          channels_content = channels_file.content_string
+          assert "channels.nixos.org/nixos-unstable" in channels_content, (
+              f"Expected nixos-unstable channel, got: {channels_content!r}"
+          )
+          assert "nixos" in channels_content, (
+              f"Expected nixos channel name, got: {channels_content!r}"
+          )
+
+      with subtest("NIX_PATH is exported in login shell"):
+          nix_path = machine.succeed("bash --login -c 'echo $NIX_PATH'").strip()
+          assert "nixpkgs=" in nix_path, f"Expected nixpkgs= entry, got: {nix_path!r}"
+          assert "/nix/var/nix/profiles/per-user/root/channels" in nix_path, (
+              f"Expected per-user root channels path, got: {nix_path!r}"
+          )
+
+      with subtest("nix-channel binary is available on PATH"):
+          machine.succeed("test -e /run/system-manager/sw/bin/nix-channel")
+
       with subtest("Deactivation restores original nix.conf"):
           machine.succeed("${toplevel}/bin/deactivate")
           restored_nix_conf = machine.succeed("cat /etc/nix/nix.conf")
