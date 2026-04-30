@@ -160,4 +160,5 @@ nav:
         - Nginx: examples/nginx.md
         - Nginx HTTPS: examples/nginx-https.md
         - Custom App: examples/custom-app.md
+        - Home Manager: examples/home-manager.md
     - FAQ: faq.md
