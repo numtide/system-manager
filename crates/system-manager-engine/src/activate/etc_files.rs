@@ -234,13 +234,18 @@ fn list_static_entries(config_entries: &EtcFilesConfig) -> anyhow::Result<Vec<Et
             // that may not resolve inside the Nix store because the target unit
             // can come from the host system (asDropin strategy). Read the symlink
             // target directly and store it as the source instead of canonicalizing.
-            let target_is_systemd_dep = is_inside_systemd_dependency_dir(&PathBuf::from("/etc").join(&target_path));
+            let target_is_systemd_dep =
+                is_inside_systemd_dependency_dir(&PathBuf::from("/etc").join(&target_path));
             if target_is_systemd_dep && file_path.is_symlink() {
                 let link_target = fs::read_link(&file_path).context(format!(
                     "Failed to read symlink target of {}",
                     file_path.display()
                 ))?;
-                log::debug!("{} is a dependency symlink -> {}", file_path.display(), link_target.display());
+                log::debug!(
+                    "{} is a dependency symlink -> {}",
+                    file_path.display(),
+                    link_target.display()
+                );
                 let replace_existing = config_entries
                     .entries
                     .iter()
