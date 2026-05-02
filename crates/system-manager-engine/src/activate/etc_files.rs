@@ -228,34 +228,30 @@ fn list_static_entries(config_entries: &EtcFilesConfig) -> anyhow::Result<Vec<Et
         let dir_content = fs::read_dir(&dir.absolute_path)?;
         for file in dir_content {
             let file = file?;
-            let canon_path = fs::canonicalize(file.path()).context(format!(
-                "Failed to get the canonical path of {}",
-                file.path().display()
-            ))?;
-            if canon_path.is_dir() {
-                log::debug!("{} is a dir", canon_path.display());
-                let dirname = file.file_name();
-                let mut path_from_root = dir.path_from_root.clone();
-                path_from_root.push(dirname);
-                dirs_to_visit.push(DirToVisit {
-                    absolute_path: canon_path,
-                    path_from_root,
-                });
-            } else {
-                log::debug!("{} is a file", file.path().display());
-                let target = dir.path_from_root.clone().join(file.file_name());
-                // Is this file entry available in the config? If so, inherit replace_existing.
+            let file_path = file.path();
+            let target_path = dir.path_from_root.clone().join(file.file_name());
+            // .wants/.requires symlinks use relative targets (e.g. ../unit.service)
+            // that may not resolve inside the Nix store because the target unit
+            // can come from the host system (asDropin strategy). Read the symlink
+            // target directly and store it as the source instead of canonicalizing.
+            let target_is_systemd_dep = is_inside_systemd_dependency_dir(&PathBuf::from("/etc").join(&target_path));
+            if target_is_systemd_dep && file_path.is_symlink() {
+                let link_target = fs::read_link(&file_path).context(format!(
+                    "Failed to read symlink target of {}",
+                    file_path.display()
+                ))?;
+                log::debug!("{} is a dependency symlink -> {}", file_path.display(), link_target.display());
                 let replace_existing = config_entries
                     .entries
                     .iter()
-                    .find(|e| e.1.target == target)
+                    .find(|e| e.1.target == target_path)
                     .map(|e| e.1.replace_existing)
                     .unwrap_or(false);
                 let etc_file = EtcFile {
                     source: StorePath {
-                        store_path: canon_path,
+                        store_path: link_target,
                     },
-                    target: PathBuf::from("/etc").join(target),
+                    target: PathBuf::from("/etc").join(target_path),
                     uid: 0,
                     gid: 0,
                     group: "".to_string(),
@@ -264,12 +260,53 @@ fn list_static_entries(config_entries: &EtcFilesConfig) -> anyhow::Result<Vec<Et
                     replace_existing,
                 };
                 log::debug!(
-                    "add file: {:?}, path_from_root: {:?}, absolute_path: {:?}",
+                    "add dependency symlink: {:?}, path_from_root: {:?}",
                     etc_file,
-                    dir.path_from_root,
-                    dir.absolute_path
+                    dir.path_from_root
                 );
                 files.push(etc_file);
+            } else {
+                let canon_path = fs::canonicalize(&file_path).context(format!(
+                    "Failed to get the canonical path of {}",
+                    file_path.display()
+                ))?;
+                if canon_path.is_dir() {
+                    log::debug!("{} is a dir", canon_path.display());
+                    let dirname = file.file_name();
+                    let mut path_from_root = dir.path_from_root.clone();
+                    path_from_root.push(dirname);
+                    dirs_to_visit.push(DirToVisit {
+                        absolute_path: canon_path,
+                        path_from_root,
+                    });
+                } else {
+                    log::debug!("{} is a file", file_path.display());
+                    let replace_existing = config_entries
+                        .entries
+                        .iter()
+                        .find(|e| e.1.target == target_path)
+                        .map(|e| e.1.replace_existing)
+                        .unwrap_or(false);
+                    let etc_file = EtcFile {
+                        source: StorePath {
+                            store_path: canon_path,
+                        },
+                        target: PathBuf::from("/etc").join(target_path),
+                        uid: 0,
+                        gid: 0,
+                        group: "".to_string(),
+                        user: "".to_string(),
+                        mode: "symlink".to_string(),
+                        replace_existing,
+                    };
+                    log::debug!(
+                        "add file: {:?}, path_from_root: {:?}, absolute_path: {:?}",
+                        etc_file,
+                        dir.path_from_root,
+                        dir.absolute_path
+                    );
+                    files.push(etc_file);
+                }
             }
         }
         i += 1;
