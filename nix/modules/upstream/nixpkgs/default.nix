@@ -12,7 +12,7 @@ let
     be included. Note that setting these names to `false` does not
     prevent the module from being loaded.
   '';
-  kernelModulesConf = pkgs.writeText "nixos.conf" ''
+  kernelModulesConf = pkgs.writeText "system-manager.conf" ''
     ${lib.concatStringsSep "\n" config.boot.kernelModules}
   '';
   attrNamesToTrue = lib.types.coercedTo (lib.types.listOf lib.types.str) (
@@ -106,7 +106,7 @@ in
   config = {
     # Create /etc/modules-load.d/system-manager.conf, which is read by
     # systemd-modules-load.service to load required kernel modules.
-    environment.etc = lib.mkIf (config.boot.kernelModules != { }) {
+    environment.etc = lib.mkIf (config.boot.kernelModules != [ ]) {
       "modules-load.d/system-manager.conf".source = kernelModulesConf;
     };
 
@@ -123,13 +123,9 @@ in
         };
       };
 
-      systemd-sysctl = lib.mkIf (config.environment.etc ? "sysctl.d/60-nixos.conf") {
+      systemd-sysctl = {
         overrideStrategy = "asDropin";
-        wantedBy = [
-          "system-manager.target"
-          "multi-user.target"
-        ];
-        restartTriggers = [ config.environment.etc."sysctl.d/60-nixos.conf".source ];
+        wantedBy = [ "system-manager.target" ];
       };
     };
   };
