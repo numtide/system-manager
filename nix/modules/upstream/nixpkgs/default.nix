@@ -2,8 +2,23 @@
   nixosModulesPath,
   lib,
   pkgs,
+  config,
   ...
 }:
+let
+  modulesTypeDesc = ''
+    This can either be a list of modules, or an attrset. In an
+    attrset, names that are set to `true` represent modules that will
+    be included. Note that setting these names to `false` does not
+    prevent the module from being loaded.
+  '';
+  kernelModulesConf = pkgs.writeText "system-manager.conf" ''
+    ${lib.concatStringsSep "\n" config.boot.kernelModules}
+  '';
+  attrNamesToTrue = lib.types.coercedTo (lib.types.listOf lib.types.str) (
+    enabledList: lib.genAttrs enabledList (_attrName: true)
+  ) (lib.types.attrsOf lib.types.bool);
+in
 {
   imports = [
     ./dhparams.nix
@@ -13,6 +28,7 @@
     ./programs/ssh.nix
     ./security-wrappers.nix
     ./security/sudo.nix
+    ./sysctl.nix
     ./userborn.nix
     ./users-groups.nix
     ../sops-nix.nix
@@ -38,11 +54,27 @@
   options =
     # We need to ignore a bunch of options that are used in NixOS modules but
     # that don't apply to system-manager configs.
-    # TODO: can we print an informational message for things like kernel modules
-    # to inform users that they need to be enabled in the host system?
     {
-      boot = lib.mkOption {
-        type = lib.types.raw;
+      boot = {
+        kernelModules = lib.mkOption {
+          type = attrNamesToTrue;
+          default = { };
+          description = ''
+            The set of kernel modules to be loaded in the second stage of
+            the boot process.
+
+            ${modulesTypeDesc}
+          '';
+          apply = mods: lib.attrNames (lib.filterAttrs (_: v: v) mods);
+        };
+
+        kernelPackages = lib.mkOption {
+          type = lib.types.raw;
+          default = {
+            kernel.version = "stub";
+          };
+          description = "Stub kernel packages for compatibility; not actively used in system-manager.";
+        };
       };
 
       # nixos/modules/services/system/userborn.nix still depends on activation scripts
@@ -70,4 +102,26 @@
         defaultText = lib.literalExpression "pkgs.glibcLocales";
       };
     };
+
+  config = {
+    # Create /etc/modules-load.d/system-manager.conf, which is read by
+    # systemd-modules-load.service to load required kernel modules.
+    environment.etc = lib.mkIf (config.boot.kernelModules != [ ]) {
+      "modules-load.d/system-manager.conf".source = kernelModulesConf;
+    };
+
+    systemd.services = {
+      systemd-modules-load = lib.mkIf (config.boot.kernelModules != [ ]) {
+        overrideStrategy = "asDropin";
+        wantedBy = [
+          "system-manager.target"
+          "multi-user.target"
+        ];
+        restartTriggers = [ kernelModulesConf ];
+        serviceConfig = {
+          SuccessExitStatus = "0 1";
+        };
+      };
+    };
+  };
 }
