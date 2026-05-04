@@ -28,6 +28,7 @@ in
     ./programs/ssh.nix
     ./security-wrappers.nix
     ./security/sudo.nix
+    ./sysctl.nix
     ./userborn.nix
     ./users-groups.nix
     ../sops-nix.nix
@@ -44,7 +45,6 @@ in
       "/security/sudo.nix"
       "/security/wrappers/"
       "/services/web-servers/nginx/"
-      "/config/sysctl.nix"
       # nix settings
       "/config/nix.nix"
       "/services/system/userborn.nix"
@@ -121,11 +121,6 @@ in
         serviceConfig = {
           SuccessExitStatus = "0 1";
         };
-      };
-
-      systemd-sysctl = {
-        overrideStrategy = "asDropin";
-        wantedBy = [ "system-manager.target" ];
       };
     };
   };
