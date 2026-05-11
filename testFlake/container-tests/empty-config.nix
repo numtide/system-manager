@@ -95,11 +95,7 @@ forEachDistro "empty-config" {
       with subtest("Snapshot /etc before activation"):
           before = snapshot_etc()
 
-      activation_logs = machine.activate()
-      with subtest("Activation produces no errors"):
-          for line in activation_logs.split("\n"):
-              assert "ERROR" not in line, f"Unexpected error in activation: {line}"
-
+      machine.activate()
       machine.wait_for_unit("system-manager.target")
 
       with subtest("No unexpected changes to /etc after activation"):

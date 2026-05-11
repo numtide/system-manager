@@ -16,9 +16,7 @@ forEachDistro "example" {
       # Nix is installed and profile is copied by the driver automatically
       # Activate system-manager
       def activate_and_check():
-        activation_logs = machine.activate()
-        for line in activation_logs.split("\n"):
-          assert not "ERROR" in line, line
+        machine.activate()
         machine.wait_for_unit("system-manager.target")
 
         with subtest("Verify services are running"):

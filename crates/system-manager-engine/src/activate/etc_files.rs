@@ -124,7 +124,14 @@ pub fn activate(
         .collect();
     entries.append(&mut non_static_entries);
     // Create dirs and link/copy entries
-    new_state = create_etc_files(entries, new_state.clone(), &old_state, &etc_dir)?;
+    let mut errors = Vec::new();
+    new_state = create_etc_files(
+        entries,
+        new_state.clone(),
+        &old_state,
+        &etc_dir,
+        &mut errors,
+    );
     // Delete unecessary files
     let files_to_delete: HashSet<PathBuf> = old_state
         .files
@@ -132,7 +139,19 @@ pub fn activate(
         .map(|f| f.to_owned())
         .collect();
     new_state = delete_paths(&files_to_delete, new_state);
-    Ok(new_state)
+    if errors.is_empty() {
+        Ok(new_state)
+    } else {
+        let messages: Vec<String> = errors.iter().map(|e| format!("{e:#}")).collect();
+        Err(ActivationError::with_partial_result(
+            new_state,
+            anyhow::anyhow!(
+                "{} etc file error(s):\n{}",
+                messages.len(),
+                messages.join("\n")
+            ),
+        ))
+    }
 }
 
 pub fn deactivate(old_state: EtcFilesState) -> EtcActivationResult {
@@ -282,19 +301,24 @@ fn create_etc_files(
     mut state: EtcFilesState,
     old_state: &EtcFilesState,
     etc_dir: &Path,
-) -> EtcActivationResult {
+    errors: &mut Vec<anyhow::Error>,
+) -> EtcFilesState {
     files.sort_by(|a, b| a.target.cmp(&b.target));
     for file in files {
         let target = file.target.clone();
         state = match create_etc_file(file, state, old_state, etc_dir) {
             Ok(state) => state,
             Err(ActivationError::WithPartialResult { result, source }) => {
-                log::warn!("Can't link/copy {} to : {}", target.display(), source);
+                log::error!(
+                    "Error while creating file in {}: {source:?}",
+                    target.display()
+                );
+                errors.push(source);
                 result
             }
         }
     }
-    Ok(state)
+    state
 }
 
 /// Create a single etc file.
@@ -358,10 +382,13 @@ fn create_etc_file(
                 );
                 state = backup_and_link(&target, &file.source.store_path, state)?;
             } else {
-                log::warn!(
-                    "Error while creating file in /etc: Unmanaged path already exists in filesystem, please remove it and run system-manager again: {}\nSet replaceExisting if you're willing to override it.",
-                    target.display()
-                );
+                return Err(ActivationError::with_partial_result(
+                    state,
+                    anyhow::anyhow!(
+                        "Unmanaged path already exists in filesystem, please remove it or use replaceExisting and run system-manager again: {}.",
+                        target.display()
+                    ),
+                ));
             }
         } else {
             // Target do not exist on the filesystem

@@ -195,8 +195,8 @@ let
         action,
       }:
       ''
-        ${node}.succeed("RUST_LOG=debug ${profile}/bin/${action} 2>&1 | tee /tmp/output.log")
-        ${node}.succeed("! grep -F 'ERROR' /tmp/output.log")
+        output = ${node}.succeed("RUST_LOG=debug ${profile}/bin/${action} 2>&1")
+        assert "ERROR" not in output, f"${action} logged errors:\n{output}"
       '';
 
     activateProfileSnippet =

@@ -25,9 +25,7 @@ forEachDistro "nginx-dhparams" {
 
       machine.wait_for_unit("multi-user.target")
 
-      activation_logs = machine.activate()
-      for line in activation_logs.split("\n"):
-          assert not "ERROR" in line, line
+      machine.activate()
       machine.wait_for_unit("system-manager.target")
 
       with subtest("Verify nginx is running"):

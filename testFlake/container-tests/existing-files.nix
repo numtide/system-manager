@@ -60,12 +60,10 @@ forEachDistro "existing-files" {
       machine.succeed("mkdir -p /etc/systemd/system/timers.target.wants")
       machine.succeed("ln -sf /lib/systemd/system/fake-existing.timer /etc/systemd/system/timers.target.wants/existing.timer")
 
-      # Activate directly because the no-replace-test entry
-      # will produce an expected ERROR that machine.activate() would reject.
-      machine.succeed("${toplevel}/bin/activate 2>&1 | tee /tmp/output.log")
-
-      # Verify that the no-replace entry produced the expected error
-      machine.succeed("grep -F 'File /etc/no-replace-test already exists' /tmp/output.log")
+      # Activate directly because the no-replace-test entry produces an
+      # expected error that causes a non-zero exit code.
+      output = machine.fail("${toplevel}/bin/activate 2>&1")
+      assert "File /etc/no-replace-test already exists" in output, f"Expected no-replace error, got: {output}"
       no_replace = machine.succeed("cat /etc/no-replace-test").strip()
       assert no_replace == "do not touch", f"Expected untouched file, got: {no_replace}"
       machine.fail("test -e /etc/no-replace-test.system-manager-backup")

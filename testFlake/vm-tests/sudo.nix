@@ -41,12 +41,10 @@ forEachImage "sudo" {
 
       # Test 2: Register and activate with --sudo should succeed
       # First register the profile (creates the symlink)
-      vm.succeed("su - testuser -c '${system-manager-cli}/bin/system-manager register --sudo --store-path ${toplevel} 2>&1' | tee /tmp/sudo-register.log")
-      vm.succeed("! grep -F 'ERROR' /tmp/sudo-register.log")
+      vm.succeed("su - testuser -c '${system-manager-cli}/bin/system-manager register --sudo --store-path ${toplevel} 2>&1'")
 
       # Then activate
-      vm.succeed("su - testuser -c '${system-manager-cli}/bin/system-manager activate --sudo --store-path ${toplevel} 2>&1' | tee /tmp/sudo-activate.log")
-      vm.succeed("! grep -F 'ERROR' /tmp/sudo-activate.log")
+      vm.succeed("su - testuser -c '${system-manager-cli}/bin/system-manager activate --sudo --store-path ${toplevel} 2>&1'")
 
       # Verify activation worked
       vm.wait_for_unit("system-manager.target")
@@ -55,8 +53,7 @@ forEachImage "sudo" {
 
       # Test 3: Deactivation with --sudo should also work
       # Now that the profile is registered, deactivate can find the engine
-      vm.succeed("su - testuser -c '${system-manager-cli}/bin/system-manager deactivate --sudo 2>&1' | tee /tmp/sudo-deactivate.log")
-      vm.succeed("! grep -F 'ERROR' /tmp/sudo-deactivate.log")
+      vm.succeed("su - testuser -c '${system-manager-cli}/bin/system-manager deactivate --sudo 2>&1'")
 
       # Verify deactivation worked
       vm.fail("systemctl status service-9.service")
