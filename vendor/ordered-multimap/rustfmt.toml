@@ -1,0 +1,2 @@
+imports_granularity = "Crate"
+tab_spaces = 2
