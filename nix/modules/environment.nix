@@ -103,6 +103,13 @@
         Setting a variable to `null` does nothing. You can override a
         variable set by another module to `null` to unset it.
 
+        Unlike [](#opt-environment.variables), session variables will
+        append the existing value of the variable using the
+        `''${parameter:+word}` shell expansion. For example, setting
+        `XDG_DATA_DIRS` to `"/nix/share"` will produce
+        `export XDG_DATA_DIRS="/nix/share''${XDG_DATA_DIRS:+:''$XDG_DATA_DIRS}"`,
+        which preserves any pre-existing value.
+
         Note: unlike NixOS, system-manager does not manage PAM on the
         host, so these variables are not injected by pam_env into
         non-shell sessions (e.g. graphical logins).
@@ -125,6 +132,15 @@
   config =
     let
       pathDir = "/run/system-manager/sw";
+
+      sessionVarNames = builtins.attrNames config.environment.sessionVariables;
+
+      exportLine =
+        k: v:
+        if builtins.elem k sessionVarNames then
+          "export ${k}=\"" + v + "$\{" + k + ":+:$" + k + "}\""
+        else
+          "export ${k}=\"" + v + "\"";
     in
     {
       environment = {
@@ -138,7 +154,7 @@
 
         etc = {
           "profile.d/system-manager-path.sh".source = pkgs.writeText "system-manager-path.sh" ''
-            ${lib.concatLines (lib.mapAttrsToList (k: v: ''export ${k}="${v}"'') config.environment.variables)}
+            ${lib.concatLines (lib.mapAttrsToList exportLine config.environment.variables)}
             export PATH=${pathDir}/bin:''${PATH}
             if [ -d "/etc/profiles/per-user/$USER/bin" ]; then
               export PATH="/etc/profiles/per-user/$USER/bin:$PATH"
