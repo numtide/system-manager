@@ -37,7 +37,7 @@ experimental-features = nix-command flakes
 Alternatively, you can pass the `--extra-experimental-features` option to each `nix` command, but this is less convenient.
 
 !!! Tip
-    For other installation options (platform-specific guides, CI/CD environments), see [nix-install.com](https://nix-install.com).
+    For other installation options (platform-specific guides, CI/CD environments), see [nixos.org/download](https://nixos.org/download/#nix-install-linux).
 
 ## Checking Your Installation
 
