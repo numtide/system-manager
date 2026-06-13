@@ -23,10 +23,11 @@ rustPlatform.buildRustPackage {
       ./Cargo.lock
       ./crates
       ./templates
+      ./vendor
     ];
   };
 
-  cargoLock.lockFile = ./Cargo.lock;
+  cargoVendorDir = "vendor";
   buildInputs = [ dbus ];
   nativeBuildInputs = [
     pkg-config

@@ -1,0 +1,47 @@
+language: rust
+rust:
+    - stable
+    - beta
+    - nightly
+arch:
+    - amd64
+    - arm64
+    - ppc64le
+cache:
+    directories:
+        - /home/travis/.rustup
+        - /home/travis/.cargo
+        - /home/travis/target
+
+addons:
+    apt:
+        packages:
+            - cmake
+            - libssl-dev
+            - pkg-config
+            - zlib1g-dev
+
+install:
+    - rustup update
+    - mkdir -p .cargo
+    - echo '[build]' > .cargo/config
+    - echo 'target-dir = "/home/travis/target"' >> .cargo/config
+
+matrix:
+    include:
+        - name: Clippy
+          arch: amd64
+          rust: stable
+          env: CLIPPY=1
+          install:
+              - rustup component add clippy; true
+          script: cargo clippy -- -D warnings
+
+        - name: Coveralls
+          arch: amd64
+          rust: nightly
+          install:
+              - cargo install cargo-tarpaulin; true
+          script: |
+              cargo tarpaulin --ignore-tests --run-types Tests --run-types Doctests \
+              --exclude-files 'fuzz/*' --coveralls $TRAVIS_JOB_ID --ciserver travis-ci

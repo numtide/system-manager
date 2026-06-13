@@ -1,0 +1,34 @@
+name: Build & Test
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  buid-test-check:
+    strategy:
+      matrix:
+        platform:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: Swatinem/rust-cache@v2
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          default: true
+          override: true
+      - name: Build & Test (Default)
+        run: cargo test --verbose --no-fail-fast
+      - name: Build & Test (inline-comment)
+        run: cargo test --verbose --no-fail-fast --features inline-comment
+      - name: Build & Test (case-insensitive)
+        run: cargo test --verbose --no-fail-fast --features case-insensitive
