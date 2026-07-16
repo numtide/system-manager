@@ -1,5 +1,26 @@
 # <img alt="System Manager" src="https://banner.numtide.com/banner/numtide/system-manager.svg">
 
+> [!Important]
+> **Fork notice: compatibility with old systemd (v219)**
+>
+> This fork carries three patches on top of upstream so that activation works on
+> hosts running systemd versions older than v230/v235:
+>
+> 1. **Engine** (`crates/system-manager-engine/src/systemd.rs`,
+>    `src/activate/services.rs`): the userborn existence check now uses the
+>    `LoadUnit` D-Bus call plus the unit's `LoadState` property instead of
+>    `ListUnitsByPatterns`, which was only added in systemd v230. Without this,
+>    userborn never ran and managed users were never created.
+> 2. **userborn unit** (`nix/modules/upstream/nixpkgs/userborn.nix`): added an
+>    `ExecStartPre` running `mkdir -p /var/lib/userborn`, because
+>    `StateDirectory=` is ignored by systemd older than v235, which broke the
+>    `ExecStartPost` symlink into that directory.
+> 3. **tmpfiles generator** (`nix/modules/tmpfiles.nix`): fields in generated
+>    `tmpfiles.d` files are now only quoted when they contain
+>    whitespace/quotes/are empty. systemd older than v230 cannot parse quoted
+>    fields and failed with `Unknown modifiers in command ''d''`.
+>
+
 <p>
 <a href="https://github.com/numtide/system-manager/actions/workflows/update-flake-lock.yml"><img src="https://github.com/numtide/system-manager/actions/workflows/update-flake-lock.yml/badge.svg"/></a>
 <a href="https://app.element.io/#/room/#home:numtide.com"><img src="https://img.shields.io/badge/Support-%23numtide-blue"/></a>
