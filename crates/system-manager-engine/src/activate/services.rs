@@ -421,10 +421,7 @@ pub fn restart_sysinit_reactivation_target() -> anyhow::Result<()> {
 pub fn restart_userborn_if_exists() -> anyhow::Result<()> {
     let service_manager = systemd::ServiceManager::new_session()?;
 
-    // Check if userborn.service exists by listing units matching the pattern
-    let units = service_manager.list_units_by_patterns(&[], &["userborn.service"])?;
-
-    if units.is_empty() {
+    if !service_manager.unit_exists("userborn.service")? {
         log::debug!("userborn.service not found, skipping");
         return Ok(());
     }
