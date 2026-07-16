@@ -122,9 +122,14 @@ let
     );
   };
 
+  # Quoted fields in tmpfiles.d are only supported since systemd v230, so we
+  # only quote fields that actually need it, to keep the generated files
+  # readable by older systemd versions.
+  quoteField = s: if s != "" && builtins.match ''[^'"[:space:]]+'' s != null then s else "'${s}'";
+
   # generates a single entry for a tmpfiles.d rule
   settingsEntryToRule = path: entry: ''
-    '${entry.type}' '${path}' '${entry.mode}' '${entry.user}' '${entry.group}' '${entry.age}' ${entry.argument}
+    ${quoteField entry.type} ${quoteField path} ${quoteField entry.mode} ${quoteField entry.user} ${quoteField entry.group} ${quoteField entry.age} ${entry.argument}
   '';
 
   # generates a list of tmpfiles.d rules from the attrs (paths) under tmpfiles.settings.<name>
