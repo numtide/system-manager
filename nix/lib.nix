@@ -85,37 +85,37 @@ let
             };
           };
 
-        config =
-          (lib.evalModules {
-            specialArgs = {
-              nixosModulesPath = "${nixos}/modules";
+        eval = lib.evalModules {
+          specialArgs = {
+            nixosModulesPath = "${nixos}/modules";
+          }
+          // specialArgs
+          // extraSpecialArgs;
+          modules = [
+            extraArgsModule
+            ./modules
+            {
+              _file = "${self.printAttrPos (builtins.unsafeGetAttrPos "a" { a = null; })}: inline module";
+              build = { inherit toplevel; };
             }
-            // specialArgs
-            // extraSpecialArgs;
-            modules = [
-              extraArgsModule
-              ./modules
-              {
-                _file = "${self.printAttrPos (builtins.unsafeGetAttrPos "a" { a = null; })}: inline module";
-                build = { inherit toplevel; };
-              }
-              {
-                config = {
-                  assertions = [
-                    {
-                      assertion = !((extraSpecialArgs != { }) && (specialArgs != { }));
-                      message = "extraSpecialArgs cannot be used together with specialArgs, please use specialArgs only instead";
-                    }
-                  ];
-                  warnings =
-                    lib.optional (extraSpecialArgs != { })
-                      "extraSpecialArgs is deprecated and will be removed in the next release, please use specialArgs instead";
-                };
-              }
-            ]
-            ++ modules;
-          }).config;
+            {
+              config = {
+                assertions = [
+                  {
+                    assertion = !((extraSpecialArgs != { }) && (specialArgs != { }));
+                    message = "extraSpecialArgs cannot be used together with specialArgs, please use specialArgs only instead";
+                  }
+                ];
+                warnings =
+                  lib.optional (extraSpecialArgs != { })
+                    "extraSpecialArgs is deprecated and will be removed in the next release, please use specialArgs instead";
+              };
+            }
+          ]
+          ++ modules;
+        };
 
+        inherit (eval) config options;
         inherit (config.nixpkgs) pkgs;
 
         # Build system-manager package for use in toplevel
@@ -180,7 +180,7 @@ let
               drv:
               drv.overrideAttrs (prevAttrs: {
                 passthru = (prevAttrs.passthru or { }) // {
-                  inherit config;
+                  inherit config options;
                 };
               });
           in
