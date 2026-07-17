@@ -132,6 +132,7 @@
 
         pathsToLink = [
           "/bin"
+          "/share"
         ];
 
         variables = config.environment.sessionVariables;
@@ -143,7 +144,19 @@
             if [ -d "/etc/profiles/per-user/$USER/bin" ]; then
               export PATH="/etc/profiles/per-user/$USER/bin:$PATH"
             fi
+            if [ -d "/etc/profiles/per-user/$USER/share" ]; then
+              export XDG_DATA_DIRS="/etc/profiles/per-user/$USER/share:''${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+            fi
+            if [ -d "${pathDir}/share" ]; then
+              export XDG_DATA_DIRS="${pathDir}/share:''${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+            fi
             ${config.environment.extraInit}
+          '';
+
+          "environment.d/10-system-manager.conf".text = ''
+            ${lib.concatLines (lib.mapAttrsToList (k: v: ''${k}="${v}"'') config.environment.variables)}
+            PATH=/etc/profiles/per-user/''${USER}/bin:${pathDir}/bin:''${PATH}
+            XDG_DATA_DIRS=/etc/profiles/per-user/''${USER}/share:${pathDir}/share:''${XDG_DATA_DIRS:-/usr/local/share:/usr/share}
           '';
 
           # TODO: figure out how to properly add fish support. We could start by

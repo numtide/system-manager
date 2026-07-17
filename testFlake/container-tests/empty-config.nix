@@ -16,6 +16,7 @@ forEachDistro "empty-config" {
           etc_entries = set(etc_json["entries"].keys())
           allowed_entries = {
               "profile.d/system-manager-path.sh",
+              "environment.d/10-system-manager.conf",
               "systemd/system",
               "tmpfiles.d",
           }
@@ -52,6 +53,7 @@ forEachDistro "empty-config" {
       # update this list only after confirming the change is intentional.
       allowed_changes = {
           "profile.d/system-manager-path.sh",
+          "environment.d/10-system-manager.conf",
           # systemd unit files
           "systemd/system/system-manager.target",
           "systemd/system/sysinit-reactivation.target",
