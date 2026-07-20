@@ -51,6 +51,12 @@ forEachDistro "environment-variables" {
           assert "FOO" in content, f"Expected FOO in profile script, got: {content}"
           assert "NULLED" not in content, f"Expected NULLED to be absent, got: {content}"
 
+      with subtest("variables are written to environment.d"):
+          content = machine.succeed("cat /etc/environment.d/10-system-manager.conf")
+          assert 'FOO="bar"' in content, f"Expected FOO in environment.d, got: {content}"
+          assert 'PATHLIKE="/a:/b:/c"' in content, f"Expected PATHLIKE in environment.d, got: {content}"
+          assert "NULLED" not in content, f"Expected NULLED to be absent, got: {content}"
+
       with subtest("sessionVariables are login shell exports"):
           value = machine.succeed("bash --login -c 'echo $SESSION_VAR'").strip()
           assert value == "from-session", f"Expected 'from-session', got: '{value}'"
