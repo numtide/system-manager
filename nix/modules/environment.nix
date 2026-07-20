@@ -144,11 +144,11 @@
             if [ -d "/etc/profiles/per-user/$USER/bin" ]; then
               export PATH="/etc/profiles/per-user/$USER/bin:$PATH"
             fi
-            if [ -d "/etc/profiles/per-user/$USER/share" ]; then
-              export XDG_DATA_DIRS="/etc/profiles/per-user/$USER/share:''${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
-            fi
             if [ -d "${pathDir}/share" ]; then
               export XDG_DATA_DIRS="${pathDir}/share:''${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+            fi
+            if [ -d "/etc/profiles/per-user/$USER/share" ]; then
+              export XDG_DATA_DIRS="/etc/profiles/per-user/$USER/share:''${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
             fi
             ${config.environment.extraInit}
           '';
