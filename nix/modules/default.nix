@@ -265,7 +265,9 @@
         '';
 
         deactivationScript = pkgs.writeShellScript "deactivate" ''
-          export PATH="$PATH:${lib.makeBinPath [ config.services.userborn.package ]}"
+          export PATH="$PATH:${
+            lib.makeBinPath (lib.optionals config.services.userborn.enable [ config.services.userborn.package ])
+          }"
           ${system-manager}/bin/system-manager-engine deactivate "$@"
         '';
 
