@@ -81,7 +81,13 @@ let
               system-manager = pkgs.callPackage ./packages/wrapper.nix {
                 system-manager-unwrapped = pkgs.callPackage ../package.nix { };
               };
-              userborn = userborn.packages.${config.nixpkgs.hostPlatform}.default;
+              userborn =
+                userborn.packages.${
+                  if config.nixpkgs.hostPlatform ? system then
+                    config.nixpkgs.hostPlatform.system
+                  else
+                    config.nixpkgs.hostPlatform
+                }.default;
             };
           };
 
