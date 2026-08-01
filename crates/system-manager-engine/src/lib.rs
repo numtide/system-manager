@@ -17,6 +17,7 @@ pub const PROFILE_NAME: &str = "system-manager";
 pub const GCROOT_PATH: &str = "/nix/var/nix/gcroots/system-manager-current";
 pub const SYSTEM_MANAGER_STATE_DIR: &str = "/var/lib/system-manager/state";
 pub const STATE_FILE_NAME: &str = "system-manager-state.json";
+const MAX_SYMLINK_DEPTH: usize = 40;
 
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 #[serde(from = "String", into = "String", rename_all = "camelCase")]
@@ -44,11 +45,23 @@ impl TryFrom<PathBuf> for StorePath {
     type Error = anyhow::Error;
 
     fn try_from(path: PathBuf) -> Result<Self> {
+        Self::try_from_path(path, 0)
+    }
+}
+
+impl StorePath {
+    fn try_from_path(path: PathBuf, symlink_depth: usize) -> Result<Self> {
         let nix_store = PathBuf::from("/").join("nix").join("store");
 
         if path.starts_with(&nix_store) {
             Ok(Self { store_path: path })
         } else if path.is_symlink() {
+            if symlink_depth >= MAX_SYMLINK_DEPTH {
+                anyhow::bail!(
+                    "Error constructing store path: too many symlink levels: {}",
+                    path.display()
+                )
+            }
             if let Ok(target) = path.read_link() {
                 let target = if target.is_relative() {
                     path.parent()
@@ -60,7 +73,7 @@ impl TryFrom<PathBuf> for StorePath {
                 if target.starts_with(&nix_store) {
                     Ok(Self { store_path: target })
                 } else {
-                    Self::try_from(target)
+                    Self::try_from_path(target, symlink_depth + 1)
                 }
             } else {
                 anyhow::bail!(
@@ -181,6 +194,18 @@ mod tests {
             store_path.store_path,
             PathBuf::from("/nix/store/test-system-manager")
         );
+
+        Ok(())
+    }
+
+    #[test]
+    fn rejects_relative_symlink_loop() -> Result<()> {
+        let temp_dir = tempfile::tempdir()?;
+        let profile = temp_dir.path().join("system-manager");
+
+        unix::fs::symlink("system-manager", &profile)?;
+
+        assert!(StorePath::try_from(profile).is_err());
 
         Ok(())
     }
