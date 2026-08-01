@@ -50,6 +50,13 @@ impl TryFrom<PathBuf> for StorePath {
             Ok(Self { store_path: path })
         } else if path.is_symlink() {
             if let Ok(target) = path.read_link() {
+                let target = if target.is_relative() {
+                    path.parent()
+                        .map(|parent| parent.join(target))
+                        .unwrap_or(target)
+                } else {
+                    target
+                };
                 if target.starts_with(&nix_store) {
                     Ok(Self { store_path: target })
                 } else {
@@ -153,5 +160,28 @@ pub fn etc_dir(ephemeral: bool) -> PathBuf {
         Path::new("/run").join("etc")
     } else {
         PathBuf::from("/etc")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn resolves_relative_profile_generation_link() -> Result<()> {
+        let temp_dir = tempfile::tempdir()?;
+        let profile = temp_dir.path().join("system-manager");
+        let generation = temp_dir.path().join("system-manager-1-link");
+
+        unix::fs::symlink("system-manager-1-link", &profile)?;
+        unix::fs::symlink("/nix/store/test-system-manager", generation)?;
+
+        let store_path = StorePath::try_from(profile)?;
+        assert_eq!(
+            store_path.store_path,
+            PathBuf::from("/nix/store/test-system-manager")
+        );
+
+        Ok(())
     }
 }
