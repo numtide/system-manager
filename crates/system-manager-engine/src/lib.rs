@@ -65,7 +65,7 @@ impl StorePath {
             if let Ok(target) = path.read_link() {
                 let target = if target.is_relative() {
                     path.parent()
-                        .map(|parent| parent.join(target))
+                        .map(|parent| parent.join(&target))
                         .unwrap_or(target)
                 } else {
                     target
