@@ -43,6 +43,12 @@
         type = lib.types.raw;
       };
 
+      # Stub to support nginx.
+      security.dhparams = lib.mkOption {
+        type = lib.types.raw;
+        default = { };
+      };
+
       # nixos/modules/services/system/userborn.nix still depends on activation scripts
       # but just to verify that the "users" activation script is disabled.
       # We try to avoid having to import the whole activationScripts module.

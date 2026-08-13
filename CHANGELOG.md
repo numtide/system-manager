@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- `main` now tracks `nixos-unstable` only, and stable Nixpkgs releases are supported on `release-XX.YY` branches, following the Home Manager model (#490)
+- This branch (`release-26.05`) is pinned to Nixpkgs `nixos-26.05` (#490)
+- Mismatched nixpkgs inputs now fail early with an explanatory error instead of an "option does not exist" trace (#490)
+
 - Breaking change: we disabled the nix module by default. To enable it, set `nix.enable = true` in your configuration. This allows users to choose their preferred Nix installation method and avoids conflicts with existing Nix setups. (#408)
 
 ## [1.1.0] - 2026-03-12
