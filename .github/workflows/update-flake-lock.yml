@@ -7,9 +7,17 @@ on:
 jobs:
   lockfile:
     runs-on: "ubuntu-latest"
+    strategy:
+      fail-fast: false
+      matrix:
+        branch:
+          - main
+          - release-26.05
     steps:
       - name: "Checkout the repo"
         uses: "actions/checkout@v6"
+        with:
+          ref: ${{ matrix.branch }}
       - name: "Install the Nix package manager"
         uses: "cachix/install-nix-action@master"
         with:
@@ -29,7 +37,8 @@ jobs:
       - name: "Create Pull Request"
         uses: "peter-evans/create-pull-request@v8"
         with:
-          branch: "auto_update_deps"
-          title: "Bump flake.lock, testFlake/flake.lock, and Cargo.lock"
+          base: ${{ matrix.branch }}
+          branch: "auto_update_deps-${{ matrix.branch }}"
+          title: "[${{ matrix.branch }}] Bump flake.lock, testFlake/flake.lock, and Cargo.lock"
           body: |
             Automatically bumped the lock files.

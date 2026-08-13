@@ -5,6 +5,30 @@
   userborn,
 }:
 let
+  # The nixpkgs releases this branch of system-manager is developed against.
+  supportedReleases = [ "26.11" ];
+
+  checkNixpkgsRelease =
+    allowUnsupportedNixpkgs: value:
+    if allowUnsupportedNixpkgs || lib.elem lib.trivial.release supportedReleases then
+      value
+    else
+      throw ''
+        This version of system-manager is meant to be used with nixpkgs ${lib.concatStringsSep " or " supportedReleases}, but you are using nixpkgs ${lib.trivial.release}.
+
+        system-manager follows the same branching model as home-manager:
+          - the main branch tracks nixos-unstable
+          - the release-XX.YY branches track the matching nixpkgs stable release
+
+        Either point system-manager at the release-${lib.trivial.release} branch:
+
+          inputs.system-manager.url = "github:numtide/system-manager/release-${lib.trivial.release}";
+
+        or make your nixpkgs input follow nixos-${lib.head supportedReleases}.
+
+        Set `allowUnsupportedNixpkgs = true;` in `makeSystemConfig` to bypass this check.
+      '';
+
   self = {
     # Function that can be used when defining inline modules to get better location
     # reporting in module-system errors.
@@ -24,6 +48,7 @@ let
         overlays ? [ ],
         extraSpecialArgs ? { },
         specialArgs ? { },
+        allowUnsupportedNixpkgs ? false,
       }:
       let
         # Module that sets additional module arguments
@@ -186,7 +211,7 @@ let
           in
           addPassthru (pkgs.linkFarm "system-manager" entries);
       in
-      returnIfNoAssertions toplevel;
+      checkNixpkgsRelease allowUnsupportedNixpkgs (returnIfNoAssertions toplevel);
 
     mkTestPreamble =
       {
