@@ -57,6 +57,18 @@
         default = { };
       };
 
+      # Stub, we don't import the display manager modules.
+      services.displayManager.hiddenUsers = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+      };
+
+      # Stub, we don't import the bash module.
+      programs.bash.completion.enable = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+      };
+
       fonts.fontconfig.enable = lib.mkOption {
         type = lib.types.bool;
         default = false;

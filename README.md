@@ -55,6 +55,9 @@ cd ~/.config/system-manager
 
 Here is what `flake.nix` looks like. (Note: If you enabled experimental features from the command line rather than through `/etc/nix/nix.conf`, this file might not exist; you can create it manually and copy the following into it.)
 
+System Manager follows the same branching model as Home Manager: the `main` branch tracks `nixos-unstable`, and each `release-XX.YY` branch tracks the matching Nixpkgs stable release.
+Make sure both inputs refer to the same release, otherwise evaluation fails with an explanatory error.
+
 ```nix
 {
   description = "Standalone System Manager configuration";
@@ -231,6 +234,33 @@ System Manager is currently supported on NixOS, Ubuntu, and Debian. However, it 
 
 Nix should be installed with the [nix-installer](https://github.com/NixOS/nix-installer).
 System manager is tested against Nix 2.32 and above installed via nix-installer.
+
+## Nixpkgs compatibility
+
+System Manager imports a number of Nixpkgs NixOS modules, so a given version only works with the Nixpkgs release it was developed against.
+We follow the same branching model as Home Manager:
+
+| System Manager branch | Nixpkgs                       |
+| --------------------- | ----------------------------- |
+| `main`                | `nixos-unstable`              |
+| `release-26.05`       | `nixos-26.05`                 |
+
+We support the current stable release and unstable.
+When the inputs do not match, evaluation fails early with a message telling you which branch to use, rather than with an error deep inside module evaluation.
+
+To use System Manager with a stable Nixpkgs:
+
+```nix
+inputs = {
+  nixpkgs.url = "github:nixos/nixpkgs/nixos-26.05";
+  system-manager = {
+    url = "github:numtide/system-manager/release-26.05";
+    inputs.nixpkgs.follows = "nixpkgs";
+  };
+};
+```
+
+The check can be bypassed with `allowUnsupportedNixpkgs = true;` in `makeSystemConfig`, but combinations other than the ones above are untested and likely to fail.
 
 ## Sponsors
 

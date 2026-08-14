@@ -1,39 +1,24 @@
 {
   lib,
-  pkgs,
   config,
   ...
 }:
 {
-  options = {
-    # options coming from modules/services/system/nix-daemon.nix that we cannot import just yet because it
-    # depends on users. These are the minimum options we need to be able to configure Nix using system-manager.
-    nix = {
-      enable = lib.mkOption {
-        type = lib.types.bool;
-        default = false;
-        description = ''
-          Whether to enable Nix.
-          Disabling Nix makes the system hard to modify and the Nix programs and configuration will not be made available by NixOS itself.
-        '';
-      };
-      package = lib.mkOption {
-        type = lib.types.package;
-        default = pkgs.nix;
-        defaultText = lib.literalExpression "pkgs.nix";
-        description = ''
-          This option specifies the Nix package instance to use throughout the system.
-        '';
-      };
-    };
-  };
+  config = lib.mkMerge [
+    {
+      nix.enable = lib.mkDefault false;
 
-  config = lib.mkIf config.nix.enable {
+      # Nix already owns its build users on the hosts we manage.
+      # Priority 900 overrides the upstream mkDefault, users can still set it.
+      nix.nrBuildUsers = lib.mkOverride 900 0;
+    }
 
-    environment.etc."nix/nix.conf".replaceExisting = true;
-    nix.settings.experimental-features = lib.mkDefault [
-      "nix-command"
-      "flakes"
-    ];
-  };
+    (lib.mkIf config.nix.enable {
+      environment.etc."nix/nix.conf".replaceExisting = true;
+      nix.settings.experimental-features = lib.mkDefault [
+        "nix-command"
+        "flakes"
+      ];
+    })
+  ];
 }
