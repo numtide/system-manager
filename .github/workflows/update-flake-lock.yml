@@ -15,7 +15,7 @@ jobs:
           - release-26.05
     steps:
       - name: "Checkout the repo"
-        uses: "actions/checkout@v6"
+        uses: "actions/checkout@v7"
         with:
           ref: ${{ matrix.branch }}
       - name: "Install the Nix package manager"
