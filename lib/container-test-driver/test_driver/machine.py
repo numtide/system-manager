@@ -329,6 +329,11 @@ class Machine(testinfra.host.Host):
             return  # Already installed
 
         with self.nested("Installing Nix via nix-installer"):
+            nscd_active = self.systemctl("is-active nscd").returncode == 0
+            if nscd_active:
+                # Temporarily shutdown nscd due to https://github.com/DeterminateSystems/nix-installer/issues/622
+                # (which also appears with https://github.com/NixOS/nix-installer)
+                self.systemctl("stop nscd")
             # Run nix-installer in multi-user mode with daemon
             result = self.execute(
                 "/usr/local/bin/nix-installer install linux "
@@ -336,6 +341,8 @@ class Machine(testinfra.host.Host):
                 "--extra-conf 'sandbox = false'",
                 timeout=300,
             )
+            if nscd_active:
+                self.systemctl("start nscd")
             if result.returncode != 0:
                 msg = f"Failed to install Nix: {result.stdout}"
                 raise Error(msg)
