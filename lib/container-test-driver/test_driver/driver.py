@@ -73,11 +73,20 @@ class Driver:
             container_rootdir = tempdir_path / container.name
             subprocess.run(
                 [
-                    "cp",
-                    "-r",
-                    "--no-preserve=ownership",
-                    str(container.rootfs),
+                    "mkdir",
+                    "-p",
                     str(container_rootdir),
+                ],
+                check=True,
+            )
+            subprocess.run(
+                [
+                    "tar",
+                    "--no-same-owner",
+                    "-C",
+                    str(container_rootdir),
+                    "-xf",
+                    str(container.rootfs),
                 ],
                 check=True,
             )

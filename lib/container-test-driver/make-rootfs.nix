@@ -81,7 +81,7 @@ in
         pkgs.jq
       ];
     in
-    pkgs.runCommand "rootfs-${name}"
+    pkgs.runCommand "rootfs-${name}.tar"
       {
         inherit nativeBuildInputs;
       }
@@ -128,5 +128,9 @@ in
 
         # Run distro-specific setup
         ${extraSetup}
+
+        tar -C $out -cf out.tar .
+        rm -rf $out
+        mv out.tar $out
       '';
 }
