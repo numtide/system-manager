@@ -68,5 +68,13 @@ forEachDistro "home-manager" {
           assert "/etc/profiles/per-user/hmuser/bin/hello" == resolved, (
               f"Expected hello from per-user profile, got: {resolved!r}"
           )
+
+      with subtest("home-manager useUserPackages profile is in NIX_PROFILES"):
+          nix_profiles = machine.succeed(
+              "runuser -u hmuser -- bash -lc 'echo $NIX_PROFILES'"
+          ).strip()
+          assert "/etc/profiles/per-user/hmuser" in nix_profiles.split(), (
+              f"Expected per-user profile in NIX_PROFILES, got: {nix_profiles!r}"
+          )
     '';
 }

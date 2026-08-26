@@ -37,6 +37,18 @@
       '';
     };
 
+    profiles = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = ''
+        A list of profiles used to setup the global environment.
+
+        Exported as the space-separated `NIX_PROFILES` variable (in reverse
+        order, matching NixOS) so that shells and completion systems can find
+        files under each profile, such as `share/zsh/site-functions`.
+      '';
+    };
+
     extraInit = lib.mkOption {
       type = lib.types.lines;
       default = "";
@@ -125,6 +137,7 @@
   config =
     let
       pathDir = "/run/system-manager/sw";
+      nixProfiles = lib.concatStringsSep " " (lib.reverseList config.environment.profiles);
     in
     {
       environment = {
@@ -133,6 +146,12 @@
         pathsToLink = [
           "/bin"
           "/share"
+        ];
+
+        # Last entries become first in NIX_PROFILES, matching NixOS.
+        profiles = lib.mkAfter [
+          "/nix/var/nix/profiles/default"
+          pathDir
         ];
 
         variables = config.environment.sessionVariables;
@@ -150,6 +169,8 @@
             if [ -d "/etc/profiles/per-user/$USER/share" ]; then
               export XDG_DATA_DIRS="/etc/profiles/per-user/$USER/share:''${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
             fi
+            export NIX_USER_PROFILE_DIR="/nix/var/nix/profiles/per-user/$USER"
+            export NIX_PROFILES="${nixProfiles}"
             ${config.environment.extraInit}
           '';
 
@@ -157,6 +178,8 @@
             ${lib.concatLines (lib.mapAttrsToList (k: v: ''${k}="${v}"'') config.environment.variables)}
             PATH=/etc/profiles/per-user/''${USER}/bin:${pathDir}/bin:''${PATH}
             XDG_DATA_DIRS=/etc/profiles/per-user/''${USER}/share:${pathDir}/share:''${XDG_DATA_DIRS:-/usr/local/share:/usr/share}
+            NIX_USER_PROFILE_DIR=/nix/var/nix/profiles/per-user/''${USER}
+            NIX_PROFILES="${nixProfiles}"
           '';
 
           # TODO: figure out how to properly add fish support. We could start by
