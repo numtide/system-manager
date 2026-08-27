@@ -55,11 +55,16 @@ Pick one of:
 
 ## Restarting services when a secret changes
 
-`sops.secrets.<name>.restartUnits` and `reloadUnits` work as they do on NixOS: `sops-install-secrets` restarts or reloads the listed units through `systemctl` when the decrypted value changes.
+`sops.secrets.<name>.restartUnits` and `reloadUnits` work as they do on NixOS: when the decrypted value changes, `sops-install-secrets` acts on the listed units through `systemctl` directly, rather than through the NixOS activation-restart lists that System Manager does not have.
 
 ```nix
 sops.secrets.my-service-env.restartUnits = [ "my-service.service" ];
 ```
+
+Two details are worth knowing, because they follow from how the unit is ordered:
+
+- The verbs used are `try-restart` and `try-reload-or-restart`, so a unit that is currently stopped is left stopped. On first activation that is the right behaviour, since the unit starts with the new secret anyway.
+- The calls are made with `--no-block`. `sops-install-secrets.service` runs before `sysinit-reactivation.target` with `DefaultDependencies=no`, and waiting on a regular service (which is ordered `After=sysinit.target`) would deadlock the transaction. So the restart is requested, not awaited.
 
 ## Secrets needed to create users
 
@@ -78,6 +83,10 @@ Secrets marked `neededForUsers` are installed into `/run/secrets-for-users` befo
 ```
 
 This requires `services.userborn.enable` (the default), since userborn is what creates the users.
+
+## Secret file ownership
+
+Secrets are written into a `ramfs` at `/run/secrets.d`, owned by root and by the `keys` group where it exists. Debian and Ubuntu have no `keys` group, so `sops-install-secrets` falls back to `nogroup`. This affects the mount point only; individual secrets still default to `0400` root-owned, and `sops.secrets.<name>.owner`/`group` work as usual.
 
 ## Limitations
 
