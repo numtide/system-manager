@@ -332,13 +332,13 @@ fn create_etc_file(
             if old_state.contains(&target) {
                 log::debug!(
                     "{} is managed by system-manager. Deleting.",
-                    &target.display()
+                    target.display()
                 );
                 fs::remove_file(&target).map_err(|e| ActivationError::WithPartialResult {
                     result: state.clone(),
                     source: e.into(),
                 })?;
-                log::debug!("{} is managed by system-manager.", &target.display());
+                log::debug!("{} is managed by system-manager.", target.display());
                 unix::fs::symlink(file.source.store_path, &target).map_err(|e| {
                     ActivationError::WithPartialResult {
                         result: state.clone(),
@@ -422,7 +422,7 @@ fn find_uid(entry: &EtcFile) -> anyhow::Result<u32> {
                     || {
                         log::warn!(
                             "Specified user {} not found, defaulting to root",
-                            &entry.user
+                            entry.user
                         );
                         0
                     },
@@ -443,7 +443,7 @@ fn find_gid(entry: &EtcFile) -> anyhow::Result<u32> {
                     || {
                         log::warn!(
                             "Specified group {} not found, defaulting to root",
-                            &entry.group
+                            entry.group
                         );
                         0
                     },
