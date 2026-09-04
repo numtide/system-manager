@@ -10,6 +10,7 @@ use std::collections::HashSet;
 use std::fs::DirBuilder;
 use std::io::Seek;
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 use std::{fs, io, process};
 use thiserror::Error;
 
@@ -128,7 +129,7 @@ impl StateV1 {
     }
 }
 
-pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
+pub fn activate(store_path: &StorePath, ephemeral: bool, timeout: &Option<Duration>) -> Result<()> {
     log::info!("Activating system-manager profile: {store_path}");
     if ephemeral {
         log::info!("Running in ephemeral mode");
@@ -164,21 +165,22 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
             }
 
             log::info!("Activating systemd services...");
-            let final_state = match services::activate(store_path, old_state.services, ephemeral) {
-                Ok(services) => StateV1 {
-                    file_tree: etc_tree,
-                    services,
-                    version: 1,
-                },
-                Err(ActivationError::WithPartialResult { result, source }) => {
-                    log::error!("Error during activation: {source:?}");
-                    StateV1 {
+            let final_state =
+                match services::activate(store_path, old_state.services, ephemeral, timeout) {
+                    Ok(services) => StateV1 {
                         file_tree: etc_tree,
-                        services: result,
+                        services,
                         version: 1,
+                    },
+                    Err(ActivationError::WithPartialResult { result, source }) => {
+                        log::error!("Error during activation: {source:?}");
+                        StateV1 {
+                            file_tree: etc_tree,
+                            services: result,
+                            version: 1,
+                        }
                     }
-                }
-            };
+                };
             final_state.write_to_file(state_file)?;
 
             if let Err(e) = tmp_result {

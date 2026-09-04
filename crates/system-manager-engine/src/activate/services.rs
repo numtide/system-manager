@@ -62,6 +62,7 @@ pub fn activate(
     store_path: &StorePath,
     old_services: Services,
     ephemeral: bool,
+    timeout: &Option<Duration>,
 ) -> ServiceActivationResult {
     verify_systemd_dir(ephemeral)
         .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
@@ -82,7 +83,6 @@ pub fn activate(
     let job_monitor = service_manager
         .monitor_jobs_init()
         .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
-    let timeout = Some(Duration::from_secs(30));
 
     // Stop removed services and any masked services that might still be running
     // (e.g. distro-provided units). Must happen before daemon-reload so systemd
@@ -93,7 +93,7 @@ pub fn activate(
         &service_manager,
         &job_monitor,
         stop_services(&service_manager, units_to_stop),
-        &timeout,
+        timeout,
     )
     .map_err(|e| ActivationError::with_partial_result(services.clone(), e))?;
 
@@ -102,7 +102,7 @@ pub fn activate(
         &job_monitor,
         reload_or_restart_units(&service_manager, convert_services(&services_to_reload))
             + start_units(&service_manager, ["system-manager.target"]),
-        &timeout,
+        timeout,
     )
     .map_err(|e| ActivationError::with_partial_result(services.clone(), e))?;
 
@@ -228,7 +228,7 @@ fn verify_systemd_dir(ephemeral: bool) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn deactivate(old_services: Services) -> ServiceActivationResult {
+pub fn deactivate(old_services: Services, timeout: &Option<Duration>) -> ServiceActivationResult {
     log::debug!("{:?}", old_services);
 
     restore_ephemeral_system_dir()
@@ -247,7 +247,6 @@ pub fn deactivate(old_services: Services) -> ServiceActivationResult {
         let job_monitor = service_manager
             .monitor_jobs_init()
             .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
-        let timeout = Some(Duration::from_secs(30));
 
         let mut units_to_stop = convert_services(&stoppable);
         units_to_stop.push("system-manager.target");
@@ -257,7 +256,7 @@ pub fn deactivate(old_services: Services) -> ServiceActivationResult {
             &service_manager,
             &job_monitor,
             stop_services(&service_manager, units_to_stop),
-            &timeout,
+            timeout,
         )
         // We consider all jobs stopped now..
         .map_err(|e| ActivationError::with_partial_result(im::HashMap::new(), e))?;
