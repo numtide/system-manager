@@ -179,6 +179,9 @@ struct ActivationArgs {
     #[arg(long, action)]
     /// If true, only write under /run, otherwise write under /etc
     ephemeral: bool,
+    /// Set timeout for action, in seconds
+    #[arg(short, long, global = true)]
+    timeout: Option<u64>,
 }
 
 #[derive(clap::Args, Debug)]
@@ -242,6 +245,9 @@ enum Action {
         optional_store_path_args: OptionalStorePathArg,
         #[command(flatten)]
         sudo_args: SudoArgs,
+        /// Set timeout for action, in seconds
+        #[arg(short, long, global = true)]
+        timeout: Option<u64>,
     },
     /// Put all files defined by the given generation in place, but do not start services
     PrePopulate {
@@ -304,7 +310,7 @@ fn go(args: Args) -> Result<()> {
     match action {
         Action::PrePopulate {
             store_or_flake_args,
-            activation_args: ActivationArgs { ephemeral },
+            activation_args: ActivationArgs { ephemeral, .. },
             sudo_args,
         } => {
             let sudo_options = sudo_args.to_sudo_options(legacy_use_remote_sudo)?;
@@ -327,6 +333,7 @@ fn go(args: Args) -> Result<()> {
         Action::Deactivate {
             optional_store_path_args: OptionalStorePathArg { maybe_store_path },
             sudo_args,
+            timeout,
         } => {
             let sudo_options = sudo_args.to_sudo_options(legacy_use_remote_sudo)?;
             deactivate(
@@ -335,6 +342,7 @@ fn go(args: Args) -> Result<()> {
                 &sudo_options,
                 &ssh_options,
                 verbose,
+                &timeout,
             )
         }
 
@@ -403,7 +411,7 @@ fn go(args: Args) -> Result<()> {
 
         Action::Switch {
             build_args,
-            activation_args: ActivationArgs { ephemeral },
+            activation_args: ActivationArgs { ephemeral, timeout },
             sudo_args,
         } => {
             let mut nix_build_options = NixBuildOptions::from(&build_args);
@@ -424,12 +432,13 @@ fn go(args: Args) -> Result<()> {
                 &sudo_options,
                 &ssh_options,
                 verbose,
+                &timeout,
             )
         }
 
         Action::Activate {
             store_path,
-            activation_args: ActivationArgs { ephemeral },
+            activation_args: ActivationArgs { ephemeral, timeout },
             sudo_args,
         } => {
             let sudo_options = sudo_args.to_sudo_options(legacy_use_remote_sudo)?;
@@ -441,6 +450,7 @@ fn go(args: Args) -> Result<()> {
                 &sudo_options,
                 &ssh_options,
                 verbose,
+                &timeout,
             )
         }
     }
@@ -618,9 +628,17 @@ fn deactivate(
     sudo_options: &SudoOptions,
     ssh_options: &[String],
     verbose: bool,
+    timeout: &Option<u64>,
 ) -> Result<()> {
     let store_path = store_path_or_active_profile(maybe_store_path);
-    invoke_engine_deactivate(&store_path, target_host, sudo_options, ssh_options, verbose)
+    invoke_engine_deactivate(
+        &store_path,
+        target_host,
+        sudo_options,
+        ssh_options,
+        verbose,
+        timeout,
+    )
 }
 
 // --- Engine invocation functions ---
@@ -653,6 +671,7 @@ fn invoke_engine_activate(
     sudo_options: &SudoOptions,
     ssh_options: &[String],
     verbose: bool,
+    timeout: &Option<u64>,
 ) -> Result<()> {
     let engine_path = store_path.store_path.join("bin").join(ENGINE_BIN);
     let mut args = vec![
@@ -665,6 +684,10 @@ fn invoke_engine_activate(
     }
     if verbose {
         args.push("--verbose".to_string());
+    }
+    if timeout.is_some() {
+        args.push("--timeout".to_string());
+        args.push(timeout.unwrap().to_string());
     }
     invoke_engine(&engine_path, &args, target_host, sudo_options, ssh_options)
 }
@@ -700,6 +723,7 @@ fn invoke_engine_deactivate(
     sudo_options: &SudoOptions,
     ssh_options: &[String],
     verbose: bool,
+    timeout: &Option<u64>,
 ) -> Result<()> {
     // For deactivate, we need to find the engine in the profile
     // If we have a specific store path, use it; otherwise use the active profile
@@ -716,6 +740,10 @@ fn invoke_engine_deactivate(
     let mut args = vec!["deactivate".to_string()];
     if verbose {
         args.push("--verbose".to_string());
+    }
+    if timeout.is_some() {
+        args.push("--timeout".to_string());
+        args.push(timeout.unwrap().to_string());
     }
     invoke_engine(&engine_path, &args, target_host, sudo_options, ssh_options)
 }

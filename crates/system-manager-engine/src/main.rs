@@ -13,6 +13,7 @@
 use anyhow::Result;
 use clap::Parser;
 use std::process::ExitCode;
+use std::time::Duration;
 
 use system_manager_engine::{NixOptions, StorePath, PROFILE_DIR};
 
@@ -64,11 +65,17 @@ enum Action {
         store_path_arg: StorePathArg,
         #[command(flatten)]
         activation_args: ActivationArgs,
+        /// Set timeout for action, in seconds
+        #[arg(short, long, global = true)]
+        timeout: Option<u64>,
     },
     /// Deactivate the system-manager profile (remove managed configuration)
     Deactivate {
         #[command(flatten)]
         store_path_arg: OptionalStorePathArg,
+        /// Set timeout for action, in seconds
+        #[arg(short, long, global = true)]
+        timeout: Option<u64>,
     },
     /// Pre-populate files without starting services
     Prepopulate {
@@ -104,17 +111,23 @@ fn go(args: Args) -> Result<()> {
         Action::Activate {
             store_path_arg: StorePathArg { store_path },
             activation_args: ActivationArgs { ephemeral },
-        } => system_manager_engine::activate::activate(&store_path, ephemeral),
+            timeout,
+        } => system_manager_engine::activate::activate(
+            &store_path,
+            ephemeral,
+            &timeout.map(Duration::from_secs),
+        ),
 
         Action::Deactivate {
             store_path_arg: OptionalStorePathArg { store_path },
+            timeout,
         } => {
             // Log which store path we're using if it was auto-detected
             if store_path.is_none() {
                 let path = std::path::Path::new(PROFILE_DIR).join("system-manager");
                 log::info!("No store path provided, using {}", path.display());
             }
-            system_manager_engine::deactivate::deactivate()
+            system_manager_engine::deactivate::deactivate(&timeout.map(Duration::from_secs))
         }
 
         Action::Prepopulate {
