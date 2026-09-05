@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- sops-nix secrets now work beyond the default case: `sops.age.generateKey` is honoured through a `sops-generate-age-key.service` oneshot instead of being discarded with the activation script, `sops.secrets.<name>.neededForUsers` is ordered against userborn instead of the unused `systemd-sysusers.service`, and `sops.useSystemdActivation` is enabled by default so that disabling userborn no longer silently stops secrets from being installed
+
 - Export `NIX_PROFILES` (and `NIX_USER_PROFILE_DIR`) including `/run/system-manager/sw` and `/etc/profiles/per-user/$USER`, so zsh/bash completions from `environment.systemPackages`, `users.users.<name>.packages`, and Home Manager `useUserPackages` are visible to shells
 
 - `main` now tracks `nixos-unstable` only, and stable Nixpkgs releases are supported on `release-XX.YY` branches, following the Home Manager model (#490)
