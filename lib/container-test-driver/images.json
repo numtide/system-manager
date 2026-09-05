@@ -28,5 +28,15 @@
       "sha256": "0xyp9pin8m6ys0gxk6spq83dgdfl3malbvps7v78hrp7sjg3rp0k",
       "url": "https://cloud-images.ubuntu.com/releases/noble/release-20260321/ubuntu-24.04-server-cloudimg-amd64-root.tar.xz"
     }
+  },
+  "ubuntu-26_04": {
+    "aarch64-linux": {
+      "sha256": "077i5k2yd36bwayybvh475v5lyr9ilb7c847n99mmyj8p3lcb5d7",
+      "url": "https://cloud-images.ubuntu.com/releases/resolute/release-20260731/ubuntu-26.04-server-cloudimg-arm64-root.tar.xz"
+    },
+    "x86_64-linux": {
+      "sha256": "12318m2bikm6cgzlwa215301y9vf3p4666yb7lxmik4z4llp42m8",
+      "url": "https://cloud-images.ubuntu.com/releases/resolute/release-20260731/ubuntu-26.04-server-cloudimg-amd64-root.tar.xz"
+    }
   }
 }
