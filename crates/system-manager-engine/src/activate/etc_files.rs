@@ -228,10 +228,27 @@ fn list_static_entries(config_entries: &EtcFilesConfig) -> anyhow::Result<Vec<Et
         let dir_content = fs::read_dir(&dir.absolute_path)?;
         for file in dir_content {
             let file = file?;
-            let canon_path = fs::canonicalize(file.path()).context(format!(
-                "Failed to get the canonical path of {}",
-                file.path().display()
-            ))?;
+            let file_path = file.path();
+            if file_path.is_symlink() {
+                if let Ok(target_path) = fs::read_link(&file_path) {
+                    if !target_path.exists() {
+                        log::warn!("Skipping broken symlink: {} -> {}", file_path.display(), target_path.display());
+                        continue;
+                    }
+                } else {
+                    log::warn!("Skipping unreadable symlink: {}", file_path.display());
+                    continue;
+                }
+            }
+
+            let canon_path = match fs::canonicalize(&file_path) {
+                Ok(path) => path,
+                Err(e) => {
+                    log::warn!("Failed to get canonical path for {}: {}. Skipping.", file_path.display(), e);
+                    continue;
+                }
+            };
+
             if canon_path.is_dir() {
                 log::debug!("{} is a dir", canon_path.display());
                 let dirname = file.file_name();

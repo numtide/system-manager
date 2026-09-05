@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      - uses: Swatinem/rust-cache@v2
+      - name: Build & run tests
+        run: cargo test --all-features
+      - name: Build without libstd
+        run: cargo build --no-default-features
+      - name: Build without libstd with serde
+        run: cargo build --no-default-features --features serde
+  miri:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          components: miri
+          override: true
+      - name: Test with Miri
+        run: cargo miri test --all-features
+  mutation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get number of CPU cores
+        uses: SimenB/github-actions-cpu-cores@v2
+        id: cpu-cores
+      - uses: actions/checkout@v4
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      - uses: Swatinem/rust-cache@v2
+      - name: Install cargo-mutants
+        run: cargo install cargo-mutants
+      - name: Run mutant tests
+        run: cargo mutants --jobs ${{ steps.cpu-cores.outputs.count }} -- --all-features
+      - name: Archive results
+        uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: mutation-report
+          path: mutants.out
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          components: rustfmt, clippy
+          override: true
+      - uses: Swatinem/rust-cache@v2
+      - name: Run clippy
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - name: Check format
+        run: cargo fmt --all -- --check
+  coverage:
+    runs-on: ubuntu-latest
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          components: llvm-tools-preview
+          override: true
+      - uses: Swatinem/rust-cache@v2
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Generate code coverage
+        run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: lcov.info
+          fail_ci_if_error: true

@@ -1,0 +1,55 @@
+name: libFuzzer
+
+on:
+    push:
+    pull_request:
+    schedule:
+        - cron: "8 0 * * *"
+
+jobs:
+    fuzz:
+        name: libFuzzer
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                target:
+                    - inline_array
+                    - ring_buffer
+                    - sized_chunk
+                    - sparse_chunk
+        steps:
+            - uses: actions/checkout@v2
+              name: Checkout project
+            - uses: actions/cache@v1
+              name: Cache corpus
+              id: cache-corpus
+              with:
+                  path: fuzz/corpus/${{ matrix.target }}
+                  key: fuzz-corpus-${{ matrix.target }}-${{ github.run_id }}
+                  restore-keys: |
+                      fuzz-corpus-${{ matrix.target }}-
+            - uses: actions-rs/toolchain@v1
+              name: Install Rust
+              with:
+                  profile: minimal
+                  toolchain: nightly
+                  override: true
+            - uses: actions-rs/install@v0.1
+              name: Install cargo-fuzz
+              with:
+                  crate: cargo-fuzz
+                  version: latest
+                  use-tool-cache: true
+            - name: Fuzz for 10 minutes
+              run: cargo fuzz run ${{ matrix.target }} -- -max_total_time=600 # seconds
+            - uses: actions/upload-artifact@v1
+              name: Publish artifacts
+              with:
+                  name: fuzz-artifacts
+                  path: fuzz/artifacts
+            - uses: actions/upload-artifact@v2
+              name: Publish corpus
+              with:
+                  name: fuzz-corpus
+                  path: fuzz/corpus
