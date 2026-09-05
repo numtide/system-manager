@@ -56,6 +56,22 @@ forEachDistro "environment-variables" {
           assert 'FOO="bar"' in content, f"Expected FOO in environment.d, got: {content}"
           assert 'PATHLIKE="/a:/b:/c"' in content, f"Expected PATHLIKE in environment.d, got: {content}"
           assert "NULLED" not in content, f"Expected NULLED to be absent, got: {content}"
+          assert "/run/system-manager/sw" in content, f"Expected system profile in NIX_PROFILES, got: {content}"
+          assert "/etc/profiles/per-user/" in content, (
+              f"Expected per-user profile in NIX_PROFILES, got: {content}"
+          )
+
+      with subtest("NIX_PROFILES is exported in login shell"):
+          content = machine.succeed("cat /etc/profile.d/system-manager-path.sh")
+          assert "NIX_PROFILES=" in content, f"Expected NIX_PROFILES in profile script, got: {content}"
+          assert "/run/system-manager/sw" in content, f"Expected system profile in NIX_PROFILES, got: {content}"
+          value = machine.succeed("bash --login -c 'echo $NIX_PROFILES'").strip()
+          assert "/run/system-manager/sw" in value.split(), (
+              f"Expected /run/system-manager/sw in NIX_PROFILES, got: {value!r}"
+          )
+          assert "/etc/profiles/per-user/" in value, (
+              f"Expected per-user profile in NIX_PROFILES, got: {value!r}"
+          )
 
       with subtest("sessionVariables are login shell exports"):
           value = machine.succeed("bash --login -c 'echo $SESSION_VAR'").strip()
