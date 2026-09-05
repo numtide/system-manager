@@ -22,6 +22,7 @@ IMAGES_JSON = (
 UBUNTU_RELEASES = {
     "ubuntu-22_04": "https://cloud-images.ubuntu.com/releases/jammy/",
     "ubuntu-24_04": "https://cloud-images.ubuntu.com/releases/noble/",
+    "ubuntu-26_04": "https://cloud-images.ubuntu.com/releases/resolute/",
 }
 
 DEBIAN_RELEASES = {
