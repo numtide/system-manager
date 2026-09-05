@@ -43,5 +43,14 @@ forEachDistro "user-packages" {
           )
           greeting = machine.succeed("su --login alice -c 'hello'").strip()
           assert "Hello, world!" in greeting, f"Expected hello greeting, got: {greeting}"
+
+      with subtest("alice's NIX_PROFILES includes the per-user profile"):
+          nix_profiles = machine.succeed("su --login alice -c 'echo $NIX_PROFILES'").strip()
+          assert "/etc/profiles/per-user/alice" in nix_profiles.split(), (
+              f"Expected per-user profile in NIX_PROFILES, got: {nix_profiles!r}"
+          )
+          assert "/run/system-manager/sw" in nix_profiles.split(), (
+              f"Expected system profile in NIX_PROFILES, got: {nix_profiles!r}"
+          )
     '';
 }

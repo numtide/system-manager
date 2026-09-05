@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Export `NIX_PROFILES` (and `NIX_USER_PROFILE_DIR`) including `/run/system-manager/sw` and `/etc/profiles/per-user/$USER`, so zsh/bash completions from `environment.systemPackages`, `users.users.<name>.packages`, and Home Manager `useUserPackages` are visible to shells
+
 - `main` now tracks `nixos-unstable` only, and stable Nixpkgs releases are supported on `release-XX.YY` branches, following the Home Manager model (#490)
 - Mismatched nixpkgs inputs now fail early with an explanatory error instead of an "option does not exist" trace (#490)
 
