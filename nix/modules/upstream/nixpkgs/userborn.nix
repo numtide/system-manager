@@ -37,6 +37,12 @@ in
   services.userborn.enable = lib.mkDefault true;
   services.userborn.package = userborn;
 
+  # The legacy import is a one-shot migration of state left behind by NixOS'
+  # update-users-groups.pl activation script. system-manager never ran that
+  # script, so there is nothing to migrate; keep the unit and the
+  # userborn-import-legacy package out of the closure.
+  services.userborn.importLegacyState = lib.mkDefault false;
+
   # REMOVE when https://github.com/NixOS/nixpkgs/pull/483684 is merged
   systemd.services.userborn = lib.mkIf config.services.userborn.enable {
     # system-manager does not implement systemd aliases
