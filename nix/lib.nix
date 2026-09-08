@@ -29,6 +29,9 @@ let
         Set `allowUnsupportedNixpkgs = true;` in `makeSystemConfig` to bypass this check.
       '';
 
+  # Returns the system string from a nixpkgs.
+  getSystem = cfg: if cfg.hostPlatform ? system then cfg.hostPlatform.system else cfg.hostPlatform;
+
   self = {
     # Function that can be used when defining inline modules to get better location
     # reporting in module-system errors.
@@ -73,7 +76,7 @@ let
                       }
                     else
                       {
-                        system = cfg.hostPlatform;
+                        system = getSystem cfg.hostPlatform;
                       };
                 in
                 import nixpkgs (
@@ -106,13 +109,7 @@ let
               system-manager = pkgs.callPackage ./packages/wrapper.nix {
                 system-manager-unwrapped = pkgs.callPackage ../package.nix { };
               };
-              userborn =
-                userborn.packages.${
-                  if config.nixpkgs.hostPlatform ? system then
-                    config.nixpkgs.hostPlatform.system
-                  else
-                    config.nixpkgs.hostPlatform
-                }.default;
+              userborn = userborn.packages.${getSystem config.nixpkgs}.default;
             };
           };
 

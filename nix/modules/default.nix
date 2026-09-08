@@ -22,9 +22,10 @@
     {
       nixpkgs = {
         buildPlatform = lib.mkOption {
-          type = types.str;
+          type = with types; either str attrs;
           example = "x86_64-linux";
           default = config.nixpkgs.hostPlatform;
+          description = "The platform on which we are building the system configuration.";
         };
 
         hostPlatform = lib.mkOption {
