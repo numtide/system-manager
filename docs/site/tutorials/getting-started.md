@@ -183,7 +183,7 @@ Next, we'll run System Manager to apply the configuration.
 System Manager requires root privileges to modify `/etc`, manage systemd services, and create system profiles. Use the `--sudo` flag to run these operations via sudo:
 
 ```sh
-nix run 'github:numtide/system-manager' -- switch --flake . --sudo
+nix run 'github:numtide/system-manager' -- switch --sudo
 ```
 
 After a short moment, the `tldr` app should be installed on your system.
