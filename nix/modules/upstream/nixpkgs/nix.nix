@@ -3,7 +3,19 @@
   config,
   ...
 }:
+let
+  cfg = config.nix;
+in
 {
+  options.nix.nixPath = lib.mkOption {
+    type = lib.types.listOf lib.types.str;
+    default = [ ];
+    description = ''
+      The default Nix expression search path, used by the Nix evaluator to
+      look up paths enclosed in angle brackets (e.g. `<nixpkgs>`).
+    '';
+  };
+
   config = lib.mkMerge [
     {
       nix.enable = lib.mkDefault false;
@@ -15,6 +27,10 @@
 
     (lib.mkIf config.nix.enable {
       environment.etc."nix/nix.conf".replaceExisting = true;
+      environment.etc."nix/registry.json".replaceExisting = true;
+      environment.sessionVariables = lib.mkIf (cfg.nixPath != [ ]) {
+        NIX_PATH = cfg.nixPath;
+      };
       nix.settings.experimental-features = lib.mkDefault [
         "nix-command"
         "flakes"
