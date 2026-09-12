@@ -154,12 +154,12 @@ class Driver:
         for machine in self.machines:
             nspawn_uuid = uuid.uuid4()
 
-            sleep = shutil.which("sleep")
-            if sleep is None:
+            sleep = machine.execute("/bin/sh -c 'which sleep'").stdout.strip()
+            if not sleep:
                 msg = "sleep command not found"
                 raise RuntimeError(msg)
             machine.execute(
-                f"systemd-run /bin/sh -c '{sleep} 999999999 && echo {nspawn_uuid}'",
+                f"systemd-run /bin/sh -c 'sleep 999999999 && echo {nspawn_uuid}'",
             )
 
             print(
