@@ -123,6 +123,14 @@ let
               _file = "${self.printAttrPos (builtins.unsafeGetAttrPos "a" { a = null; })}: inline module";
               build = { inherit toplevel; };
             }
+            (
+              { lib, ... }:
+              {
+                config.nixpkgs.flake.source = lib.mkIf (
+                  builtins.isAttrs nixpkgs && nixpkgs ? outPath
+                ) nixpkgs.outPath;
+              }
+            )
             {
               config = {
                 assertions = [
