@@ -1,7 +1,7 @@
 {
-  "nixVersion": "2.35.1",
+  "nixVersion": "2.35.2",
   "nix-installer": {
-    "x86_64-linux": "11acxgxj35sl1ndqdcxgkwdi4c649zb7xzyrwdvcpb1032ws0j9v",
-    "aarch64-linux": "0jg6w3h8jv0qp6zhhsbysk8lc3ybajry9z592sdz3ms465sjyvky"
+    "x86_64-linux": "1k3ajkhihx5xr0yrz193isiync9pmzxxwrb3sfs5r55df36s2j2l",
+    "aarch64-linux": "13jw5f1p1ap0pd3rvmqb7iznbb2876w1gky32z0xpnjsv9b5xcx1"
   }
 }
