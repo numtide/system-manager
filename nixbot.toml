@@ -1,0 +1,2 @@
+# Evaluate testFlake: parent flake checks plus the Ubuntu VM tests.
+flake_dir = "./testFlake"
