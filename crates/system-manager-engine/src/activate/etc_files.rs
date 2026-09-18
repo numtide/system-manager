@@ -152,6 +152,24 @@ fn backup_path_for(path: &Path) -> PathBuf {
     s
 }
 
+/// Clear a directory sitting where a managed file belongs.
+///
+/// Such a path can neither be unlinked (EISDIR) nor moved into the backup slot,
+/// because rename(2) refuses to put a directory back over the symlink we create
+/// (ENOTDIR), which would leave the backup unrestorable. An empty directory has
+/// nothing worth keeping, so drop it; anything else needs an operator, and
+/// recursing under /etc on the strength of a state file is not a trade worth
+/// making.
+fn remove_dir_in_the_way(target: &Path) -> anyhow::Result<()> {
+    log::info!("Removing empty directory in the way: {}", target.display());
+    fs::remove_dir(target).with_context(|| {
+        format!(
+            "{} is a non-empty directory where a file is expected, remove it and re-run",
+            target.display()
+        )
+    })
+}
+
 fn backup_existing_file(path: &Path) -> anyhow::Result<()> {
     let backup_path = backup_path_for(path);
     log::info!(
@@ -325,7 +343,14 @@ fn create_etc_file(
 
     if file.mode == "symlink" {
         // On some symlinks, target.exists() returns false. Not sure why.
-        let exists = target.exists() || target.is_symlink();
+        let mut exists = target.exists() || target.is_symlink();
+        let may_replace =
+            old_state.contains(&target) || file.replace_existing || target_is_in_systemd_dir;
+        if exists && may_replace && !target.is_symlink() && target.is_dir() {
+            remove_dir_in_the_way(&target)
+                .map_err(|e| ActivationError::with_partial_result(state.clone(), e))?;
+            exists = false;
+        }
         if exists {
             // If the target exists and has been created by a previous system-manager activation,
             // replace it.
@@ -465,7 +490,15 @@ fn copy_file(
     old_state: &EtcFilesState,
     mut new_state: EtcFilesState,
 ) -> EtcActivationResult {
-    let exists = target.exists() || target.is_symlink();
+    let mut exists = target.exists() || target.is_symlink();
+    if exists
+        && (old_state.contains(target) || entry.replace_existing)
+        && !target.is_symlink()
+        && target.is_dir()
+    {
+        remove_dir_in_the_way(target).map_err(|e| to_activation_result(e, &new_state))?;
+        exists = false;
+    }
     let exists_and_need_backup = exists && !old_state.contains(target) && entry.replace_existing;
     if exists && !old_state.contains(target) {
         if exists_and_need_backup {
