@@ -582,3 +582,162 @@ fn copy_file(
     }
     Ok(new_state)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct Fixture {
+        _tmp: tempfile::TempDir,
+        etc: PathBuf,
+        source: PathBuf,
+    }
+
+    fn fixture() -> Fixture {
+        let tmp = tempfile::tempdir().expect("tempdir");
+        let etc = tmp.path().join("etc");
+        let store = tmp.path().join("store");
+        fs::create_dir_all(&etc).unwrap();
+        fs::create_dir_all(&store).unwrap();
+        let source = store.join("managed.conf");
+        fs::write(&source, "managed\n").unwrap();
+        Fixture {
+            _tmp: tmp,
+            etc,
+            source,
+        }
+    }
+
+    fn entry(target: &str, source: &Path, mode: &str, replace_existing: bool) -> EtcFile {
+        EtcFile {
+            source: StorePath {
+                store_path: source.to_owned(),
+            },
+            target: PathBuf::from(target),
+            uid: 0,
+            gid: 0,
+            group: "+0".to_owned(),
+            user: "+0".to_owned(),
+            mode: mode.to_owned(),
+            replace_existing,
+        }
+    }
+
+    #[test]
+    fn an_empty_directory_at_the_target_is_replaced() {
+        let f = fixture();
+        fs::create_dir_all(f.etc.join("nix/nix.conf")).unwrap();
+
+        let (state, failed) = create_etc_files(
+            vec![entry("nix/nix.conf", &f.source, "symlink", true)],
+            EtcFilesState::default(),
+            &EtcFilesState::default(),
+            &f.etc,
+        );
+
+        assert!(failed.is_empty(), "unexpected failures: {failed:?}");
+        let target = f.etc.join("nix/nix.conf");
+        assert!(target.is_symlink(), "target should be our symlink");
+        assert_eq!(fs::read_to_string(&target).unwrap(), "managed\n");
+        assert!(state.files.contains(&target));
+    }
+
+    #[test]
+    fn a_non_empty_directory_at_the_target_fails_and_is_left_alone() {
+        let f = fixture();
+        fs::create_dir_all(f.etc.join("nix/nix.conf")).unwrap();
+        fs::write(f.etc.join("nix/nix.conf/keep"), "keep me\n").unwrap();
+
+        let (state, failed) = create_etc_files(
+            vec![entry("nix/nix.conf", &f.source, "symlink", true)],
+            EtcFilesState::default(),
+            &EtcFilesState::default(),
+            &f.etc,
+        );
+
+        assert_eq!(failed, vec![PathBuf::from("nix/nix.conf")]);
+        assert!(
+            f.etc.join("nix/nix.conf/keep").exists(),
+            "a non-empty directory must never be deleted"
+        );
+        assert!(state.files.is_empty());
+    }
+
+    #[test]
+    fn a_managed_directory_at_the_target_is_replaced() {
+        let f = fixture();
+        let target = f.etc.join("nix/nix.conf");
+        fs::create_dir_all(&target).unwrap();
+        let old_state = EtcFilesState {
+            files: HashSet::from([target.clone()]),
+            ..EtcFilesState::default()
+        };
+
+        let (_, failed) = create_etc_files(
+            vec![entry("nix/nix.conf", &f.source, "symlink", false)],
+            EtcFilesState::default(),
+            &old_state,
+            &f.etc,
+        );
+
+        assert!(failed.is_empty(), "unexpected failures: {failed:?}");
+        assert!(target.is_symlink());
+    }
+
+    #[test]
+    fn an_unmanaged_symlink_target_without_replace_existing_is_skipped_without_failing() {
+        let f = fixture();
+        let target = f.etc.join("keep-me");
+        fs::write(&target, "original\n").unwrap();
+
+        let (state, failed) = create_etc_files(
+            vec![entry("keep-me", &f.source, "symlink", false)],
+            EtcFilesState::default(),
+            &EtcFilesState::default(),
+            &f.etc,
+        );
+
+        assert!(failed.is_empty(), "a deliberate skip is not a failure");
+        assert_eq!(fs::read_to_string(&target).unwrap(), "original\n");
+        assert!(state.files.is_empty());
+    }
+
+    #[test]
+    fn an_unmanaged_copy_target_without_replace_existing_is_skipped_without_failing() {
+        let f = fixture();
+        let target = f.etc.join("keep-me");
+        fs::write(&target, "original\n").unwrap();
+
+        let (state, failed) = create_etc_files(
+            vec![entry("keep-me", &f.source, "0644", false)],
+            EtcFilesState::default(),
+            &EtcFilesState::default(),
+            &f.etc,
+        );
+
+        assert!(failed.is_empty(), "a deliberate skip is not a failure");
+        assert_eq!(fs::read_to_string(&target).unwrap(), "original\n");
+        assert!(state.files.is_empty());
+    }
+
+    #[test]
+    fn an_existing_backup_is_never_overwritten() {
+        let f = fixture();
+        let target = f.etc.join("sudoers");
+        fs::write(&target, "current\n").unwrap();
+        fs::write(backup_path_for(&target), "installer original\n").unwrap();
+
+        let (_, failed) = create_etc_files(
+            vec![entry("sudoers", &f.source, "symlink", true)],
+            EtcFilesState::default(),
+            &EtcFilesState::default(),
+            &f.etc,
+        );
+
+        assert_eq!(failed, vec![PathBuf::from("sudoers")]);
+        assert_eq!(
+            fs::read_to_string(backup_path_for(&target)).unwrap(),
+            "installer original\n"
+        );
+    }
+}
