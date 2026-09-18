@@ -159,34 +159,21 @@ Build the configuration to confirm it evaluates without errors:
 nix build .#systemConfigs.default
 ```
 
-## Real-world example: sops-nix stubs
+## Real-world example: sops-nix
 
-The system-manager codebase provides a concrete reference for this technique.
-The sops-nix module uses NixOS activation scripts, which system-manager does not support.
-To allow the module to evaluate, system-manager declares stub options in `nix/modules/upstream/sops-nix.nix`:
+The sops-nix module is the codebase's reference for a module that needed more than plain stubs.
 
-```nix
-{ lib, ... }:
-{
-  options.system.activationScripts = {
-    generate-age-key = lib.mkOption {
-      type = lib.types.raw;
-      default = "";
-    };
-    setupSecrets = lib.mkOption {
-      type = lib.types.raw;
-      default = "";
-    };
-    setupSecretsForUsers = lib.mkOption {
-      type = lib.types.raw;
-      default = "";
-    };
-  };
-}
-```
+Upstream sops-nix installs secrets in one of two ways: from a `system.activationScripts.setupSecrets` snippet, or from a `sops-install-secrets.service` oneshot unit when `sops.useSystemdActivation` is set.
+System-manager never runs NixOS activation scripts, so only the second path can work.
+`nix/modules/upstream/sops-nix.nix` therefore does three things:
 
-These stubs absorb the values that sops-nix writes to activation scripts without executing them.
-The actual secret decryption is handled differently in system-manager through a systemd service.
+- it declares the `system.activationScripts.{setupSecrets,setupSecretsForUsers,generate-age-key}` options, so that sops-nix evaluates even on the code paths system-manager does not take;
+- it defaults `sops.useSystemdActivation` to `true` and asserts that it stays enabled, so that secrets management cannot be silently disabled;
+- it re-points the units sops-nix orders around NixOS-only services (`systemd-sysusers.service`) at their system-manager equivalents, and lifts the `generate-age-key` activation script into a `sops-generate-age-key.service` oneshot.
+
+The pattern generalises: declare stub options to make a module evaluate, then translate whatever the module expresses as activation scripts into systemd units ordered against `sysinit-reactivation.target`, which system-manager restarts on every activation.
+
+See [Manage secrets with sops-nix](manage-secrets.md) for the user-facing guide.
 
 ## Tips
 
