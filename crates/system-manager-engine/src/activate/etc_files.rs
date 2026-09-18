@@ -289,7 +289,7 @@ fn create_etc_files(
         state = match create_etc_file(file, state, old_state, etc_dir) {
             Ok(state) => state,
             Err(ActivationError::WithPartialResult { result, source }) => {
-                log::warn!("Can't link/copy {} to : {}", target.display(), source);
+                log::warn!("Can't link/copy {}: {}", target.display(), source);
                 result
             }
         }
