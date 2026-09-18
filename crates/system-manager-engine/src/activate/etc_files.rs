@@ -342,7 +342,15 @@ fn create_etc_file(
     );
     // Create all dirs
     log::debug!("Creating all dirs up to {:?}", target.parent());
-    target.parent().map(fs::create_dir_all);
+    if let Some(parent) = target.parent() {
+        fs::create_dir_all(parent).map_err(|e| {
+            ActivationError::with_partial_result(
+                state.clone(),
+                anyhow::Error::from(e)
+                    .context(format!("creating the parent dir of {}", target.display())),
+            )
+        })?;
+    }
 
     // We want to override all the Ubuntu systemd .wants and .requires entries.
     // We did not find a proper way to do that from the Nix static env,
