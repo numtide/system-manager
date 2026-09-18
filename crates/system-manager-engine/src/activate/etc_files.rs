@@ -413,7 +413,14 @@ fn create_etc_file(
                     source: e.into(),
                 }
             })?;
-            state.files.insert(target);
+            // A target we backed up once keeps that classification even if our
+            // symlink has since gone missing, so that deactivate still has the
+            // original to restore.
+            if old_state.backed_up_files.contains(&target) {
+                state.backed_up_files.insert(target);
+            } else {
+                state.files.insert(target);
+            }
         }
     } else {
         log::debug!("{} is a regular file", file.source);
