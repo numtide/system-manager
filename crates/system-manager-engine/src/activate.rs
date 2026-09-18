@@ -145,7 +145,7 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
     log::info!("Activating etc files...");
 
     match etc_files::activate(store_path, old_state.file_tree, ephemeral) {
-        Ok(etc_tree) => {
+        Ok((etc_tree, failed_etc_files)) => {
             log::info!("Restarting sysinit-reactivation.target...");
             services::restart_sysinit_reactivation_target()?;
 
@@ -185,6 +185,8 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
                 return Err(e.into());
             }
 
+            bail_on_failed_etc_files(&failed_etc_files)?;
+
             Ok(())
         }
         Err(ActivationError::WithPartialResult { result, source }) => {
@@ -195,9 +197,30 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
                 ..old_state
             };
             final_state.write_to_file(state_file)?;
-            Ok(())
+            Err(source)
         }
     }
+}
+
+/// Turn the per-file warnings emitted during etc activation into a failure.
+///
+/// Files we deliberately leave alone, such as an unmanaged path without
+/// `replaceExisting`, are not reported here: only an attempt to write a file
+/// that failed counts, so that "activation succeeded" means /etc holds what the
+/// generation says it should.
+fn bail_on_failed_etc_files(failed: &[PathBuf]) -> Result<()> {
+    if failed.is_empty() {
+        return Ok(());
+    }
+    anyhow::bail!(
+        "Failed to create {} file(s) under /etc, see the warnings above: {}",
+        failed.len(),
+        failed
+            .iter()
+            .map(|path| path.display().to_string())
+            .collect::<Vec<_>>()
+            .join(", ")
+    )
 }
 
 pub fn prepopulate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
@@ -216,8 +239,8 @@ pub fn prepopulate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
 
     log::info!("Activating etc files...");
 
-    match etc_files::activate(store_path, old_state.file_tree, ephemeral) {
-        Ok(etc_tree) => {
+    let failed_etc_files = match etc_files::activate(store_path, old_state.file_tree, ephemeral) {
+        Ok((etc_tree, failed_etc_files)) => {
             log::info!("Registering systemd services...");
             match services::get_active_services(store_path, old_state.services) {
                 Ok(services) => StateV1 {
@@ -234,6 +257,8 @@ pub fn prepopulate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
                     }
                 }
             }
+            .write_to_file(state_file)?;
+            failed_etc_files
         }
         Err(ActivationError::WithPartialResult { result, source }) => {
             log::error!("Error during activation: {source:?}");
@@ -241,9 +266,11 @@ pub fn prepopulate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
                 file_tree: result,
                 ..old_state
             }
+            .write_to_file(state_file)?;
+            return Err(source);
         }
-    }
-    .write_to_file(state_file)?;
+    };
+    bail_on_failed_etc_files(&failed_etc_files)?;
     Ok(())
 }
 

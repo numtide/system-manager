@@ -1,5 +1,5 @@
 pub mod etc_tree;
-use anyhow::{anyhow, Context};
+use anyhow::Context;
 use im::HashMap;
 use regex;
 use serde::{Deserialize, Serialize};
@@ -16,6 +16,11 @@ use crate::activate::{ActivationError, EtcFilesState};
 use crate::{etc_dir, remove_file, remove_link, StorePath};
 
 type EtcActivationResult = ActivationResult<EtcFilesState>;
+/// The state we managed to build, plus every target we failed to write.
+///
+/// Only the success path carries the failure list: an error here means the walk
+/// was abandoned, so there is no per-file outcome to report.
+type EtcActivationOutcome = Result<(EtcFilesState, Vec<PathBuf>), ActivationError<EtcFilesState>>;
 
 static UID_GID_REGEX: OnceLock<regex::Regex> = OnceLock::new();
 
@@ -93,14 +98,12 @@ pub fn activate(
     store_path: &StorePath,
     old_state: EtcFilesState,
     ephemeral: bool,
-) -> EtcActivationResult {
+) -> EtcActivationOutcome {
     let config = read_config(store_path)
         .map_err(|e| ActivationError::with_partial_result(old_state.clone(), e))?;
 
     let etc_dir = etc_dir(ephemeral);
     log::info!("Creating /etc entries in {}", etc_dir.display());
-
-    let mut new_state = EtcFilesState::default();
 
     // Walk through static link, list entries
     let mut entries = match list_static_entries(&config) {
@@ -124,7 +127,8 @@ pub fn activate(
         .collect();
     entries.append(&mut non_static_entries);
     // Create dirs and link/copy entries
-    new_state = create_etc_files(entries, new_state.clone(), &old_state, &etc_dir)?;
+    let (mut new_state, failed) =
+        create_etc_files(entries, EtcFilesState::default(), &old_state, &etc_dir);
     // Delete unecessary files
     let files_to_delete: HashSet<PathBuf> = old_state
         .files
@@ -132,7 +136,7 @@ pub fn activate(
         .map(|f| f.to_owned())
         .collect();
     new_state = delete_paths(&files_to_delete, new_state);
-    Ok(new_state)
+    Ok((new_state, failed))
 }
 
 pub fn deactivate(old_state: EtcFilesState) -> EtcActivationResult {
@@ -308,7 +312,8 @@ fn create_etc_files(
     mut state: EtcFilesState,
     old_state: &EtcFilesState,
     etc_dir: &Path,
-) -> EtcActivationResult {
+) -> (EtcFilesState, Vec<PathBuf>) {
+    let mut failed = Vec::new();
     files.sort_by(|a, b| a.target.cmp(&b.target));
     for file in files {
         let target = file.target.clone();
@@ -316,17 +321,19 @@ fn create_etc_files(
             Ok(state) => state,
             Err(ActivationError::WithPartialResult { result, source }) => {
                 log::warn!("Can't link/copy {}: {}", target.display(), source);
+                failed.push(target);
                 result
             }
         }
     }
-    Ok(state)
+    (state, failed)
 }
 
 /// Create a single etc file.
 ///
-/// We separated this from `create_etc_files` to catch any error on a file boundary
-/// to make sure failing to link a file do not cancel the whole etc activation.
+/// We separated this from `create_etc_files` to catch any error on a file
+/// boundary, so that failing to link one file does not abandon the rest of the
+/// walk. The caller still collects those failures and fails the activation.
 fn create_etc_file(
     file: EtcFile,
     mut state: EtcFilesState,
@@ -505,7 +512,8 @@ fn find_gid(entry: &EtcFile) -> anyhow::Result<u32> {
 }
 
 /// Copy a file from source to target.
-/// Failing to copy a file shouldn't stop the overall activation, hence the anyhow return.
+/// Failing to copy a file doesn't abandon the rest of the walk, hence the
+/// per-file error return; the caller collects it and fails the activation.
 fn copy_file(
     source: &Path,
     target: &PathBuf,
@@ -530,11 +538,10 @@ fn copy_file(
                 source: e,
             })?;
         } else {
-            let error = anyhow!("File {} already exists, ignoring. Set replaceExisting if you want to back it up and override it.", target.display());
-            return Err(ActivationError::WithPartialResult {
-                result: new_state,
-                source: error,
-            });
+            // Deliberately left alone rather than clobbered, so this is not a
+            // failure and must not fail the activation.
+            log::warn!("File {} already exists, ignoring. Set replaceExisting if you want to back it up and override it.", target.display());
+            return Ok(new_state);
         }
     };
     log::debug!(
