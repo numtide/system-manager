@@ -172,6 +172,14 @@ fn remove_dir_in_the_way(target: &Path) -> anyhow::Result<()> {
 
 fn backup_existing_file(path: &Path) -> anyhow::Result<()> {
     let backup_path = backup_path_for(path);
+    // fs::rename clobbers its destination, which would discard the
+    // pre-system-manager original that deactivate restores from.
+    if backup_path.exists() || backup_path.is_symlink() {
+        anyhow::bail!(
+            "Refusing to overwrite the existing backup at {}",
+            backup_path.display()
+        );
+    }
     log::info!(
         "Backing up existing file {} to {}",
         path.display(),
