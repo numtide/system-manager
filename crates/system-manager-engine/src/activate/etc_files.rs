@@ -1,5 +1,5 @@
 pub mod etc_tree;
-use anyhow::{anyhow, Context};
+use anyhow::Context;
 use im::HashMap;
 use regex;
 use serde::{Deserialize, Serialize};
@@ -16,6 +16,11 @@ use crate::activate::{ActivationError, EtcFilesState};
 use crate::{etc_dir, remove_file, remove_link, StorePath};
 
 type EtcActivationResult = ActivationResult<EtcFilesState>;
+/// The state we managed to build, plus every target we failed to write.
+///
+/// Only the success path carries the failure list: an error here means the walk
+/// was abandoned, so there is no per-file outcome to report.
+type EtcActivationOutcome = Result<(EtcFilesState, Vec<PathBuf>), ActivationError<EtcFilesState>>;
 
 static UID_GID_REGEX: OnceLock<regex::Regex> = OnceLock::new();
 
@@ -93,14 +98,12 @@ pub fn activate(
     store_path: &StorePath,
     old_state: EtcFilesState,
     ephemeral: bool,
-) -> EtcActivationResult {
+) -> EtcActivationOutcome {
     let config = read_config(store_path)
         .map_err(|e| ActivationError::with_partial_result(old_state.clone(), e))?;
 
     let etc_dir = etc_dir(ephemeral);
     log::info!("Creating /etc entries in {}", etc_dir.display());
-
-    let mut new_state = EtcFilesState::default();
 
     // Walk through static link, list entries
     let mut entries = match list_static_entries(&config) {
@@ -124,7 +127,8 @@ pub fn activate(
         .collect();
     entries.append(&mut non_static_entries);
     // Create dirs and link/copy entries
-    new_state = create_etc_files(entries, new_state.clone(), &old_state, &etc_dir)?;
+    let (mut new_state, failed) =
+        create_etc_files(entries, EtcFilesState::default(), &old_state, &etc_dir);
     // Delete unecessary files
     let files_to_delete: HashSet<PathBuf> = old_state
         .files
@@ -132,7 +136,7 @@ pub fn activate(
         .map(|f| f.to_owned())
         .collect();
     new_state = delete_paths(&files_to_delete, new_state);
-    Ok(new_state)
+    Ok((new_state, failed))
 }
 
 pub fn deactivate(old_state: EtcFilesState) -> EtcActivationResult {
@@ -152,8 +156,34 @@ fn backup_path_for(path: &Path) -> PathBuf {
     s
 }
 
+/// Clear a directory sitting where a managed file belongs.
+///
+/// Such a path can neither be unlinked (EISDIR) nor moved into the backup slot,
+/// because rename(2) refuses to put a directory back over the symlink we create
+/// (ENOTDIR), which would leave the backup unrestorable. An empty directory has
+/// nothing worth keeping, so drop it; anything else needs an operator, and
+/// recursing under /etc on the strength of a state file is not a trade worth
+/// making.
+fn remove_dir_in_the_way(target: &Path) -> anyhow::Result<()> {
+    log::info!("Removing empty directory in the way: {}", target.display());
+    fs::remove_dir(target).with_context(|| {
+        format!(
+            "{} is a non-empty directory where a file is expected, remove it and re-run",
+            target.display()
+        )
+    })
+}
+
 fn backup_existing_file(path: &Path) -> anyhow::Result<()> {
     let backup_path = backup_path_for(path);
+    // fs::rename clobbers its destination, which would discard the
+    // pre-system-manager original that deactivate restores from.
+    if backup_path.exists() || backup_path.is_symlink() {
+        anyhow::bail!(
+            "Refusing to overwrite the existing backup at {}",
+            backup_path.display()
+        );
+    }
     log::info!(
         "Backing up existing file {} to {}",
         path.display(),
@@ -282,25 +312,28 @@ fn create_etc_files(
     mut state: EtcFilesState,
     old_state: &EtcFilesState,
     etc_dir: &Path,
-) -> EtcActivationResult {
+) -> (EtcFilesState, Vec<PathBuf>) {
+    let mut failed = Vec::new();
     files.sort_by(|a, b| a.target.cmp(&b.target));
     for file in files {
         let target = file.target.clone();
         state = match create_etc_file(file, state, old_state, etc_dir) {
             Ok(state) => state,
             Err(ActivationError::WithPartialResult { result, source }) => {
-                log::warn!("Can't link/copy {} to : {}", target.display(), source);
+                log::warn!("Can't link/copy {}: {}", target.display(), source);
+                failed.push(target);
                 result
             }
         }
     }
-    Ok(state)
+    (state, failed)
 }
 
 /// Create a single etc file.
 ///
-/// We separated this from `create_etc_files` to catch any error on a file boundary
-/// to make sure failing to link a file do not cancel the whole etc activation.
+/// We separated this from `create_etc_files` to catch any error on a file
+/// boundary, so that failing to link one file does not abandon the rest of the
+/// walk. The caller still collects those failures and fails the activation.
 fn create_etc_file(
     file: EtcFile,
     mut state: EtcFilesState,
@@ -316,7 +349,15 @@ fn create_etc_file(
     );
     // Create all dirs
     log::debug!("Creating all dirs up to {:?}", target.parent());
-    target.parent().map(fs::create_dir_all);
+    if let Some(parent) = target.parent() {
+        fs::create_dir_all(parent).map_err(|e| {
+            ActivationError::with_partial_result(
+                state.clone(),
+                anyhow::Error::from(e)
+                    .context(format!("creating the parent dir of {}", target.display())),
+            )
+        })?;
+    }
 
     // We want to override all the Ubuntu systemd .wants and .requires entries.
     // We did not find a proper way to do that from the Nix static env,
@@ -325,7 +366,14 @@ fn create_etc_file(
 
     if file.mode == "symlink" {
         // On some symlinks, target.exists() returns false. Not sure why.
-        let exists = target.exists() || target.is_symlink();
+        let mut exists = target.exists() || target.is_symlink();
+        let may_replace =
+            old_state.contains(&target) || file.replace_existing || target_is_in_systemd_dir;
+        if exists && may_replace && !target.is_symlink() && target.is_dir() {
+            remove_dir_in_the_way(&target)
+                .map_err(|e| ActivationError::with_partial_result(state.clone(), e))?;
+            exists = false;
+        }
         if exists {
             // If the target exists and has been created by a previous system-manager activation,
             // replace it.
@@ -372,7 +420,14 @@ fn create_etc_file(
                     source: e.into(),
                 }
             })?;
-            state.files.insert(target);
+            // A target we backed up once keeps that classification even if our
+            // symlink has since gone missing, so that deactivate still has the
+            // original to restore.
+            if old_state.backed_up_files.contains(&target) {
+                state.backed_up_files.insert(target);
+            } else {
+                state.files.insert(target);
+            }
         }
     } else {
         log::debug!("{} is a regular file", file.source);
@@ -457,7 +512,8 @@ fn find_gid(entry: &EtcFile) -> anyhow::Result<u32> {
 }
 
 /// Copy a file from source to target.
-/// Failing to copy a file shouldn't stop the overall activation, hence the anyhow return.
+/// Failing to copy a file doesn't abandon the rest of the walk, hence the
+/// per-file error return; the caller collects it and fails the activation.
 fn copy_file(
     source: &Path,
     target: &PathBuf,
@@ -465,7 +521,15 @@ fn copy_file(
     old_state: &EtcFilesState,
     mut new_state: EtcFilesState,
 ) -> EtcActivationResult {
-    let exists = target.exists() || target.is_symlink();
+    let mut exists = target.exists() || target.is_symlink();
+    if exists
+        && (old_state.contains(target) || entry.replace_existing)
+        && !target.is_symlink()
+        && target.is_dir()
+    {
+        remove_dir_in_the_way(target).map_err(|e| to_activation_result(e, &new_state))?;
+        exists = false;
+    }
     let exists_and_need_backup = exists && !old_state.contains(target) && entry.replace_existing;
     if exists && !old_state.contains(target) {
         if exists_and_need_backup {
@@ -474,11 +538,10 @@ fn copy_file(
                 source: e,
             })?;
         } else {
-            let error = anyhow!("File {} already exists, ignoring. Set replaceExisting if you want to back it up and override it.", target.display());
-            return Err(ActivationError::WithPartialResult {
-                result: new_state,
-                source: error,
-            });
+            // Deliberately left alone rather than clobbered, so this is not a
+            // failure and must not fail the activation.
+            log::warn!("File {} already exists, ignoring. Set replaceExisting if you want to back it up and override it.", target.display());
+            return Ok(new_state);
         }
     };
     log::debug!(
@@ -518,4 +581,163 @@ fn copy_file(
         new_state.files.insert(target.clone());
     }
     Ok(new_state)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct Fixture {
+        _tmp: tempfile::TempDir,
+        etc: PathBuf,
+        source: PathBuf,
+    }
+
+    fn fixture() -> Fixture {
+        let tmp = tempfile::tempdir().expect("tempdir");
+        let etc = tmp.path().join("etc");
+        let store = tmp.path().join("store");
+        fs::create_dir_all(&etc).unwrap();
+        fs::create_dir_all(&store).unwrap();
+        let source = store.join("managed.conf");
+        fs::write(&source, "managed\n").unwrap();
+        Fixture {
+            _tmp: tmp,
+            etc,
+            source,
+        }
+    }
+
+    fn entry(target: &str, source: &Path, mode: &str, replace_existing: bool) -> EtcFile {
+        EtcFile {
+            source: StorePath {
+                store_path: source.to_owned(),
+            },
+            target: PathBuf::from(target),
+            uid: 0,
+            gid: 0,
+            group: "+0".to_owned(),
+            user: "+0".to_owned(),
+            mode: mode.to_owned(),
+            replace_existing,
+        }
+    }
+
+    #[test]
+    fn an_empty_directory_at_the_target_is_replaced() {
+        let f = fixture();
+        fs::create_dir_all(f.etc.join("nix/nix.conf")).unwrap();
+
+        let (state, failed) = create_etc_files(
+            vec![entry("nix/nix.conf", &f.source, "symlink", true)],
+            EtcFilesState::default(),
+            &EtcFilesState::default(),
+            &f.etc,
+        );
+
+        assert!(failed.is_empty(), "unexpected failures: {failed:?}");
+        let target = f.etc.join("nix/nix.conf");
+        assert!(target.is_symlink(), "target should be our symlink");
+        assert_eq!(fs::read_to_string(&target).unwrap(), "managed\n");
+        assert!(state.files.contains(&target));
+    }
+
+    #[test]
+    fn a_non_empty_directory_at_the_target_fails_and_is_left_alone() {
+        let f = fixture();
+        fs::create_dir_all(f.etc.join("nix/nix.conf")).unwrap();
+        fs::write(f.etc.join("nix/nix.conf/keep"), "keep me\n").unwrap();
+
+        let (state, failed) = create_etc_files(
+            vec![entry("nix/nix.conf", &f.source, "symlink", true)],
+            EtcFilesState::default(),
+            &EtcFilesState::default(),
+            &f.etc,
+        );
+
+        assert_eq!(failed, vec![PathBuf::from("nix/nix.conf")]);
+        assert!(
+            f.etc.join("nix/nix.conf/keep").exists(),
+            "a non-empty directory must never be deleted"
+        );
+        assert!(state.files.is_empty());
+    }
+
+    #[test]
+    fn a_managed_directory_at_the_target_is_replaced() {
+        let f = fixture();
+        let target = f.etc.join("nix/nix.conf");
+        fs::create_dir_all(&target).unwrap();
+        let old_state = EtcFilesState {
+            files: HashSet::from([target.clone()]),
+            ..EtcFilesState::default()
+        };
+
+        let (_, failed) = create_etc_files(
+            vec![entry("nix/nix.conf", &f.source, "symlink", false)],
+            EtcFilesState::default(),
+            &old_state,
+            &f.etc,
+        );
+
+        assert!(failed.is_empty(), "unexpected failures: {failed:?}");
+        assert!(target.is_symlink());
+    }
+
+    #[test]
+    fn an_unmanaged_symlink_target_without_replace_existing_is_skipped_without_failing() {
+        let f = fixture();
+        let target = f.etc.join("keep-me");
+        fs::write(&target, "original\n").unwrap();
+
+        let (state, failed) = create_etc_files(
+            vec![entry("keep-me", &f.source, "symlink", false)],
+            EtcFilesState::default(),
+            &EtcFilesState::default(),
+            &f.etc,
+        );
+
+        assert!(failed.is_empty(), "a deliberate skip is not a failure");
+        assert_eq!(fs::read_to_string(&target).unwrap(), "original\n");
+        assert!(state.files.is_empty());
+    }
+
+    #[test]
+    fn an_unmanaged_copy_target_without_replace_existing_is_skipped_without_failing() {
+        let f = fixture();
+        let target = f.etc.join("keep-me");
+        fs::write(&target, "original\n").unwrap();
+
+        let (state, failed) = create_etc_files(
+            vec![entry("keep-me", &f.source, "0644", false)],
+            EtcFilesState::default(),
+            &EtcFilesState::default(),
+            &f.etc,
+        );
+
+        assert!(failed.is_empty(), "a deliberate skip is not a failure");
+        assert_eq!(fs::read_to_string(&target).unwrap(), "original\n");
+        assert!(state.files.is_empty());
+    }
+
+    #[test]
+    fn an_existing_backup_is_never_overwritten() {
+        let f = fixture();
+        let target = f.etc.join("sudoers");
+        fs::write(&target, "current\n").unwrap();
+        fs::write(backup_path_for(&target), "installer original\n").unwrap();
+
+        let (_, failed) = create_etc_files(
+            vec![entry("sudoers", &f.source, "symlink", true)],
+            EtcFilesState::default(),
+            &EtcFilesState::default(),
+            &f.etc,
+        );
+
+        assert_eq!(failed, vec![PathBuf::from("sudoers")]);
+        assert_eq!(
+            fs::read_to_string(backup_path_for(&target)).unwrap(),
+            "installer original\n"
+        );
+    }
 }
