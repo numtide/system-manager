@@ -1,0 +1,23 @@
+[package]
+name = "dlv-list"
+version = "0.5.2"
+authors = ["Scott Godwin <sgodwincs@gmail.com>"]
+license = "MIT OR Apache-2.0"
+edition = "2021"
+repository = "https://github.com/sgodwincs/dlv-list-rs"
+description = "Semi-doubly linked list implemented using a vector"
+readme = "README.md"
+categories = ["data-structures"]
+keywords = ["vector", "linked", "list"]
+
+[dependencies]
+const-random = "0.1.15"
+serde = { version = "1", optional = true, default-features = false }
+
+[dev-dependencies]
+coverage-helper = "0.2.0"
+serde_test = "1.0.144"
+
+[features]
+default = ["std"]
+std = []

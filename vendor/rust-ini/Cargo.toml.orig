@@ -1,0 +1,41 @@
+[package]
+name = "rust-ini"
+version = "0.21.3"
+authors = ["Y. T. Chung <zonyitoo@gmail.com>"]
+description = "An Ini configuration file parsing library in Rust"
+repository = "https://github.com/zonyitoo/rust-ini"
+documentation = "https://docs.rs/rust-ini/"
+keywords = ["ini", "configuration", "conf", "cfg"]
+license = "MIT"
+edition = "2018"
+rust-version = "1.64"
+
+[lib]
+name = "ini"
+test = true
+
+[dependencies]
+cfg-if = "1.0"
+unicase = { version = "2.6", optional = true }
+ordered-multimap = "0.7"
+
+[features]
+default = []
+# Allowing inline comments
+#
+# For example:
+#
+# [A]
+# Key=value # COMMENTS
+#
+# This was a default feature < 0.14.0
+inline-comment = []
+# Case-insensitive Sections and Property Keys
+case-insensitive = ["unicase"]
+# Allowing brackets in sections names
+#
+# For example:
+#
+# [[A]]
+# Key=value
+brackets-in-section-names = []
