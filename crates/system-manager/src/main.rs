@@ -1084,4 +1084,71 @@ mod tests {
 
         assert!(args.ssh_options.is_empty());
     }
+
+    fn switch_timeout_args(extra: &[&str]) -> Option<u64> {
+        let argv = ["system-manager", "switch", "--flake", ".#test"]
+            .into_iter()
+            .chain(extra.iter().copied());
+        let args = Args::try_parse_from(argv).expect("failed to parse args");
+
+        match args.action {
+            Action::Switch { timeout_args, .. } => Option::<u64>::from(&timeout_args),
+            other => panic!("expected switch, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn timeout_defaults_to_30_seconds() {
+        assert_eq!(switch_timeout_args(&[]), Some(30));
+    }
+
+    #[test]
+    fn no_timeout_conflicts_with_timeout() {
+        Args::try_parse_from([
+            "system-manager",
+            "switch",
+            "--flake",
+            ".#test",
+            "--no-timeout",
+            "--timeout",
+            "5",
+        ])
+        .expect_err("--no-timeout and --timeout should be mutually exclusive");
+    }
+
+    #[test]
+    fn pre_populate_rejects_timeout() {
+        // pre-populate starts no service, so it must not advertise a timeout
+        Args::try_parse_from([
+            "system-manager",
+            "pre-populate",
+            "--flake",
+            ".#test",
+            "--timeout",
+            "5",
+        ])
+        .expect_err("pre-populate should not accept --timeout");
+    }
+
+    #[test]
+    fn no_timeout_is_passed_to_the_engine_as_zero() {
+        // The engine defaults to 30s, so omitting the flag would silently
+        // re-enable the timeout instead of disabling it.
+        let timeout = switch_timeout_args(&["--no-timeout"]);
+        assert_eq!(timeout, None);
+
+        let mut args = vec!["activate".to_string()];
+        push_timeout_arg(&mut args, &timeout);
+        assert_eq!(args, vec!["activate", "--timeout", "0"]);
+    }
+
+    #[test]
+    fn explicit_timeout_is_passed_to_the_engine() {
+        let timeout = switch_timeout_args(&["--timeout", "90"]);
+        assert_eq!(timeout, Some(90));
+
+        let mut args = vec!["activate".to_string()];
+        push_timeout_arg(&mut args, &timeout);
+        assert_eq!(args, vec!["activate", "--timeout", "90"]);
+    }
 }
