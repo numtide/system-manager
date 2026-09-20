@@ -7,16 +7,13 @@
 }:
 
 let
-  distros = {
-    ubuntu = {
-      # Ubuntu 20.04 reaches end of life April 2025; drop support.
-      filter = v: v != "20_04";
-    };
-    debian = {
-      # Only Debian 13 (trixie)
-      filter = v: v == "13";
-    };
-  };
+  supportedImages = builtins.attrNames (
+    builtins.fromJSON (builtins.readFile ../../lib/container-test-driver/images.json)
+  );
+
+  distros = lib.genAttrs [ "ubuntu" "debian" ] (distroName: {
+    filter = v: builtins.elem "${distroName}-${v}" supportedImages;
+  });
 
   forEachImage =
     name:
