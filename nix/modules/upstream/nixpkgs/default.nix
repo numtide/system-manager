@@ -29,6 +29,7 @@
       "/services/web-servers/nginx/"
       # nix settings
       "/config/nix.nix"
+      "/config/nix-channel.nix"
       "/config/nix-flakes.nix"
       "/services/system/userborn.nix"
       "/system/build.nix"
@@ -50,6 +51,18 @@
       system.activationScripts.users = lib.mkOption {
         type = lib.types.str;
         default = "";
+      };
+
+      # nix-channel.nix registers a pre-switch check warning about leftover
+      # channel state. We don't run NixOS pre-switch checks, so ignore them.
+      system.preSwitchChecks = lib.mkOption {
+        type = lib.types.attrsOf lib.types.raw;
+        default = { };
+      };
+
+      # Channels are a NixOS-only concept here, see nix.nix for the rationale.
+      nix.channel.enable = lib.mkOption {
+        internal = true;
       };
 
       # Stubs for home-manager

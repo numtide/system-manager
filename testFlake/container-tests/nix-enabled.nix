@@ -41,6 +41,16 @@ forEachDistro "nix-enabled" {
           assert nix_conf.exists, "/etc/nix/nix.conf should still exist after re-activation"
           assert nix_conf.contains("flakes"), "nix.conf should still contain flakes"
 
+      with subtest("Channels are disabled by default"):
+          assert not machine.file("/root/.nix-channels").exists, (
+              "/root/.nix-channels should not be created when channels are disabled"
+          )
+          machine.fail("test -e /run/system-manager/sw/bin/nix-channel")
+
+      with subtest("NIX_PATH is unset when no nixPath is configured"):
+          nix_path = machine.succeed("bash --login -c 'printf %s \"''${NIX_PATH-unset}\"'").strip()
+          assert nix_path == "unset", f"Expected NIX_PATH to be unset, got: {nix_path!r}"
+
       with subtest("Deactivation restores original nix.conf and registry.json"):
           machine.succeed("${toplevel}/bin/deactivate")
           restored_nix_conf = machine.succeed("cat /etc/nix/nix.conf")
