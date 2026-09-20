@@ -200,8 +200,6 @@ struct ActivationArgs {
     #[arg(long, action)]
     /// If true, only write under /run, otherwise write under /etc
     ephemeral: bool,
-    #[command(flatten)]
-    timeout_args: TimeoutArgs,
 }
 
 #[derive(clap::Args, Debug)]
@@ -246,6 +244,8 @@ enum Action {
         activation_args: ActivationArgs,
         #[command(flatten)]
         sudo_args: SudoArgs,
+        #[command(flatten)]
+        timeout_args: TimeoutArgs,
     },
     /// Build a new system-manager generation and register it as the active system-manager profile
     Register {
@@ -286,6 +286,8 @@ enum Action {
         activation_args: ActivationArgs,
         #[command(flatten)]
         sudo_args: SudoArgs,
+        #[command(flatten)]
+        timeout_args: TimeoutArgs,
     },
 }
 
@@ -329,7 +331,7 @@ fn go(args: Args) -> Result<()> {
     match action {
         Action::PrePopulate {
             store_or_flake_args,
-            activation_args: ActivationArgs { ephemeral, .. },
+            activation_args: ActivationArgs { ephemeral },
             sudo_args,
         } => {
             let sudo_options = sudo_args.to_sudo_options(legacy_use_remote_sudo)?;
@@ -430,12 +432,9 @@ fn go(args: Args) -> Result<()> {
 
         Action::Switch {
             build_args,
-            activation_args:
-                ActivationArgs {
-                    ephemeral,
-                    timeout_args,
-                },
+            activation_args: ActivationArgs { ephemeral },
             sudo_args,
+            timeout_args,
         } => {
             let mut nix_build_options = NixBuildOptions::from(&build_args);
             let sudo_options = sudo_args.to_sudo_options(legacy_use_remote_sudo)?;
@@ -461,12 +460,9 @@ fn go(args: Args) -> Result<()> {
 
         Action::Activate {
             store_path,
-            activation_args:
-                ActivationArgs {
-                    ephemeral,
-                    timeout_args,
-                },
+            activation_args: ActivationArgs { ephemeral },
             sudo_args,
+            timeout_args,
         } => {
             let sudo_options = sudo_args.to_sudo_options(legacy_use_remote_sudo)?;
             copy_closure(&store_path, &target_host, &ssh_options)?;
