@@ -691,6 +691,8 @@
       
         
       
+        
+      
     
     
     
@@ -1012,10 +1014,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#real-world-example-sops-nix-stubs" class="md-nav__link">
+  <a href="#real-world-example-sops-nix" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Real-world example: sops-nix stubs
+        Real-world example: sops-nix
       
     </span>
   </a>
@@ -1124,6 +1126,34 @@
     
   
     Manage Existing Files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../manage-secrets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Manage Secrets with sops-nix
   
 
     
@@ -2009,10 +2039,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#real-world-example-sops-nix-stubs" class="md-nav__link">
+  <a href="#real-world-example-sops-nix" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Real-world example: sops-nix stubs
+        Real-world example: sops-nix
       
     </span>
   </a>
@@ -2299,46 +2329,18 @@ It is a self-contained 58-line module that defines a single systemd service with
 <p>Build the configuration to confirm it evaluates without errors:</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1"></a>nix<span class="w"> </span>build<span class="w"> </span>.#systemConfigs.default
 </code></pre></div></td></tr></table></div>
-<h2 id="real-world-example-sops-nix-stubs">Real-world example: sops-nix stubs<a class="headerlink" href="#real-world-example-sops-nix-stubs" title="Permanent link">&para;</a></h2>
-<p>The system-manager codebase provides a concrete reference for this technique.
-The sops-nix module uses NixOS activation scripts, which system-manager does not support.
-To allow the module to evaluate, system-manager declares stub options in <code>nix/modules/upstream/sops-nix.nix</code>:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1"> 1</a></span>
-<span class="normal"><a href="#__codelineno-10-2"> 2</a></span>
-<span class="normal"><a href="#__codelineno-10-3"> 3</a></span>
-<span class="normal"><a href="#__codelineno-10-4"> 4</a></span>
-<span class="normal"><a href="#__codelineno-10-5"> 5</a></span>
-<span class="normal"><a href="#__codelineno-10-6"> 6</a></span>
-<span class="normal"><a href="#__codelineno-10-7"> 7</a></span>
-<span class="normal"><a href="#__codelineno-10-8"> 8</a></span>
-<span class="normal"><a href="#__codelineno-10-9"> 9</a></span>
-<span class="normal"><a href="#__codelineno-10-10">10</a></span>
-<span class="normal"><a href="#__codelineno-10-11">11</a></span>
-<span class="normal"><a href="#__codelineno-10-12">12</a></span>
-<span class="normal"><a href="#__codelineno-10-13">13</a></span>
-<span class="normal"><a href="#__codelineno-10-14">14</a></span>
-<span class="normal"><a href="#__codelineno-10-15">15</a></span>
-<span class="normal"><a href="#__codelineno-10-16">16</a></span>
-<span class="normal"><a href="#__codelineno-10-17">17</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="p">{</span> lib<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2"></a><span class="p">{</span>
-<a id="__codelineno-10-3" name="__codelineno-10-3"></a>  options<span class="o">.</span>system<span class="o">.</span><span class="ss">activationScripts</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-10-4" name="__codelineno-10-4"></a>    <span class="ss">generate-age-key</span> <span class="o">=</span> lib<span class="o">.</span>mkOption <span class="p">{</span>
-<a id="__codelineno-10-5" name="__codelineno-10-5"></a>      <span class="ss">type</span> <span class="o">=</span> lib<span class="o">.</span>types<span class="o">.</span>raw<span class="p">;</span>
-<a id="__codelineno-10-6" name="__codelineno-10-6"></a>      <span class="ss">default</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">;</span>
-<a id="__codelineno-10-7" name="__codelineno-10-7"></a>    <span class="p">};</span>
-<a id="__codelineno-10-8" name="__codelineno-10-8"></a>    <span class="ss">setupSecrets</span> <span class="o">=</span> lib<span class="o">.</span>mkOption <span class="p">{</span>
-<a id="__codelineno-10-9" name="__codelineno-10-9"></a>      <span class="ss">type</span> <span class="o">=</span> lib<span class="o">.</span>types<span class="o">.</span>raw<span class="p">;</span>
-<a id="__codelineno-10-10" name="__codelineno-10-10"></a>      <span class="ss">default</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">;</span>
-<a id="__codelineno-10-11" name="__codelineno-10-11"></a>    <span class="p">};</span>
-<a id="__codelineno-10-12" name="__codelineno-10-12"></a>    <span class="ss">setupSecretsForUsers</span> <span class="o">=</span> lib<span class="o">.</span>mkOption <span class="p">{</span>
-<a id="__codelineno-10-13" name="__codelineno-10-13"></a>      <span class="ss">type</span> <span class="o">=</span> lib<span class="o">.</span>types<span class="o">.</span>raw<span class="p">;</span>
-<a id="__codelineno-10-14" name="__codelineno-10-14"></a>      <span class="ss">default</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">;</span>
-<a id="__codelineno-10-15" name="__codelineno-10-15"></a>    <span class="p">};</span>
-<a id="__codelineno-10-16" name="__codelineno-10-16"></a>  <span class="p">};</span>
-<a id="__codelineno-10-17" name="__codelineno-10-17"></a><span class="p">}</span>
-</code></pre></div></td></tr></table></div>
-<p>These stubs absorb the values that sops-nix writes to activation scripts without executing them.
-The actual secret decryption is handled differently in system-manager through a systemd service.</p>
+<h2 id="real-world-example-sops-nix">Real-world example: sops-nix<a class="headerlink" href="#real-world-example-sops-nix" title="Permanent link">&para;</a></h2>
+<p>The sops-nix module is the codebase's reference for a module that needed more than plain stubs.</p>
+<p>Upstream sops-nix installs secrets in one of two ways: from a <code>system.activationScripts.setupSecrets</code> snippet, or from a <code>sops-install-secrets.service</code> oneshot unit when <code>sops.useSystemdActivation</code> is set.
+System-manager never runs NixOS activation scripts, so only the second path can work.
+<code>nix/modules/upstream/sops-nix.nix</code> therefore does three things:</p>
+<ul>
+<li>it declares the <code>system.activationScripts.{setupSecrets,setupSecretsForUsers,generate-age-key}</code> options, so that sops-nix evaluates even on the code paths system-manager does not take;</li>
+<li>it defaults <code>sops.useSystemdActivation</code> to <code>true</code> and asserts that it stays enabled, so that secrets management cannot be silently disabled;</li>
+<li>it re-points the units sops-nix orders around NixOS-only services (<code>systemd-sysusers.service</code>) at their system-manager equivalents, and lifts the <code>generate-age-key</code> activation script into a <code>sops-generate-age-key.service</code> oneshot.</li>
+</ul>
+<p>The pattern generalises: declare stub options to make a module evaluate, then translate whatever the module expresses as activation scripts into systemd units ordered against <code>sysinit-reactivation.target</code>, which system-manager restarts on every activation.</p>
+<p>See <a href="../manage-secrets/">Manage secrets with sops-nix</a> for the user-facing guide.</p>
 <h2 id="tips">Tips<a class="headerlink" href="#tips" title="Permanent link">&para;</a></h2>
 <p>Not every NixOS module can work with system-manager.
 Modules that depend on kernel features (<code>boot.*</code>), the NixOS activation system, or NixOS-specific infrastructure like the NixOS module evaluator may require more extensive stubs or may not be practical to port.
@@ -2349,24 +2351,24 @@ A module that deeply integrates with the NixOS activation system or requires mul
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <h3 id="option-type-conflict-with-built-in-modules">Option type conflict with built-in modules<a class="headerlink" href="#option-type-conflict-with-built-in-modules" title="Permanent link">&para;</a></h3>
 <p>If you previously created a stub for an option that system-manager now provides as a built-in module, evaluation will fail with a type conflict error:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-11-1">1</a></span>
-<span class="normal"><a href="#__codelineno-11-2">2</a></span>
-<span class="normal"><a href="#__codelineno-11-3">3</a></span>
-<span class="normal"><a href="#__codelineno-11-4">4</a></span>
-<span class="normal"><a href="#__codelineno-11-5">5</a></span>
-<span class="normal"><a href="#__codelineno-11-6">6</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1"></a>error: The option `networking.firewall&#39; in module `/nix/store/...-source/modules/nebula/config.nix&#39;
-<a id="__codelineno-11-2" name="__codelineno-11-2"></a>  would be a parent of the following options, but its type `attribute set of anything&#39;
-<a id="__codelineno-11-3" name="__codelineno-11-3"></a>  does not support nested options.
-<a id="__codelineno-11-4" name="__codelineno-11-4"></a>    - option(s) with prefix `networking.firewall.allowedTCPPorts&#39; in module `...firewall.nix&#39;
-<a id="__codelineno-11-5" name="__codelineno-11-5"></a>    - option(s) with prefix `networking.firewall.enable&#39; in module `...firewall.nix&#39;
-<a id="__codelineno-11-6" name="__codelineno-11-6"></a>    ...
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1">1</a></span>
+<span class="normal"><a href="#__codelineno-10-2">2</a></span>
+<span class="normal"><a href="#__codelineno-10-3">3</a></span>
+<span class="normal"><a href="#__codelineno-10-4">4</a></span>
+<span class="normal"><a href="#__codelineno-10-5">5</a></span>
+<span class="normal"><a href="#__codelineno-10-6">6</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1"></a>error: The option `networking.firewall&#39; in module `/nix/store/...-source/modules/nebula/config.nix&#39;
+<a id="__codelineno-10-2" name="__codelineno-10-2"></a>  would be a parent of the following options, but its type `attribute set of anything&#39;
+<a id="__codelineno-10-3" name="__codelineno-10-3"></a>  does not support nested options.
+<a id="__codelineno-10-4" name="__codelineno-10-4"></a>    - option(s) with prefix `networking.firewall.allowedTCPPorts&#39; in module `...firewall.nix&#39;
+<a id="__codelineno-10-5" name="__codelineno-10-5"></a>    - option(s) with prefix `networking.firewall.enable&#39; in module `...firewall.nix&#39;
+<a id="__codelineno-10-6" name="__codelineno-10-6"></a>    ...
 </code></pre></div></td></tr></table></div>
 <p>This happens when a catch-all stub like</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-12-1">1</a></span>
-<span class="normal"><a href="#__codelineno-12-2">2</a></span>
-<span class="normal"><a href="#__codelineno-12-3">3</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1"></a>options<span class="o">.</span>networking<span class="o">.</span><span class="ss">firewall</span> <span class="o">=</span> lib<span class="o">.</span>mkOption <span class="p">{</span>
-<a id="__codelineno-12-2" name="__codelineno-12-2"></a>  <span class="ss">type</span> <span class="o">=</span> <span class="k">with</span> lib<span class="o">.</span>types<span class="p">;</span> lazyAttrsOf raw<span class="p">;</span>
-<a id="__codelineno-12-3" name="__codelineno-12-3"></a><span class="p">};</span>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-11-1">1</a></span>
+<span class="normal"><a href="#__codelineno-11-2">2</a></span>
+<span class="normal"><a href="#__codelineno-11-3">3</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1"></a>options<span class="o">.</span>networking<span class="o">.</span><span class="ss">firewall</span> <span class="o">=</span> lib<span class="o">.</span>mkOption <span class="p">{</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2"></a>  <span class="ss">type</span> <span class="o">=</span> <span class="k">with</span> lib<span class="o">.</span>types<span class="p">;</span> lazyAttrsOf raw<span class="p">;</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3"></a><span class="p">};</span>
 </code></pre></div></td></tr></table></div>
 <p>conflicts with system-manager's structured option declarations for the same path.
 The Nix module system cannot reconcile a flat <code>lazyAttrsOf raw</code> type with nested typed options defined by another module.</p>
@@ -2403,7 +2405,7 @@ When you see this class of error, check whether system-manager now ships a modul
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="March 17, 2026 00:05:24 UTC">March 17, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="August 26, 2026 19:07:55 UTC">August 26, 2026</span>
   </span>
 
     

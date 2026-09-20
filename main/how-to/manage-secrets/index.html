@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://system-manager.net/main/explanation/introduction/">
+        <link rel="canonical" href="https://system-manager.net/main/how-to/manage-secrets/">
       
       
-        <link rel="prev" href="../../reference/supported-platforms/">
+        <link rel="prev" href="../manage-existing-files/">
       
       
-        <link rel="next" href="../declarative-config/">
+        <link rel="next" href="../rollback/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>What is System Manager? - System Manager</title>
+        <title>Manage Secrets with sops-nix - System Manager</title>
       
     
     
@@ -133,7 +133,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#introduction" class="md-skip">
+        <a href="#manage-secrets-with-sops-nix" class="md-skip">
           Skip to content
         </a>
       
@@ -170,7 +170,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              What is System Manager?
+              Manage Secrets with sops-nix
             
           </span>
         </div>
@@ -337,11 +337,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../how-to/install/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../install/" class="md-tabs__link">
           
   
   
@@ -381,13 +383,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../explanation/introduction/" class="md-tabs__link">
           
   
   
@@ -668,8 +668,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -695,19 +697,22 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   
@@ -725,7 +730,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -743,7 +748,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../how-to/install/" class="md-nav__link">
+      <a href="../install/" class="md-nav__link">
         
   
   
@@ -771,7 +776,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../how-to/deploy-remotely/" class="md-nav__link">
+      <a href="../deploy-remotely/" class="md-nav__link">
         
   
   
@@ -799,7 +804,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../how-to/use-remote-flakes/" class="md-nav__link">
+      <a href="../use-remote-flakes/" class="md-nav__link">
         
   
   
@@ -827,7 +832,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../how-to/use-blueprint/" class="md-nav__link">
+      <a href="../use-blueprint/" class="md-nav__link">
         
   
   
@@ -855,7 +860,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../how-to/import-nixos-module/" class="md-nav__link">
+      <a href="../import-nixos-module/" class="md-nav__link">
         
   
   
@@ -883,7 +888,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../how-to/test-configuration/" class="md-nav__link">
+      <a href="../test-configuration/" class="md-nav__link">
         
   
   
@@ -911,7 +916,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../how-to/manage-existing-files/" class="md-nav__link">
+      <a href="../manage-existing-files/" class="md-nav__link">
         
   
   
@@ -936,10 +941,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../how-to/manage-secrets/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Manage Secrets with sops-nix
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -955,6 +987,114 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works-here" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it works here
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#basic-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic usage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#choosing-a-decryption-key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Choosing a decryption key
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#restarting-services-when-a-secret-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Restarting services when a secret changes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#secrets-needed-to-create-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secrets needed to create users
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#secret-file-ownership" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secret file ownership
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Limitations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -967,7 +1107,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../how-to/rollback/" class="md-nav__link">
+      <a href="../rollback/" class="md-nav__link">
         
   
   
@@ -1223,10 +1363,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -1242,22 +1380,19 @@
     
     
       
-        
-        
-      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
             
   
   
@@ -1275,7 +1410,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1290,37 +1425,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    What is System Manager?
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../explanation/introduction/" class="md-nav__link">
         
   
   
@@ -1336,70 +1444,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#why-system-manager" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why System Manager?
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#who-is-it-for" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Who is it for?
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#next-steps" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Next Steps
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#learn-more" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Learn More
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1412,7 +1456,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../declarative-config/" class="md-nav__link">
+      <a href="../../explanation/declarative-config/" class="md-nav__link">
         
   
   
@@ -1440,7 +1484,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../how-it-works/" class="md-nav__link">
+      <a href="../../explanation/how-it-works/" class="md-nav__link">
         
   
   
@@ -1468,7 +1512,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../nixos-comparison/" class="md-nav__link">
+      <a href="../../explanation/nixos-comparison/" class="md-nav__link">
         
   
   
@@ -1834,10 +1878,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#why-system-manager" class="md-nav__link">
+  <a href="#how-it-works-here" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why System Manager?
+        How it works here
       
     </span>
   </a>
@@ -1845,10 +1889,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#who-is-it-for" class="md-nav__link">
+  <a href="#basic-usage" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Who is it for?
+        Basic usage
       
     </span>
   </a>
@@ -1856,10 +1900,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#next-steps" class="md-nav__link">
+  <a href="#choosing-a-decryption-key" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Next Steps
+        Choosing a decryption key
       
     </span>
   </a>
@@ -1867,10 +1911,54 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#learn-more" class="md-nav__link">
+  <a href="#restarting-services-when-a-secret-changes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Learn More
+        Restarting services when a secret changes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#secrets-needed-to-create-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secrets needed to create users
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#secret-file-ownership" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secret file ownership
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Limitations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
       
     </span>
   </a>
@@ -1920,10 +2008,10 @@
     
     
       <li class="md-path__item">
-        <a href="./" class="md-path__link">
+        <a href="../install/" class="md-path__link">
           
   <span class="md-ellipsis">
-    Explanation
+    How-to Guides
   </span>
 
         </a>
@@ -1945,37 +2033,106 @@
   
 
 
-<h1 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h1>
-<blockquote>
-<p>Declarative system configuration for Linux distributions.</p>
-</blockquote>
-<p>System Manager brings the power of NixOS-style declarative configuration to other Linux distributions. Define your packages, services, and <code>/etc</code> files in Nix, and System Manager ensures your system matches that configuration.</p>
-<h2 id="why-system-manager">Why System Manager?<a class="headerlink" href="#why-system-manager" title="Permanent link">&para;</a></h2>
+<h1 id="manage-secrets-with-sops-nix">Manage secrets with sops-nix<a class="headerlink" href="#manage-secrets-with-sops-nix" title="Permanent link">&para;</a></h1>
+<p><a href="https://github.com/Mic92/sops-nix">sops-nix</a> decrypts secrets that are committed to your repository in encrypted form and installs them, at runtime, into a <code>ramfs</code> under <code>/run/secrets</code>.
+System Manager supports it, so encrypted secrets can live in Git while the plaintext never touches disk.</p>
+<h2 id="how-it-works-here">How it works here<a class="headerlink" href="#how-it-works-here" title="Permanent link">&para;</a></h2>
+<p>On NixOS, sops-nix normally installs secrets from an activation script.
+System Manager does not run NixOS activation scripts: it activates a configuration by writing systemd units and restarting <code>sysinit-reactivation.target</code>.</p>
+<p>Instead, System Manager uses the systemd code path that sops-nix already provides (<code>sops.useSystemdActivation</code>), which installs secrets from a <code>sops-install-secrets.service</code> oneshot unit.
+This is enabled by default and is ordered so that secrets are installed both on boot and on every <code>system-manager switch</code>.</p>
+<h2 id="basic-usage">Basic usage<a class="headerlink" href="#basic-usage" title="Permanent link">&para;</a></h2>
+<p>Add sops-nix as a flake input and import its NixOS module:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span>
+<span class="normal"><a href="#__codelineno-0-2">2</a></span>
+<span class="normal"><a href="#__codelineno-0-3">3</a></span>
+<span class="normal"><a href="#__codelineno-0-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="p">{</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2"></a>  inputs<span class="o">.</span>sops-nix<span class="o">.</span><span class="ss">url</span> <span class="o">=</span> <span class="s2">&quot;github:Mic92/sops-nix&quot;</span><span class="p">;</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3"></a>  inputs<span class="o">.</span>sops-nix<span class="o">.</span>inputs<span class="o">.</span>nixpkgs<span class="o">.</span><span class="ss">follows</span> <span class="o">=</span> <span class="s2">&quot;nixpkgs&quot;</span><span class="p">;</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-1-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-1-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-1-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-1-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-1-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-1-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-1-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-1-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-1-10">10</a></span>
+<span class="normal"><a href="#__codelineno-1-11">11</a></span>
+<span class="normal"><a href="#__codelineno-1-12">12</a></span>
+<span class="normal"><a href="#__codelineno-1-13">13</a></span>
+<span class="normal"><a href="#__codelineno-1-14">14</a></span>
+<span class="normal"><a href="#__codelineno-1-15">15</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="p">{</span> config<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="p">{</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3"></a>  <span class="ss">imports</span> <span class="o">=</span> <span class="p">[</span> inputs<span class="o">.</span>sops-nix<span class="o">.</span>nixosModules<span class="o">.</span>sops <span class="p">];</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5"></a>  <span class="ss">sops</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6"></a>    age<span class="o">.</span><span class="ss">keyFile</span> <span class="o">=</span> <span class="s2">&quot;/var/lib/sops-nix/key.txt&quot;</span><span class="p">;</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7"></a>    <span class="ss">defaultSopsFile</span> <span class="o">=</span> <span class="l">./secrets.yaml</span><span class="p">;</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8"></a>    secrets<span class="o">.</span><span class="ss">my-service-env</span> <span class="o">=</span> <span class="p">{</span> <span class="p">};</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9"></a>  <span class="p">};</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10"></a>
+<a id="__codelineno-1-11" name="__codelineno-1-11"></a>  systemd<span class="o">.</span>services<span class="o">.</span><span class="ss">my-service</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12"></a>    <span class="ss">wantedBy</span> <span class="o">=</span> <span class="p">[</span> <span class="s2">&quot;system-manager.target&quot;</span> <span class="p">];</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13"></a>    serviceConfig<span class="o">.</span><span class="ss">EnvironmentFile</span> <span class="o">=</span> config<span class="o">.</span>sops<span class="o">.</span>secrets<span class="o">.</span>my-service-env<span class="o">.</span>path<span class="p">;</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14"></a>  <span class="p">};</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>The secret is decrypted into <code>/run/secrets/my-service-env</code>, owned by root with mode <code>0400</code> by default.</p>
+<h2 id="choosing-a-decryption-key">Choosing a decryption key<a class="headerlink" href="#choosing-a-decryption-key" title="Permanent link">&para;</a></h2>
+<p>Because System Manager does not manage <code>services.openssh</code>, sops-nix cannot auto-detect SSH host keys.
+Pick one of:</p>
 <ul>
-<li><strong>No reinstall required</strong> - Keep your existing distro (Ubuntu, Debian, Fedora, etc.) while gaining declarative configuration</li>
-<li><strong>Reproducible systems</strong> - Your configuration files fully describe your system state</li>
-<li><strong>Generational rollback</strong> - Switch between previous configurations when needed</li>
-<li><strong>Familiar to NixOS users</strong> - Uses the same module system and configuration patterns</li>
+<li><strong>An age key file</strong> — set <code>sops.age.keyFile</code> to a path outside the Nix store, and provision the key out of band.</li>
+<li><strong>An SSH host key</strong> — set <code>sops.age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];</code> explicitly to reuse a key the machine already has.</li>
+<li><strong>A generated age key</strong> — set <code>sops.age.generateKey = true;</code> together with <code>sops.age.keyFile</code>.
+  System Manager generates the key from a <code>sops-generate-age-key.service</code> oneshot ordered before secret installation.
+  The key is only generated if the file does not exist yet, so you have to add its public half to your <code>.sops.yaml</code> and re-encrypt before secrets can be decrypted on that machine.</li>
 </ul>
-<h2 id="who-is-it-for">Who is it for?<a class="headerlink" href="#who-is-it-for" title="Permanent link">&para;</a></h2>
-<p>System Manager is ideal for:</p>
+<h2 id="restarting-services-when-a-secret-changes">Restarting services when a secret changes<a class="headerlink" href="#restarting-services-when-a-secret-changes" title="Permanent link">&para;</a></h2>
+<p><code>sops.secrets.&lt;name&gt;.restartUnits</code> and <code>reloadUnits</code> work as they do on NixOS: when the decrypted value changes, <code>sops-install-secrets</code> acts on the listed units through <code>systemctl</code> directly, rather than through the NixOS activation-restart lists that System Manager does not have.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1"></a>sops<span class="o">.</span>secrets<span class="o">.</span>my-service-env<span class="o">.</span><span class="ss">restartUnits</span> <span class="o">=</span> <span class="p">[</span> <span class="s2">&quot;my-service.service&quot;</span> <span class="p">];</span>
+</code></pre></div></td></tr></table></div>
+<p>Two details are worth knowing, because they follow from how the unit is ordered:</p>
 <ul>
-<li>Developers who want reproducible development environments</li>
-<li>Sysadmins managing fleets of non-NixOS Linux servers</li>
-<li>NixOS users who need to configure systems where NixOS isn't an option</li>
-<li>Anyone tired of imperative configuration drift</li>
+<li>The verbs used are <code>try-restart</code> and <code>try-reload-or-restart</code>, so a unit that is currently stopped is left stopped. On first activation that is the right behaviour, since the unit starts with the new secret anyway.</li>
+<li>The calls are made with <code>--no-block</code>. <code>sops-install-secrets.service</code> runs before <code>sysinit-reactivation.target</code> with <code>DefaultDependencies=no</code>, and waiting on a regular service (which is ordered <code>After=sysinit.target</code>) would deadlock the transaction. So the restart is requested, not awaited.</li>
 </ul>
-<h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<h2 id="secrets-needed-to-create-users">Secrets needed to create users<a class="headerlink" href="#secrets-needed-to-create-users" title="Permanent link">&para;</a></h2>
+<p>Secrets marked <code>neededForUsers</code> are installed into <code>/run/secrets-for-users</code> before users are created, which is how you can source a user's password hash from sops:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span>
+<span class="normal"><a href="#__codelineno-3-2">2</a></span>
+<span class="normal"><a href="#__codelineno-3-3">3</a></span>
+<span class="normal"><a href="#__codelineno-3-4">4</a></span>
+<span class="normal"><a href="#__codelineno-3-5">5</a></span>
+<span class="normal"><a href="#__codelineno-3-6">6</a></span>
+<span class="normal"><a href="#__codelineno-3-7">7</a></span>
+<span class="normal"><a href="#__codelineno-3-8">8</a></span>
+<span class="normal"><a href="#__codelineno-3-9">9</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="p">{</span> config<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="p">{</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3"></a>  sops<span class="o">.</span>secrets<span class="o">.</span>alice-password<span class="o">.</span><span class="ss">neededForUsers</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4"></a>
+<a id="__codelineno-3-5" name="__codelineno-3-5"></a>  users<span class="o">.</span>users<span class="o">.</span><span class="ss">alice</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6"></a>    <span class="ss">isNormalUser</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7"></a>    <span class="ss">hashedPasswordFile</span> <span class="o">=</span> config<span class="o">.</span>sops<span class="o">.</span>secrets<span class="o">.</span>alice-password<span class="o">.</span>path<span class="p">;</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8"></a>  <span class="p">};</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>This requires <code>services.userborn.enable</code> (the default), since userborn is what creates the users.</p>
+<h2 id="secret-file-ownership">Secret file ownership<a class="headerlink" href="#secret-file-ownership" title="Permanent link">&para;</a></h2>
+<p>Secrets are written into a <code>ramfs</code> at <code>/run/secrets.d</code>, owned by root and by the <code>keys</code> group where it exists. Debian and Ubuntu have no <code>keys</code> group, so <code>sops-install-secrets</code> falls back to <code>nogroup</code>. This affects the mount point only; individual secrets still default to <code>0400</code> root-owned, and <code>sops.secrets.&lt;name&gt;.owner</code>/<code>group</code> work as usual.</p>
+<h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../../tutorials/getting-started/">Getting Started</a> - Configure your first system</li>
-<li><a href="../../how-to/install/">Installation</a> - Install Nix and get started</li>
-<li><a href="../../examples/">Examples</a> - See practical use cases</li>
+<li><code>sops.useSystemdActivation</code> cannot be disabled: the activation-script path it falls back to does not exist in System Manager. Setting it to <code>false</code> fails evaluation with an explanatory error.</li>
+<li>Secrets live in <code>/run</code> and are re-installed on every boot and every activation. A machine that cannot reach its decryption key will fail <code>sops-install-secrets.service</code> rather than start services with stale secrets.</li>
 </ul>
-<h2 id="learn-more">Learn More<a class="headerlink" href="#learn-more" title="Permanent link">&para;</a></h2>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../declarative-config/">Declarative Configuration</a> - Understanding the declarative paradigm</li>
-<li><a href="../how-it-works/">How System Manager Works</a> - Architecture and internals</li>
-<li><a href="../nixos-comparison/">Comparison with NixOS</a> - When to use which</li>
+<li><a href="../import-nixos-module/">Import a NixOS module</a> for the technique behind the sops-nix compatibility module</li>
+<li><a href="../../examples/users/">Users and groups example</a></li>
 </ul>
 
 
@@ -1999,7 +2156,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="January 10, 2026 12:40:24 UTC">January 10, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="August 27, 2026 14:29:53 UTC">August 27, 2026</span>
   </span>
 
     
@@ -2009,7 +2166,7 @@
     <span class="md-icon" title="Created">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="January 6, 2026 10:44:58 UTC">January 6, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="August 26, 2026 19:07:55 UTC">August 26, 2026</span>
   </span>
 
     
@@ -2040,7 +2197,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../../reference/supported-platforms/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Supported Platforms">
+          <a href="../manage-existing-files/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Manage Existing Files">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -2050,20 +2207,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Supported Platforms
+                Manage Existing Files
               </div>
             </div>
           </a>
         
         
           
-          <a href="../declarative-config/" class="md-footer__link md-footer__link--next" aria-label="Next: Declarative Configuration">
+          <a href="../rollback/" class="md-footer__link md-footer__link--next" aria-label="Next: Rollback Changes">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Declarative Configuration
+                Rollback Changes
               </div>
             </div>
             <div class="md-footer__button md-icon">
