@@ -396,10 +396,9 @@ impl From<JobId> for String {
     }
 }
 
-pub fn restart_sysinit_reactivation_target() -> anyhow::Result<()> {
+pub fn restart_sysinit_reactivation_target(timeout: &Option<Duration>) -> anyhow::Result<()> {
     let service_manager = systemd::ServiceManager::new_session()?;
     let job_monitor = service_manager.monitor_jobs_init()?;
-    let timeout = Some(Duration::from_secs(30));
 
     log::info!("Reloading the systemd daemon...");
     service_manager.daemon_reload()?;
@@ -410,14 +409,14 @@ pub fn restart_sysinit_reactivation_target() -> anyhow::Result<()> {
         "restarting",
     );
 
-    wait_for_jobs(&service_manager, &job_monitor, jobs, &timeout)?;
+    wait_for_jobs(&service_manager, &job_monitor, jobs, timeout)?;
     Ok(())
 }
 
 /// This must be called after daemon-reload so systemd knows about the unit,
 /// but before tmpfiles activation since tmpfiles may reference users that
 /// userborn needs to create.
-pub fn restart_userborn_if_exists() -> anyhow::Result<()> {
+pub fn restart_userborn_if_exists(timeout: &Option<Duration>) -> anyhow::Result<()> {
     let service_manager = systemd::ServiceManager::new_session()?;
 
     // Check if userborn.service exists by listing units matching the pattern
@@ -430,7 +429,6 @@ pub fn restart_userborn_if_exists() -> anyhow::Result<()> {
 
     log::info!("Restarting userborn.service to create users before tmpfiles...");
     let job_monitor = service_manager.monitor_jobs_init()?;
-    let timeout = Some(Duration::from_secs(30));
 
     // We use restart rather than start because userborn is a oneshot service
     // with RemainAfterExit=true.
@@ -440,7 +438,7 @@ pub fn restart_userborn_if_exists() -> anyhow::Result<()> {
         "restarting",
     );
 
-    wait_for_jobs(&service_manager, &job_monitor, jobs, &timeout)?;
+    wait_for_jobs(&service_manager, &job_monitor, jobs, timeout)?;
     log::info!("userborn.service completed");
     Ok(())
 }
