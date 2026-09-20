@@ -16,7 +16,7 @@ in
       extraSetup ? "",
       tarExtraFlags ? "",
       tarCompression ? "-J",
-    }:
+    }@rootFsConfig:
     let
       excludeArgs = builtins.concatStringsSep " \\\n        " (
         map (p: "--exclude='${p}'") excludePatterns
@@ -84,6 +84,9 @@ in
     pkgs.runCommand "rootfs-${name}"
       {
         inherit nativeBuildInputs;
+        passthru = {
+          inherit rootFsConfig;
+        };
       }
       ''
         mkdir -p $out
