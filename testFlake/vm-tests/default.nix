@@ -7,13 +7,9 @@
 }:
 
 let
-  supportedImages = builtins.attrNames (
+  imageNames = builtins.attrNames (
     builtins.fromJSON (builtins.readFile ../../lib/container-test-driver/images.json)
   );
-
-  distros = lib.genAttrs [ "ubuntu" "debian" ] (distroName: {
-    filter = v: builtins.elem "${distroName}-${v}" supportedImages;
-  });
 
   forEachImage =
     name:
@@ -24,7 +20,7 @@ let
       projectTest ? test: test.sandboxed,
     }:
     let
-      mkToplevel = system-manager.lib.makeSystemConfig {
+      toplevel = system-manager.lib.makeSystemConfig {
         modules = modules ++ [
           (
             { lib, pkgs, ... }:
@@ -41,37 +37,27 @@ let
           )
         ];
       };
-      mkTestForDistro =
-        distroName: distroConfig:
-        let
-          distro = nix-vm-test.${distroName};
-          versions = lib.filter distroConfig.filter (lib.attrNames distro.images);
-        in
-        lib.listToAttrs (
-          map (
-            imageVersion:
-            let
-              toplevel = mkToplevel;
-              inherit (toplevel.config) hostPkgs;
-            in
-            lib.nameValuePair "vm-${distroName}-${imageVersion}-${name}" (
-              projectTest (
-                distro.${imageVersion} {
-                  testScript = testScriptFunction { inherit toplevel hostPkgs; };
-                  extraPathsToRegister = extraPathsToRegister ++ [
-                    toplevel
-                  ];
-                  sharedDirs = { };
-                }
-              )
-            )
-          ) versions
-        );
+      inherit (toplevel.config) hostPkgs;
     in
-    lib.foldlAttrs (
-      acc: distroName: distroConfig:
-      acc // mkTestForDistro distroName distroConfig
-    ) { } distros;
+    lib.listToAttrs (
+      map (
+        image:
+        let
+          parts = lib.splitString "-" image;
+        in
+        lib.nameValuePair "vm-${image}-${name}" (
+          projectTest (
+            nix-vm-test.${lib.head parts}.${lib.last parts} {
+              testScript = testScriptFunction { inherit toplevel hostPkgs; };
+              extraPathsToRegister = extraPathsToRegister ++ [
+                toplevel
+              ];
+              sharedDirs = { };
+            }
+          )
+        )
+      ) imageNames
+    );
 
   newConfig = system-manager.lib.makeSystemConfig {
     modules = [
