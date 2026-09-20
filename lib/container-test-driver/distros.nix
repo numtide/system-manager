@@ -56,6 +56,18 @@ in
     maskableService = "unattended-upgrades.service";
   };
 
+  ubuntu-26_04 = {
+    systems = builtins.attrNames images.ubuntu-26_04;
+    rootfs = makeRootfs.buildRootfs {
+      name = "ubuntu-26_04";
+      cloudImg = fetchCloudImg "ubuntu-26_04";
+      cloudImgFormat = "tar";
+      excludePatterns = ubuntuExcludePatterns;
+      extraDirs = [ "var/lib/apt/lists/partial" ];
+    };
+    maskableService = "unattended-upgrades.service";
+  };
+
   debian-13 = {
     systems = builtins.attrNames images.debian-13;
     rootfs = makeRootfs.buildRootfs {
