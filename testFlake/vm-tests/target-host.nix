@@ -95,8 +95,7 @@ forEachImage "target-host" {
               ["${hostPkgs.openssh}/bin/ssh"] + ssh_opts +
               ["root@127.0.0.1", "--",
                "${toplevel}/bin/system-manager-engine", "activate",
-               "--store-path", "${toplevel}",
-               "--timeout", "100"],
+               "--store-path", "${toplevel}"],
               capture_output=True, text=True, timeout=120
           )
           print(f"Remote activate stdout: {result.stdout}")
@@ -137,7 +136,7 @@ forEachImage "target-host" {
           result = subprocess.run(
               ["${hostPkgs.openssh}/bin/ssh"] + ssh_opts +
               ["root@127.0.0.1", "--",
-               "${toplevel}/bin/system-manager-engine", "deactivate", "--timeout", "30"],
+               "${toplevel}/bin/system-manager-engine", "deactivate"],
               capture_output=True, text=True, timeout=120
           )
           print(f"Remote deactivate stdout: {result.stdout}")

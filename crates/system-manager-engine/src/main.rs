@@ -43,6 +43,23 @@ struct ActivationArgs {
 }
 
 #[derive(clap::Args, Debug)]
+struct TimeoutArgs {
+    /// Set the timeout for the action, in seconds. 0 disables the timeout and
+    /// waits indefinitely for the action to finish
+    #[arg(short, long, default_value_t = 30u64)]
+    timeout: u64,
+}
+
+impl From<&TimeoutArgs> for Option<Duration> {
+    fn from(timeout_args: &TimeoutArgs) -> Self {
+        match timeout_args.timeout {
+            0 => None,
+            secs => Some(Duration::from_secs(secs)),
+        }
+    }
+}
+
+#[derive(clap::Args, Debug)]
 struct StorePathArg {
     /// The store path containing the system-manager profile
     #[arg(long)]
@@ -65,17 +82,15 @@ enum Action {
         store_path_arg: StorePathArg,
         #[command(flatten)]
         activation_args: ActivationArgs,
-        /// Set timeout for action, in seconds
-        #[arg(short, long)]
-        timeout: Option<u64>,
+        #[command(flatten)]
+        timeout_args: TimeoutArgs,
     },
     /// Deactivate the system-manager profile (remove managed configuration)
     Deactivate {
         #[command(flatten)]
         store_path_arg: OptionalStorePathArg,
-        /// Set timeout for action, in seconds
-        #[arg(short, long)]
-        timeout: Option<u64>,
+        #[command(flatten)]
+        timeout_args: TimeoutArgs,
     },
     /// Pre-populate files without starting services
     Prepopulate {
@@ -111,23 +126,23 @@ fn go(args: Args) -> Result<()> {
         Action::Activate {
             store_path_arg: StorePathArg { store_path },
             activation_args: ActivationArgs { ephemeral },
-            timeout,
+            timeout_args,
         } => system_manager_engine::activate::activate(
             &store_path,
             ephemeral,
-            &timeout.map(Duration::from_secs),
+            &Option::<Duration>::from(&timeout_args),
         ),
 
         Action::Deactivate {
             store_path_arg: OptionalStorePathArg { store_path },
-            timeout,
+            timeout_args,
         } => {
             // Log which store path we're using if it was auto-detected
             if store_path.is_none() {
                 let path = std::path::Path::new(PROFILE_DIR).join("system-manager");
                 log::info!("No store path provided, using {}", path.display());
             }
-            system_manager_engine::deactivate::deactivate(&timeout.map(Duration::from_secs))
+            system_manager_engine::deactivate::deactivate(&Option::<Duration>::from(&timeout_args))
         }
 
         Action::Prepopulate {

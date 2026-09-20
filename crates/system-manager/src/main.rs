@@ -670,6 +670,14 @@ fn deactivate(
 
 // --- Engine invocation functions ---
 
+/// Always pass the timeout explicitly, so that `--no-timeout` (`None`) is not
+/// silently turned back into the engine's own default. The engine reads 0 as
+/// "wait indefinitely".
+fn push_timeout_arg(args: &mut Vec<String>, timeout: &Option<u64>) {
+    args.push("--timeout".to_string());
+    args.push(timeout.unwrap_or(0).to_string());
+}
+
 /// Invoke the engine's register subcommand
 fn invoke_engine_register(
     store_path: &StorePath,
@@ -712,10 +720,7 @@ fn invoke_engine_activate(
     if verbose {
         args.push("--verbose".to_string());
     }
-    if timeout.is_some() {
-        args.push("--timeout".to_string());
-        args.push(timeout.unwrap().to_string());
-    }
+    push_timeout_arg(&mut args, timeout);
     invoke_engine(&engine_path, &args, target_host, sudo_options, ssh_options)
 }
 
@@ -768,10 +773,7 @@ fn invoke_engine_deactivate(
     if verbose {
         args.push("--verbose".to_string());
     }
-    if timeout.is_some() {
-        args.push("--timeout".to_string());
-        args.push(timeout.unwrap().to_string());
-    }
+    push_timeout_arg(&mut args, timeout);
     invoke_engine(&engine_path, &args, target_host, sudo_options, ssh_options)
 }
 
