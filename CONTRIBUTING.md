@@ -86,11 +86,10 @@ Pin a specific dated build directory upstream rather than `latest/` and obtain t
 
 Reuse the existing `excludePatterns` (which strip container-incompatible systemd units) and `extraDirs` (per-package-manager directories like `var/lib/apt/lists/partial`) as a starting point and trim or extend them based on the first build.
 
-**3. Add a VM test entry.**
-VM tests live under `testFlake/vm-tests/` and iterate over distributions exposed by `nix-vm-test`.
-Edit the `distros` attrset in `testFlake/vm-tests/default.nix` to add a key matching the `nix-vm-test` distribution name (`ubuntu`, `debian`, `fedora`, `rocky`).
-Each entry takes a `filter` predicate that selects which versions to exercise — use it to skip versions you do not want in the matrix.
-If `nix-vm-test` does not yet support the distribution, support must be added there first.
+**3. Check the VM test entry.**
+VM tests live under `testFlake/vm-tests/` and iterate over the same `images.json` keys as the container tests, so step 2 already added them.
+A key like `ubuntu-24_04` selects `nix-vm-test.ubuntu."24_04"`, which means the distribution name must match the one `nix-vm-test` uses (`ubuntu`, `debian`, `fedora`, `rocky`) and the version must be one it publishes.
+If `nix-vm-test` does not yet support the distribution or that version, support must be added there first.
 
 **4. Run the test matrix and triage failures.**
 Build the new check attributes via `nix build .#checks.x86_64-linux.container-<distro>-*` and `vm-<distro>-*-*` and triage any failures.
