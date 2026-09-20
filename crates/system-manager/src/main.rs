@@ -180,17 +180,39 @@ struct TimeoutArgs {
     #[arg(long, action)]
     /// If set disable timeout; wait indefinitely until for action to finish
     no_timeout: bool,
-    /// Set timeout for action, in seconds
-    #[arg(short, long, default_value_t = 30u64)]
-    timeout: u64,
+    /// Set timeout for action, in seconds. Defaults to the engine's timeout.
+    #[arg(short, long)]
+    timeout: Option<u64>,
 }
 
-impl From<&TimeoutArgs> for Option<u64> {
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum EngineTimeoutArg {
+    Default,
+    Disabled,
+    Seconds(u64),
+}
+
+impl EngineTimeoutArg {
+    fn push_to(self, args: &mut Vec<String>) {
+        let value = match self {
+            Self::Default => return,
+            Self::Disabled => 0,
+            Self::Seconds(seconds) => seconds,
+        };
+
+        args.push("--timeout".to_string());
+        args.push(value.to_string());
+    }
+}
+
+impl From<&TimeoutArgs> for EngineTimeoutArg {
     fn from(timeout_args: &TimeoutArgs) -> Self {
         if timeout_args.no_timeout {
-            None
+            Self::Disabled
+        } else if let Some(seconds) = timeout_args.timeout {
+            Self::Seconds(seconds)
         } else {
-            Some(timeout_args.timeout)
+            Self::Default
         }
     }
 }
@@ -363,7 +385,7 @@ fn go(args: Args) -> Result<()> {
                 &sudo_options,
                 &ssh_options,
                 verbose,
-                &Option::<u64>::from(&timeout_args),
+                &EngineTimeoutArg::from(&timeout_args),
             )
         }
 
@@ -454,7 +476,7 @@ fn go(args: Args) -> Result<()> {
                 &sudo_options,
                 &ssh_options,
                 verbose,
-                &Option::<u64>::from(&timeout_args),
+                &EngineTimeoutArg::from(&timeout_args),
             )
         }
 
@@ -473,7 +495,7 @@ fn go(args: Args) -> Result<()> {
                 &sudo_options,
                 &ssh_options,
                 verbose,
-                &Option::<u64>::from(&timeout_args),
+                &EngineTimeoutArg::from(&timeout_args),
             )
         }
     }
@@ -651,7 +673,7 @@ fn deactivate(
     sudo_options: &SudoOptions,
     ssh_options: &[String],
     verbose: bool,
-    timeout: &Option<u64>,
+    timeout: &EngineTimeoutArg,
 ) -> Result<()> {
     let store_path = store_path_or_active_profile(maybe_store_path);
     invoke_engine_deactivate(
@@ -665,14 +687,6 @@ fn deactivate(
 }
 
 // --- Engine invocation functions ---
-
-/// Always pass the timeout explicitly, so that `--no-timeout` (`None`) is not
-/// silently turned back into the engine's own default. The engine reads 0 as
-/// "wait indefinitely".
-fn push_timeout_arg(args: &mut Vec<String>, timeout: &Option<u64>) {
-    args.push("--timeout".to_string());
-    args.push(timeout.unwrap_or(0).to_string());
-}
 
 /// Invoke the engine's register subcommand
 fn invoke_engine_register(
@@ -702,7 +716,7 @@ fn invoke_engine_activate(
     sudo_options: &SudoOptions,
     ssh_options: &[String],
     verbose: bool,
-    timeout: &Option<u64>,
+    timeout: &EngineTimeoutArg,
 ) -> Result<()> {
     let engine_path = store_path.store_path.join("bin").join(ENGINE_BIN);
     let mut args = vec![
@@ -716,7 +730,7 @@ fn invoke_engine_activate(
     if verbose {
         args.push("--verbose".to_string());
     }
-    push_timeout_arg(&mut args, timeout);
+    timeout.push_to(&mut args);
     invoke_engine(&engine_path, &args, target_host, sudo_options, ssh_options)
 }
 
@@ -751,7 +765,7 @@ fn invoke_engine_deactivate(
     sudo_options: &SudoOptions,
     ssh_options: &[String],
     verbose: bool,
-    timeout: &Option<u64>,
+    timeout: &EngineTimeoutArg,
 ) -> Result<()> {
     // For deactivate, we need to find the engine in the profile
     // If we have a specific store path, use it; otherwise use the active profile
@@ -769,7 +783,7 @@ fn invoke_engine_deactivate(
     if verbose {
         args.push("--verbose".to_string());
     }
-    push_timeout_arg(&mut args, timeout);
+    timeout.push_to(&mut args);
     invoke_engine(&engine_path, &args, target_host, sudo_options, ssh_options)
 }
 
@@ -1085,21 +1099,26 @@ mod tests {
         assert!(args.ssh_options.is_empty());
     }
 
-    fn switch_timeout_args(extra: &[&str]) -> Option<u64> {
+    fn switch_timeout_args(extra: &[&str]) -> EngineTimeoutArg {
         let argv = ["system-manager", "switch", "--flake", ".#test"]
             .into_iter()
             .chain(extra.iter().copied());
         let args = Args::try_parse_from(argv).expect("failed to parse args");
 
         match args.action {
-            Action::Switch { timeout_args, .. } => Option::<u64>::from(&timeout_args),
+            Action::Switch { timeout_args, .. } => EngineTimeoutArg::from(&timeout_args),
             other => panic!("expected switch, got {other:?}"),
         }
     }
 
     #[test]
-    fn timeout_defaults_to_30_seconds() {
-        assert_eq!(switch_timeout_args(&[]), Some(30));
+    fn omitted_timeout_uses_the_engine_default() {
+        let timeout = switch_timeout_args(&[]);
+        assert_eq!(timeout, EngineTimeoutArg::Default);
+
+        let mut args = vec!["activate".to_string()];
+        timeout.push_to(&mut args);
+        assert_eq!(args, vec!["activate"]);
     }
 
     #[test]
@@ -1135,20 +1154,20 @@ mod tests {
         // The engine defaults to 30s, so omitting the flag would silently
         // re-enable the timeout instead of disabling it.
         let timeout = switch_timeout_args(&["--no-timeout"]);
-        assert_eq!(timeout, None);
+        assert_eq!(timeout, EngineTimeoutArg::Disabled);
 
         let mut args = vec!["activate".to_string()];
-        push_timeout_arg(&mut args, &timeout);
+        timeout.push_to(&mut args);
         assert_eq!(args, vec!["activate", "--timeout", "0"]);
     }
 
     #[test]
     fn explicit_timeout_is_passed_to_the_engine() {
         let timeout = switch_timeout_args(&["--timeout", "90"]);
-        assert_eq!(timeout, Some(90));
+        assert_eq!(timeout, EngineTimeoutArg::Seconds(90));
 
         let mut args = vec!["activate".to_string()];
-        push_timeout_arg(&mut args, &timeout);
+        timeout.push_to(&mut args);
         assert_eq!(args, vec!["activate", "--timeout", "90"]);
     }
 }
