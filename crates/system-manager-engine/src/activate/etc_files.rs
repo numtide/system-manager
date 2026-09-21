@@ -129,6 +129,7 @@ pub fn activate(
     // Create dirs and link/copy entries
     let (mut new_state, failed) =
         create_etc_files(entries, EtcFilesState::default(), &old_state, &etc_dir);
+    retain_failed_targets(&mut new_state, &old_state, &failed);
     // Delete unecessary files
     let files_to_delete: HashSet<PathBuf> = old_state
         .files
@@ -137,6 +138,21 @@ pub fn activate(
         .collect();
     new_state = delete_paths(&files_to_delete, new_state);
     Ok((new_state, failed))
+}
+
+/// Carry a target we failed to write over from the old state.
+///
+/// Without this it looks like a target that left the configuration: we would
+/// delete the file we just failed to replace, and forget that it was ever ours,
+/// so the next activation would refuse to touch it as unmanaged.
+fn retain_failed_targets(state: &mut EtcFilesState, old_state: &EtcFilesState, failed: &[PathBuf]) {
+    for target in failed {
+        if old_state.backed_up_files.contains(target) {
+            state.backed_up_files.insert(target.clone());
+        } else if old_state.files.contains(target) {
+            state.files.insert(target.clone());
+        }
+    }
 }
 
 pub fn deactivate(old_state: EtcFilesState) -> EtcActivationResult {
@@ -165,7 +181,10 @@ fn backup_path_for(path: &Path) -> PathBuf {
 /// recursing under /etc on the strength of a state file is not a trade worth
 /// making.
 fn remove_dir_in_the_way(target: &Path) -> anyhow::Result<()> {
-    log::info!("Removing empty directory in the way: {}", target.display());
+    log::info!(
+        "Trying to remove empty directory in the way: {}",
+        target.display()
+    );
     fs::remove_dir(target).with_context(|| {
         format!(
             "{} is a non-empty directory where a file is expected, remove it and re-run",
@@ -316,7 +335,7 @@ fn create_etc_files(
     let mut failed = Vec::new();
     files.sort_by(|a, b| a.target.cmp(&b.target));
     for file in files {
-        let target = file.target.clone();
+        let target = PathBuf::from(etc_dir).join(&file.target);
         state = match create_etc_file(file, state, old_state, etc_dir) {
             Ok(state) => state,
             Err(ActivationError::WithPartialResult { result, source }) => {
@@ -655,7 +674,7 @@ mod tests {
             &f.etc,
         );
 
-        assert_eq!(failed, vec![PathBuf::from("nix/nix.conf")]);
+        assert_eq!(failed, vec![f.etc.join("nix/nix.conf")]);
         assert!(
             f.etc.join("nix/nix.conf/keep").exists(),
             "a non-empty directory must never be deleted"
@@ -721,6 +740,49 @@ mod tests {
     }
 
     #[test]
+    fn a_failed_target_stays_managed_and_is_not_deleted() {
+        let f = fixture();
+        let target = f.etc.join("nix/nix.conf");
+        fs::create_dir_all(&target).unwrap();
+        fs::write(target.join("keep"), "keep me\n").unwrap();
+        let old_state = EtcFilesState {
+            files: HashSet::from([target.clone()]),
+            ..EtcFilesState::default()
+        };
+
+        let (mut state, failed) = create_etc_files(
+            vec![entry("nix/nix.conf", &f.source, "symlink", false)],
+            EtcFilesState::default(),
+            &old_state,
+            &f.etc,
+        );
+        assert_eq!(failed, vec![target.clone()]);
+        retain_failed_targets(&mut state, &old_state, &failed);
+
+        assert!(state.files.contains(&target), "must stay managed");
+        assert!(
+            old_state.files.difference(&state.files).next().is_none(),
+            "must not be scheduled for deletion"
+        );
+    }
+
+    #[test]
+    fn a_failed_target_keeps_its_backup_classification() {
+        let f = fixture();
+        let target = f.etc.join("sudoers");
+        let old_state = EtcFilesState {
+            backed_up_files: HashSet::from([target.clone()]),
+            ..EtcFilesState::default()
+        };
+        let mut state = EtcFilesState::default();
+
+        retain_failed_targets(&mut state, &old_state, std::slice::from_ref(&target));
+
+        assert!(state.backed_up_files.contains(&target));
+        assert!(state.files.is_empty());
+    }
+
+    #[test]
     fn an_existing_backup_is_never_overwritten() {
         let f = fixture();
         let target = f.etc.join("sudoers");
@@ -734,7 +796,7 @@ mod tests {
             &f.etc,
         );
 
-        assert_eq!(failed, vec![PathBuf::from("sudoers")]);
+        assert_eq!(failed, vec![f.etc.join("sudoers")]);
         assert_eq!(
             fs::read_to_string(backup_path_for(&target)).unwrap(),
             "installer original\n"
