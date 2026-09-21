@@ -129,6 +129,21 @@
       };
 
       system-manager = {
+        package = lib.mkOption {
+          type = lib.types.package;
+          # TODO: Use nixpkgs version by default.
+          default = pkgs.callPackage ../packages/wrapper.nix {
+            system-manager-unwrapped = pkgs.callPackage ../../package.nix { };
+          };
+          example = "pkgs.system-manager";
+          defaultText = lib.literalExpression ''
+            pkgs.callPackage ''${system-manager}/nix/modules/packages/wrapper.nix {
+              system-manager-unwrapped = pkgs.callPackage ''${system-manager}/package.nix { };
+            }
+          '';
+          description = "System-manager binary to use.";
+        };
+
         allowAnyDistro = lib.mkEnableOption "the usage of system-manager on untested distributions";
 
         linkCurrentSystem = lib.mkOption {
