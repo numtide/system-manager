@@ -23,11 +23,13 @@
     map (path: nixosModulesPath + path) [
       "/misc/meta.nix"
       "/misc/ids.nix"
+      "/misc/nixpkgs-flake.nix"
       "/security/acme/"
       "/security/sudo.nix"
       "/security/wrappers/"
       "/services/web-servers/nginx/"
       # nix settings
+      "/config/nix-flakes.nix"
       "/config/nix.nix"
       "/services/system/userborn.nix"
       "/system/build.nix"
@@ -67,6 +69,12 @@
       programs.bash.completion.enable = lib.mkOption {
         type = lib.types.bool;
         default = false;
+      };
+
+      nix.channel.enable = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        internal = true;
       };
 
       fonts.fontconfig.enable = lib.mkOption {
