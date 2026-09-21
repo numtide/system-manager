@@ -1,2 +1,5 @@
 # Evaluate testFlake: parent flake checks plus the Ubuntu VM tests.
 flake_dir = "./testFlake"
+
+# Build release branches on push, in addition to the default branch.
+build_branches = ["release-*"]
