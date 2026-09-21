@@ -146,6 +146,17 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
 
     match etc_files::activate(store_path, old_state.file_tree, ephemeral) {
         Ok((etc_tree, failed_etc_files)) => {
+            // Restarting a service on a configuration file we know we failed
+            // to write is worse than not restarting it at all.
+            if !failed_etc_files.is_empty() {
+                let final_state = StateV1 {
+                    file_tree: etc_tree,
+                    ..old_state
+                };
+                final_state.write_to_file(state_file)?;
+                return bail_on_failed_etc_files(&failed_etc_files);
+            }
+
             log::info!("Restarting sysinit-reactivation.target...");
             services::restart_sysinit_reactivation_target()?;
 
@@ -184,8 +195,6 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
             if let Err(e) = tmp_result {
                 return Err(e.into());
             }
-
-            bail_on_failed_etc_files(&failed_etc_files)?;
 
             Ok(())
         }
@@ -293,4 +302,27 @@ pub(crate) fn get_state_file() -> Result<PathBuf> {
         .recursive(true)
         .create(SYSTEM_MANAGER_STATE_DIR)?;
     Ok(state_file)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn no_failed_etc_files_is_not_an_error() {
+        assert!(bail_on_failed_etc_files(&[]).is_ok());
+    }
+
+    #[test]
+    fn failed_etc_files_are_all_named_in_the_error() {
+        let err = bail_on_failed_etc_files(&[
+            PathBuf::from("/etc/nix/nix.conf"),
+            PathBuf::from("/etc/sudoers"),
+        ])
+        .expect_err("failures must fail the activation");
+        let msg = err.to_string();
+        assert!(msg.contains("2 file(s)"), "{msg}");
+        assert!(msg.contains("/etc/nix/nix.conf"), "{msg}");
+        assert!(msg.contains("/etc/sudoers"), "{msg}");
+    }
 }
