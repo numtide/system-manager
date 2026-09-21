@@ -124,6 +124,13 @@ let
               build = { inherit toplevel; };
             }
             {
+              _file = "${self.printAttrPos (builtins.unsafeGetAttrPos "a" { a = null; })}: inline module";
+              # Pin the nixpkgs used to build this configuration, like
+              # nixpkgs.lib.nixosSystem does: misc/nixpkgs-flake.nix turns this
+              # into a flake registry entry and NIX_PATH=nixpkgs=flake:nixpkgs.
+              config.nixpkgs.flake.source = lib.mkDefault (toString nixpkgs);
+            }
+            {
               config = {
                 assertions = [
                   {
