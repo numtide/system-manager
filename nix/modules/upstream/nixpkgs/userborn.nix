@@ -37,6 +37,10 @@ in
   services.userborn.enable = lib.mkDefault true;
   services.userborn.package = userborn;
 
+  # Imports state left by the NixOS perl activation script
+  # (update-users-groups.pl), which never runs on system-manager hosts.
+  services.userborn.importLegacyState = lib.mkDefault false;
+
   # REMOVE when https://github.com/NixOS/nixpkgs/pull/483684 is merged
   systemd.services.userborn = lib.mkIf config.services.userborn.enable {
     # system-manager does not implement systemd aliases

@@ -139,6 +139,7 @@ nav:
         - Import a NixOS Module: how-to/import-nixos-module.md
         - Test Configuration: how-to/test-configuration.md
         - Manage Existing Files: how-to/manage-existing-files.md
+        - Manage Secrets with sops-nix: how-to/manage-secrets.md
         - Rollback Changes: how-to/rollback.md
     - Reference:
         - Overview: reference/index.md

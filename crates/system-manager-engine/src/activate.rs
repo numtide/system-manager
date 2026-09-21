@@ -102,7 +102,7 @@ impl StateV1 {
                         backup_path.add_extension("v0back");
                         log::info!(
                             "Create a backup of the v0 state at {}.",
-                            &backup_path.display()
+                            backup_path.display()
                         );
                         fs::copy(state_file, backup_path)?;
                         Ok(filetree.into())

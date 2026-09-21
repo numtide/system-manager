@@ -67,17 +67,19 @@ class Driver:
 
         self.machines: list[Machine] = []
         for container in containers:
-            # Copy rootfs to container working directory
-            # Use --no-preserve=ownership so files become owned by root (current user)
+            # Extract tar of rootfs to container working directory
+            # Use --no-same-owner so files become owned by root (current user)
             # instead of preserving Nix store ownership which maps incorrectly in container
             container_rootdir = tempdir_path / container.name
+            container_rootdir.mkdir(parents=True, exist_ok=True)
             subprocess.run(
                 [
-                    "cp",
-                    "-r",
-                    "--no-preserve=ownership",
-                    str(container.rootfs),
+                    "tar",
+                    "--no-same-owner",
+                    "-C",
                     str(container_rootdir),
+                    "-xf",
+                    str(container.rootfs),
                 ],
                 check=True,
             )
@@ -154,12 +156,12 @@ class Driver:
         for machine in self.machines:
             nspawn_uuid = uuid.uuid4()
 
-            sleep = shutil.which("sleep")
-            if sleep is None:
+            sleep = machine.execute("/bin/sh -c 'which sleep'").stdout.strip()
+            if not sleep:
                 msg = "sleep command not found"
                 raise RuntimeError(msg)
             machine.execute(
-                f"systemd-run /bin/sh -c '{sleep} 999999999 && echo {nspawn_uuid}'",
+                f"systemd-run /bin/sh -c 'sleep 999999999 && echo {nspawn_uuid}'",
             )
 
             print(
