@@ -160,9 +160,19 @@ pub struct BuildUri {
     )]
     flake_uri: Option<(String, Option<String>)>,
 
-    // Path to a (non-flake) nix file and attribute of a system-manager configuration
-    #[arg(short, long, name = "FILE [<ATTR>]", num_args = 0..=2, value_delimiter = ' ')]
-    file: Option<Vec<String>>,
+    #[clap(flatten)]
+    file_args: Option<FileArgs>,
+}
+
+#[derive(clap::Args, Debug)]
+struct FileArgs {
+    /// Path to a (non-flake) nix file to build the system-manager configuration from [default: ~/.config/system-manager].
+    #[arg(long)]
+    file: Option<String>,
+
+    /// Specific attribute path to the system-manager configuration from.
+    #[arg(long)]
+    attr: Option<String>,
 }
 
 #[derive(clap::Args, Debug)]
@@ -178,11 +188,16 @@ struct BuildArgs {
 impl TryFrom<&BuildArgs> for NixBuildOptions {
     type Error = anyhow::Error;
     fn try_from(build_args: &BuildArgs) -> Result<Self, Self::Error> {
+        // Work-around https://github.com/clap-rs/clap/issues/5253
+        if build_args.uri.flake_uri.is_some() && build_args.uri.file_args.is_some() {
+            bail!("the argument '--flake <FLAKE_URI>' cannot be used with '--file <FILE> | --attr <ATTR>'")
+        }
+
         let mut path = build_args
             .uri
-            .file
+            .file_args
             .as_ref()
-            .and_then(|vec| vec.first().cloned())
+            .and_then(|f_args| f_args.file.clone())
             .unwrap_or_else(|| {
                 build_args
                     .uri
@@ -200,13 +215,13 @@ impl TryFrom<&BuildArgs> for NixBuildOptions {
         }
 
         Ok(Self {
-            is_flake: build_args.uri.file.is_none(),
+            is_flake: build_args.uri.file_args.is_none(),
             path: path.to_string(),
             attr: build_args
                 .uri
-                .file
+                .file_args
                 .as_ref()
-                .and_then(|vec| vec.get(1).cloned())
+                .and_then(|f_args| f_args.attr.clone())
                 .or_else(|| {
                     build_args
                         .uri
@@ -575,7 +590,7 @@ fn register(
             optional_build_uri_arg:
                 BuildUri {
                     flake_uri: None,
-                    file: None,
+                    file_args: None,
                 },
             refresh: _,
         } => {
@@ -629,7 +644,7 @@ fn prepopulate(
             optional_build_uri_arg:
                 BuildUri {
                     flake_uri: None,
-                    file: None,
+                    file_args: None,
                 },
             refresh: _,
         } => {
