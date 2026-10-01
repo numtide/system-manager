@@ -20,6 +20,10 @@ forEachDistro "nix-enabled" {
           assert machine.file("/etc/nix/nix.conf").exists, "/etc/nix/nix.conf should exist before activation"
           original_nix_conf = machine.succeed("cat /etc/nix/nix.conf")
 
+      with subtest("Pre-existing registry.json before activation"):
+          original_registry = '{"flakes":[],"version":2}'
+          machine.succeed(f"printf %s '{original_registry}' > /etc/nix/registry.json")
+
       machine.activate()
       machine.wait_for_unit("system-manager.target")
 
@@ -37,9 +41,26 @@ forEachDistro "nix-enabled" {
           assert nix_conf.exists, "/etc/nix/nix.conf should still exist after re-activation"
           assert nix_conf.contains("flakes"), "nix.conf should still contain flakes"
 
-      with subtest("Deactivation restores original nix.conf"):
+      with subtest("Channels are disabled by default"):
+          assert not machine.file("/root/.nix-channels").exists, (
+              "/root/.nix-channels should not be created when channels are disabled"
+          )
+          machine.fail("test -e /run/system-manager/sw/bin/nix-channel")
+
+      with subtest("NIX_PATH points at the pinned nixpkgs flake"):
+          nix_path = machine.succeed("bash --login -c 'printf %s \"$NIX_PATH\"'").strip()
+          assert nix_path == "nixpkgs=flake:nixpkgs", (
+              f"Expected configured NIX_PATH, got: {nix_path!r}"
+          )
+
+      with subtest("Deactivation restores original nix.conf and registry.json"):
           machine.succeed("${toplevel}/bin/deactivate")
           restored_nix_conf = machine.succeed("cat /etc/nix/nix.conf")
           assert restored_nix_conf == original_nix_conf, f"nix.conf content differs after deactivation:\n  original: {original_nix_conf!r}\n  restored: {restored_nix_conf!r}"
+          restored_registry = machine.succeed("cat /etc/nix/registry.json")
+          assert restored_registry == original_registry, (
+              f"registry.json content differs after deactivation:\n"
+              f"  original: {original_registry!r}\n  restored: {restored_registry!r}"
+          )
     '';
 }
