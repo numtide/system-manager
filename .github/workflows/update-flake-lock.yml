@@ -19,9 +19,7 @@ jobs:
         with:
           ref: ${{ matrix.branch }}
       - name: "Install the Nix package manager"
-        uses: "cachix/install-nix-action@master"
-        with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+        uses: "NixOS/nix-installer-action@main"
       - name: "Update the lockfiles"
         run: |
           git config user.name 'github-actions[bot]'

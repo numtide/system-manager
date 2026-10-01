@@ -21,7 +21,7 @@ jobs:
               with:
                   fetch-depth: 0
 
-            - uses: cachix/install-nix-action@v31
+            - uses: NixOS/nix-installer-action@main
 
             - name: Configure Git user
               run: |

@@ -11,9 +11,7 @@ jobs:
       - name: "Checkout the repo"
         uses: "actions/checkout@v7"
       - name: "Install the Nix package manager"
-        uses: "cachix/install-nix-action@master"
-        with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+        uses: "NixOS/nix-installer-action@main"
       - name: "Bump Nix version in nix-artifacts"
         run: python3 tools/bump_nix_version.py
         env:
