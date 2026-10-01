@@ -218,17 +218,29 @@ let
         node,
         profile,
         action,
+        arguments ? [ ],
       }:
+      let
+        command = lib.escapeShellArgs ([ "${profile}/bin/${action}" ] ++ arguments);
+      in
       ''
-        ${node}.succeed("RUST_LOG=debug ${profile}/bin/${action} 2>&1 | tee /tmp/output.log")
+        ${node}.succeed("RUST_LOG=debug ${command} 2>&1 | tee /tmp/output.log")
         ${node}.succeed("! grep -F 'ERROR' /tmp/output.log")
       '';
 
     activateProfileSnippet =
-      { node, profile }:
+      {
+        node,
+        profile,
+        timeout ? 30,
+      }:
       self.mkTestPreamble {
         inherit node profile;
         action = "activate";
+        arguments = lib.optionals (timeout != 30) [
+          "--timeout"
+          (if timeout == null then "0" else toString timeout)
+        ];
       };
     deactivateProfileSnippet =
       { node, profile }:

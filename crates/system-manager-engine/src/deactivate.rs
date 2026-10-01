@@ -1,4 +1,5 @@
 use anyhow::Result;
+use std::time::Duration;
 
 use crate::activate::etc_files;
 use crate::activate::services;
@@ -7,7 +8,7 @@ use crate::activate::{get_state_file, ActivationError, StateV1};
 
 /// Deactivates system-manager by locking managed users, removing etc files,
 /// and stopping systemd services.
-pub fn deactivate() -> Result<()> {
+pub fn deactivate(timeout: &Option<Duration>) -> Result<()> {
     log::info!("Deactivating system-manager");
     let state_file = &get_state_file()?;
     let old_state = StateV1::from_file(state_file)?;
@@ -24,7 +25,7 @@ pub fn deactivate() -> Result<()> {
     match etc_files::deactivate(old_state.file_tree) {
         Ok(etc_tree) => {
             log::info!("Deactivating systemd services...");
-            match services::deactivate(old_state.services) {
+            match services::deactivate(old_state.services, timeout) {
                 Ok(services) => StateV1 {
                     file_tree: etc_tree,
                     services,
