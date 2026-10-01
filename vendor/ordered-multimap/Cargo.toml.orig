@@ -1,0 +1,24 @@
+[package]
+name = "ordered-multimap"
+version = "0.7.3"
+authors = ["Scott Godwin <sgodwincs@gmail.com>"]
+license = "MIT"
+edition = "2021"
+repository = "https://github.com/sgodwincs/ordered-multimap-rs"
+description = "Insertion ordered multimap"
+readme = "README.md"
+categories = ["data-structures"]
+rust-version = "1.64.0"
+
+[dependencies]
+dlv-list = { version = "0.5", default-features = false }
+hashbrown = { version = "0.14.0", default-features = false }
+serde = { version = "1", optional = true, default-features = false }
+
+[features]
+default = ["std"]
+std = ["dlv-list/std"]
+
+[dev-dependencies]
+coverage-helper = "0.2.0"
+serde_test = "1.0.144"

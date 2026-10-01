@@ -1,0 +1,26 @@
+[target.'cfg(all())']
+rustflags = [
+  "-Wabsolute_paths_not_starting_with_crate",
+  "-Welided_lifetimes_in_paths",
+  "-Wexplicit_outlives_requirements",
+  "-Wkeyword_idents",
+  "-Wmacro_use_extern_crate",
+  "-Wmeta_variable_misuse",
+  "-Wmissing_abi",
+  "-Wmissing_debug_implementations",
+  "-Wmissing_docs",
+  "-Wnon_ascii_idents",
+  "-Wnoop_method_call",
+  "-Wpointer_structural_match",
+  "-Wsingle_use_lifetimes",
+  "-Wtrivial_casts",
+  "-Wtrivial_numeric_casts",
+  "-Wunsafe_code",
+  "-Wunsafe_op_in_unsafe_fn",
+  "-Wunused_extern_crates",
+  "-Wunused_import_braces",
+  "-Wunused_lifetimes",
+  "-Wunused_qualifications",
+  "-Wunused_results",
+  "-Wvariant_size_differences"
+]
