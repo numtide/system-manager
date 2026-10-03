@@ -90,10 +90,35 @@
         default = false;
       };
 
+      # Only the locale archive is consumed (nix/modules/locale.nix sets
+      # LOCALE_ARCHIVE from it), and pkgs.glibcLocales is built with
+      # allLocales = true, which is a 223 MB locale-archive. Build just the two
+      # locales NixOS enables by default instead, the same list as
+      # nixos/modules/config/i18n.nix's i18n.supportedLocales. A configuration
+      # that needs more can override this option with its own
+      # pkgs.glibcLocales.override, or set it to null to get no archive at all.
       i18n.glibcLocales = lib.mkOption {
-        type = lib.types.package;
-        default = pkgs.glibcLocales;
-        defaultText = lib.literalExpression "pkgs.glibcLocales";
+        type = lib.types.nullOr lib.types.package;
+        default =
+          if pkgs.glibcLocales != null then
+            pkgs.glibcLocales.override {
+              allLocales = false;
+              locales = [
+                "C.UTF-8/UTF-8"
+                "en_US.UTF-8/UTF-8"
+              ];
+            }
+          else
+            null;
+        defaultText = lib.literalExpression ''
+          if pkgs.glibcLocales != null then
+            pkgs.glibcLocales.override {
+              allLocales = false;
+              locales = [ "C.UTF-8/UTF-8" "en_US.UTF-8/UTF-8" ];
+            }
+          else
+            null
+        '';
       };
     };
 }

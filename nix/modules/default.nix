@@ -10,6 +10,7 @@
     ./auto-upgrade.nix
     ./environment.nix
     ./etc.nix
+    ./locale.nix
     ./systemd.nix
     ./tmpfiles.nix
     ./upstream/nixpkgs
