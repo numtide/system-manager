@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::DirBuilder;
@@ -68,15 +68,13 @@ fn create_gcroot(gcroot_path: &str, profile_path: &Path) -> Result<()> {
     create_store_link(&store_path, Path::new(gcroot_path))
 }
 
-pub fn build(
-    nix_build_options: &mut NixBuildOptions,
-    nix_options: &NixOptions,
-) -> Result<StorePath> {
-    nix_build_options.flake_uri = find_flake_attr(nix_build_options, nix_options)?;
+pub fn build(nix_build_options: &NixBuildOptions, nix_options: &NixOptions) -> Result<StorePath> {
+    let attr = find_flake_attr(nix_build_options, nix_options)?;
 
     log::info!("Building new system-manager generation...");
     log::info!("Running nix build...");
-    let store_path = run_nix_build(nix_build_options, nix_options).and_then(get_store_path)?;
+    let store_path =
+        run_nix_build(nix_build_options, attr, nix_options).and_then(get_store_path)?;
     log::info!("Built system-manager profile {store_path}");
     Ok(store_path)
 }
@@ -85,50 +83,27 @@ fn find_flake_attr(
     nix_build_options: &NixBuildOptions,
     nix_options: &NixOptions,
 ) -> Result<String> {
-    let flake_uri = nix_build_options.flake_uri.trim_end_matches('#');
-    let mut splitted = flake_uri.split('#');
-    let flake = splitted
-        .next()
-        .ok_or_else(|| anyhow!("Invalid flake URI: {flake_uri}"))?;
-    let attr = splitted.next();
-
-    if splitted.next().is_some() {
-        anyhow::bail!("Invalid flake URI, too many '#'s: {flake_uri}");
-    }
-
     let system = get_nix_system(nix_options)?;
-
-    if let Some(attr) = attr {
-        let Some(full_uri) =
-            try_flake_attr(flake, attr, nix_options, &system, nix_build_options.refresh)?
-        else {
+    let path = &nix_build_options.path;
+    if let Some(attr) = &nix_build_options.attr {
+        let Some(full_attr) = try_flake_attr(nix_build_options, attr, nix_options, &system)? else {
             anyhow::bail!(
-                "Explicitly provided flake URI does not point to a valid system-manager configuration: {flake}#{attr}"
+                "Explicitly provided flake URI does not point to a valid system-manager configuration: {path}#{attr}"
             )
         };
-        return Ok(full_uri);
+        return Ok(full_attr);
     }
 
     let hostname_os = nix::unistd::gethostname()?;
     let hostname = escape_nix_string(&hostname_os.to_string_lossy());
     let default = "default";
 
-    if let Some(full_uri) = try_flake_attr(
-        flake,
-        &hostname,
-        nix_options,
-        &system,
-        nix_build_options.refresh,
-    )? {
-        return Ok(full_uri);
-    } else if let Some(full_uri) = try_flake_attr(
-        flake,
-        default,
-        nix_options,
-        &system,
-        nix_build_options.refresh,
-    )? {
-        return Ok(full_uri);
+    if let Some(full_attr) = try_flake_attr(nix_build_options, &hostname, nix_options, &system)? {
+        return Ok(full_attr);
+    } else if let Some(full_attr) =
+        try_flake_attr(nix_build_options, default, nix_options, &system)?
+    {
+        return Ok(full_attr);
     };
     anyhow::bail!("No suitable flake attribute found, giving up.");
 }
@@ -147,21 +122,20 @@ fn escape_nix_string(s: &str) -> String {
 }
 
 fn try_flake_attr(
-    flake: &str,
+    nix_build_options: &NixBuildOptions,
     attr: &str,
     nix_options: &NixOptions,
     system: &str,
-    refresh: bool,
 ) -> Result<Option<String>> {
     let try_flake_attr_impl = |attr: &str| {
-        let full_uri = format!("{flake}#{FLAKE_ATTR}.{attr}");
-        log::info!("Trying flake URI: {full_uri}...");
-        let status = try_nix_eval(flake, attr, nix_options, refresh)?;
+        let full_attr = format!("{FLAKE_ATTR}.{attr}");
+        log::info!("Trying attribute: {full_attr}...");
+        let status = try_nix_eval(nix_build_options, attr, nix_options)?;
         if status {
-            log::info!("Success, using {full_uri}");
-            Ok(Some(full_uri))
+            log::info!("Success, using {full_attr}");
+            Ok(Some(full_attr))
         } else {
-            log::info!("Attribute {full_uri} not found in flake.");
+            log::info!("Attribute {full_attr} not found.");
             Ok(None)
         }
     };
@@ -199,12 +173,18 @@ fn parse_nix_build_output(output: String) -> Result<StorePath> {
 
 fn run_nix_build(
     nix_build_options: &NixBuildOptions,
+    attr: String,
     nix_options: &NixOptions,
 ) -> Result<process::Output> {
+    let path = &nix_build_options.path;
     let mut cmd = nix_cmd(nix_options);
-    cmd.arg("build")
-        .arg(&nix_build_options.flake_uri)
-        .arg("--json");
+    cmd.arg("build");
+    if nix_build_options.is_flake {
+        cmd.arg(format!("{path}#{attr}"));
+    } else {
+        cmd.arg("-f").arg(path).arg(attr);
+    }
+    cmd.arg("--json");
     if nix_build_options.refresh {
         cmd.arg("--refresh");
     }
@@ -220,14 +200,23 @@ fn run_nix_build(
     Ok(output)
 }
 
-fn try_nix_eval(flake: &str, attr: &str, nix_options: &NixOptions, refresh: bool) -> Result<bool> {
+fn try_nix_eval(
+    nix_build_options: &NixBuildOptions,
+    attr: &str,
+    nix_options: &NixOptions,
+) -> Result<bool> {
+    let path = &nix_build_options.path;
     let mut cmd = nix_cmd(nix_options);
-    cmd.arg("eval")
-        .arg(format!("{flake}#{FLAKE_ATTR}"))
-        .arg("--json")
+    cmd.arg("eval");
+    if nix_build_options.is_flake {
+        cmd.arg(format!("{path}#{FLAKE_ATTR}"));
+    } else {
+        cmd.arg("-f").arg(path).arg(FLAKE_ATTR);
+    }
+    cmd.arg("--json")
         .arg("--apply")
         .arg(format!("_: _ ? {attr}"));
-    if refresh {
+    if nix_build_options.refresh {
         cmd.arg("--refresh");
     }
 
@@ -279,12 +268,47 @@ mod tests {
 
     #[test]
     fn test_try_nix_eval() {
-        let flake = "./test/rust/register";
+        let nix_build_options_flake = NixBuildOptions {
+            is_flake: true,
+            path: "./test/rust/register".to_string(),
+            attr: None,
+            refresh: false,
+        };
+        let nix_build_options_classic = NixBuildOptions {
+            is_flake: false,
+            path: "./test/rust/register".to_string(),
+            attr: None,
+            refresh: false,
+        };
         let nix_options = &NixOptions::new(vec![]);
 
-        assert!(try_nix_eval(flake, "identifier-key", nix_options, false).unwrap());
-        assert!(try_nix_eval(flake, "\"string.literal/key\"", nix_options, false).unwrap());
-        assert!(!try_nix_eval(flake, "_identifier-key", nix_options, false).unwrap());
-        assert!(!try_nix_eval(flake, "\"_string.literal/key\"", nix_options, false).unwrap());
+        assert!(try_nix_eval(&nix_build_options_flake, "identifier-key", nix_options).unwrap());
+        assert!(try_nix_eval(&nix_build_options_classic, "identifier-key", nix_options).unwrap());
+        assert!(try_nix_eval(
+            &nix_build_options_flake,
+            "\"string.literal/key\"",
+            nix_options
+        )
+        .unwrap());
+        assert!(try_nix_eval(
+            &nix_build_options_classic,
+            "\"string.literal/key\"",
+            nix_options
+        )
+        .unwrap());
+        assert!(!try_nix_eval(&nix_build_options_flake, "_identifier-key", nix_options).unwrap());
+        assert!(!try_nix_eval(&nix_build_options_classic, "_identifier-key", nix_options).unwrap());
+        assert!(!try_nix_eval(
+            &nix_build_options_flake,
+            "\"_string.literal/key\"",
+            nix_options
+        )
+        .unwrap());
+        assert!(!try_nix_eval(
+            &nix_build_options_classic,
+            "\"_string.literal/key\"",
+            nix_options
+        )
+        .unwrap());
     }
 }
