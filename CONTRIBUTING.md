@@ -91,6 +91,7 @@ Reuse the existing `excludePatterns` (which strip container-incompatible systemd
 VM tests live under `testFlake/vm-tests/` and iterate over the same `images.json` keys as the container tests, so step 2 already added them.
 A key like `ubuntu-24_04` selects `nix-vm-test.ubuntu."24_04"`, which means the distribution name must match the one `nix-vm-test` uses (`ubuntu`, `debian`, `fedora`, `rocky`) and the version must be one it publishes.
 If `nix-vm-test` does not yet support the distribution or that version, support must be added there first.
+Fedora is the exception: it runs in container tests only, so `testFlake/vm-tests/default.nix` filters it out.
 
 **4. Run the test matrix and triage failures.**
 Build the new check attributes via `nix build .#checks.x86_64-linux.container-<distro>-*` and `vm-<distro>-*-*` and triage any failures.

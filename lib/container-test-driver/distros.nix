@@ -79,4 +79,23 @@ in
     };
     maskableService = "unattended-upgrades.service";
   };
+
+  fedora-44 = {
+    systems = builtins.attrNames images.fedora-44;
+    rootfs = makeRootfs.buildRootfs {
+      name = "fedora-44";
+      cloudImgFormat = "disk-qcow2";
+      cloudImg = fetchCloudImg "fedora-44";
+      excludePatterns = [
+        "usr/lib/systemd/system/systemd-remount-fs.service"
+      ];
+      # firstboot blocks boot on a console prompt; auditd fails in nspawn
+      extraSetup = ''
+        for unit in systemd-firstboot.service auditd.service audit-rules.service; do
+          ln -s /dev/null $out/etc/systemd/system/$unit
+        done
+      '';
+    };
+    maskableService = "systemd-homed.service";
+  };
 }
