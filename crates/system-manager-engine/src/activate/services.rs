@@ -88,7 +88,12 @@ pub fn activate(
     // (e.g. distro-provided units). Must happen before daemon-reload so systemd
     // still knows about these units.
     let mut units_to_stop = convert_services(&services_to_stop);
-    units_to_stop.extend(convert_services(&masked));
+    // a masked unit the distro does not ship is not loaded, and StopUnit fails on it
+    units_to_stop.extend(
+        convert_services(&masked)
+            .into_iter()
+            .filter(|unit| is_loaded(&service_manager, unit)),
+    );
     wait_for_jobs(
         &service_manager,
         &job_monitor,
@@ -308,6 +313,12 @@ fn restore_ephemeral_system_dir() -> anyhow::Result<()> {
         fs::create_dir_all(&ephemeral_systemd_system_dir)?;
     }
     Ok(())
+}
+
+fn is_loaded(service_manager: &systemd::ServiceManager, unit: &str) -> bool {
+    service_manager
+        .list_units_by_patterns(&[], &[unit])
+        .map_or(true, |units| !units.is_empty())
 }
 
 fn stop_services<'a, U>(service_manager: &systemd::ServiceManager, units: U) -> HashSet<JobId>
