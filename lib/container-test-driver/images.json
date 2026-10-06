@@ -11,12 +11,12 @@
   },
   "ubuntu-22_04": {
     "aarch64-linux": {
-      "sha256": "00px613rrbk15ch6cqqc26i58zn95l7qp4r1ama7qncz2ycgh2z7",
-      "url": "https://cloud-images.ubuntu.com/releases/jammy/release-20260926/ubuntu-22.04-server-cloudimg-arm64-root.tar.xz"
+      "sha256": "0i8m4d9xlnw9yz3iqnfgdn8m3nnzzwxk87j7jd27dx4vfzpk02n9",
+      "url": "https://cloud-images.ubuntu.com/releases/jammy/release-20261004/ubuntu-22.04-server-cloudimg-arm64-root.tar.xz"
     },
     "x86_64-linux": {
-      "sha256": "16hpd8rflk9khpzs8xq75g3x2l58ap3lx1kbdi93q5kr3lca2rd2",
-      "url": "https://cloud-images.ubuntu.com/releases/jammy/release-20260926/ubuntu-22.04-server-cloudimg-amd64-root.tar.xz"
+      "sha256": "19ag49sy6jbik3pqb09wawqjbrv14xgi4zrl53lldwmylyd6vp2l",
+      "url": "https://cloud-images.ubuntu.com/releases/jammy/release-20261004/ubuntu-22.04-server-cloudimg-amd64-root.tar.xz"
     }
   },
   "ubuntu-24_04": {
@@ -31,12 +31,12 @@
   },
   "ubuntu-26_04": {
     "aarch64-linux": {
-      "sha256": "077i5k2yd36bwayybvh475v5lyr9ilb7c847n99mmyj8p3lcb5d7",
-      "url": "https://cloud-images.ubuntu.com/releases/resolute/release-20260731/ubuntu-26.04-server-cloudimg-arm64-root.tar.xz"
+      "sha256": "1myh38wxrkf15ry12q32q215p1r686gzw26cyx7sp3h47bmmbm3f",
+      "url": "https://cloud-images.ubuntu.com/releases/resolute/release-20260927/ubuntu-26.04-server-cloudimg-arm64-root.tar.xz"
     },
     "x86_64-linux": {
-      "sha256": "12318m2bikm6cgzlwa215301y9vf3p4666yb7lxmik4z4llp42m8",
-      "url": "https://cloud-images.ubuntu.com/releases/resolute/release-20260731/ubuntu-26.04-server-cloudimg-amd64-root.tar.xz"
+      "sha256": "1j31iq3al5chd1k0nzfq3aviq1fx7f8v90i6vls91indfrx8ml6c",
+      "url": "https://cloud-images.ubuntu.com/releases/resolute/release-20260927/ubuntu-26.04-server-cloudimg-amd64-root.tar.xz"
     }
   }
 }
