@@ -16,6 +16,7 @@ runCommand "system-manager"
     # The wrapped version has a reference to the nix store path, so nix is
     # part of its runtime closure.
     unwrapped = system-manager-unwrapped;
+    meta.mainProgram = "system-manager";
   }
   ''
     # Wrap the CLI binary with nix in PATH
