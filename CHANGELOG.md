@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Activation no longer exits 0 when it didn't apply the profile: it exits 1, naming what wasn't applied, when systemd refused a job, `userborn.service` failed or the services phase was cut short, and 4, naming the units, when everything was applied but managed units are failed afterwards, as NixOS' `switch-to-configuration` does (#582)
+
 - sops-nix secrets now work beyond the default case: `sops.age.generateKey` is honoured through a `sops-generate-age-key.service` oneshot instead of being discarded with the activation script, `sops.secrets.<name>.neededForUsers` is ordered against userborn instead of the unused `systemd-sysusers.service`, and `sops.useSystemdActivation` is enabled by default so that disabling userborn no longer silently stops secrets from being installed
 
 - Export `NIX_PROFILES` (and `NIX_USER_PROFILE_DIR`) including `/run/system-manager/sw` and `/etc/profiles/per-user/$USER`, so zsh/bash completions from `environment.systemPackages`, `users.users.<name>.packages`, and Home Manager `useUserPackages` are visible to shells

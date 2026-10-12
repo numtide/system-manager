@@ -84,6 +84,9 @@ pub fn activate(
         .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
     let timeout = Some(Duration::from_secs(30));
 
+    // Units systemd refused a job for: the activation isn't complete.
+    let mut refused = vec![];
+
     // Stop removed services and any masked services that might still be running
     // (e.g. distro-provided units). Must happen before daemon-reload so systemd
     // still knows about these units.
@@ -92,7 +95,7 @@ pub fn activate(
     wait_for_jobs(
         &service_manager,
         &job_monitor,
-        stop_services(&service_manager, units_to_stop),
+        stop_services(&service_manager, units_to_stop, &mut refused),
         &timeout,
     )
     .map_err(|e| ActivationError::with_partial_result(services.clone(), e))?;
@@ -100,8 +103,11 @@ pub fn activate(
     wait_for_jobs(
         &service_manager,
         &job_monitor,
-        reload_or_restart_units(&service_manager, convert_services(&services_to_reload))
-            + start_units(&service_manager, ["system-manager.target"]),
+        reload_or_restart_units(
+            &service_manager,
+            convert_services(&services_to_reload),
+            &mut refused,
+        ) + start_units(&service_manager, ["system-manager.target"], &mut refused),
         &timeout,
     )
     .map_err(|e| ActivationError::with_partial_result(services.clone(), e))?;
@@ -125,8 +131,38 @@ pub fn activate(
         );
     }
 
+    if !refused.is_empty() {
+        return Err(ActivationError::with_partial_result(
+            services,
+            anyhow::anyhow!(refused.join("; ")),
+        ));
+    }
+
     log::info!("Done");
     Ok(services)
+}
+
+/// The managed units systemd reports as failed once activation is done: as NixOS'
+/// switch-to-configuration does, a unit that failed to (re)start doesn't fail the activation
+/// by itself, but it is reported, so that the caller can judge it against what was failing
+/// before.
+pub fn failed_units(services: &Services) -> anyhow::Result<Vec<String>> {
+    let names: Vec<&str> = services
+        .iter()
+        .filter(|(_, cfg)| !cfg.masked)
+        .map(|(name, _)| name.as_str())
+        .collect();
+    if names.is_empty() {
+        return Ok(vec![]);
+    }
+    let service_manager = systemd::ServiceManager::new_session()?;
+    let mut failed: Vec<String> = service_manager
+        .list_units_by_patterns(&["failed"], &names)?
+        .into_iter()
+        .map(|unit| unit.name)
+        .collect();
+    failed.sort();
+    Ok(failed)
 }
 
 fn get_services_to_reload(services: Services, old_services: Services) -> Services {
@@ -256,7 +292,7 @@ pub fn deactivate(old_services: Services) -> ServiceActivationResult {
         wait_for_jobs(
             &service_manager,
             &job_monitor,
-            stop_services(&service_manager, units_to_stop),
+            stop_services(&service_manager, units_to_stop, &mut vec![]),
             &timeout,
         )
         // We consider all jobs stopped now..
@@ -310,16 +346,34 @@ fn restore_ephemeral_system_dir() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn stop_services<'a, U>(service_manager: &systemd::ServiceManager, units: U) -> HashSet<JobId>
+fn stop_services<'a, U>(
+    service_manager: &systemd::ServiceManager,
+    units: U,
+    refused: &mut Vec<String>,
+) -> HashSet<JobId>
 where
     U: AsRef<[&'a str]>,
 {
-    for_each_unit(|s| service_manager.stop_unit(s), units.as_ref(), "stopping")
+    for_each_unit(
+        |s| service_manager.stop_unit(s),
+        units.as_ref(),
+        "stopping",
+        // An inactive unit whose file is gone isn't loaded any more: it is already stopped.
+        is_not_loaded,
+        refused,
+    )
+}
+
+fn is_not_loaded(e: &anyhow::Error) -> bool {
+    e.downcast_ref::<dbus::Error>()
+        .and_then(dbus::Error::name)
+        .is_some_and(|name| name == "org.freedesktop.systemd1.NoSuchUnit")
 }
 
 fn reload_or_restart_units<'a, U>(
     service_manager: &systemd::ServiceManager,
     units: U,
+    refused: &mut Vec<String>,
 ) -> HashSet<JobId>
 where
     U: AsRef<[&'a str]>,
@@ -328,10 +382,16 @@ where
         |s| service_manager.reload_or_restart_unit(s),
         units.as_ref(),
         "reloading",
+        |_| false,
+        refused,
     )
 }
 
-fn start_units<'a, U>(service_manager: &systemd::ServiceManager, units: U) -> HashSet<JobId>
+fn start_units<'a, U>(
+    service_manager: &systemd::ServiceManager,
+    units: U,
+    refused: &mut Vec<String>,
+) -> HashSet<JobId>
 where
     U: AsRef<[&'a str]>,
 {
@@ -339,6 +399,8 @@ where
         |unit| service_manager.start_unit(unit),
         units.as_ref(),
         "starting",
+        |_| false,
+        refused,
     )
 }
 
@@ -346,12 +408,21 @@ fn convert_services(services: &Services) -> Vec<&str> {
     services.keys().map(AsRef::as_ref).collect::<Vec<&str>>()
 }
 
-fn for_each_unit<'a, F, R, S>(action: F, units: S, log_action: &str) -> HashSet<JobId>
+/// Queues `action` for each unit, returning the jobs to wait for. A unit systemd refuses a
+/// job for is logged and added to `refused`, unless `nothing_to_do` says the error means the
+/// unit is already where `action` would put it.
+fn for_each_unit<'a, F, N, R, S>(
+    action: F,
+    units: S,
+    log_action: &str,
+    nothing_to_do: N,
+    refused: &mut Vec<String>,
+) -> HashSet<JobId>
 where
     F: Fn(&str) -> anyhow::Result<R>,
+    N: Fn(&anyhow::Error) -> bool,
     S: AsRef<[&'a str]>,
 {
-    // TODO: do we want to propagate unit failures here in some way?
     units
         .as_ref()
         .iter()
@@ -363,12 +434,17 @@ where
                 });
                 set
             }
+            Err(e) if nothing_to_do(&e) => {
+                log::debug!("Unit {unit}: nothing to do for {log_action}: {e}");
+                set
+            }
             Err(e) => {
                 log::error!(
                     "Service {}: error {log_action}, please consult the logs",
                     unit
                 );
                 log::error!("{e}");
+                refused.push(format!("{unit}: error {log_action}: {e}"));
                 set
             }
         })
@@ -397,7 +473,9 @@ impl From<JobId> for String {
     }
 }
 
-pub fn restart_sysinit_reactivation_target() -> anyhow::Result<()> {
+/// A job systemd refuses is added to `refused` rather than returned, so that the activation
+/// carries on and records what it applied.
+pub fn restart_sysinit_reactivation_target(refused: &mut Vec<String>) -> anyhow::Result<()> {
     let service_manager = systemd::ServiceManager::new_session()?;
     let job_monitor = service_manager.monitor_jobs_init()?;
     let timeout = Some(Duration::from_secs(30));
@@ -409,6 +487,8 @@ pub fn restart_sysinit_reactivation_target() -> anyhow::Result<()> {
         |unit| service_manager.restart_unit(unit),
         ["sysinit-reactivation.target"],
         "restarting",
+        |_| false,
+        refused,
     );
 
     wait_for_jobs(&service_manager, &job_monitor, jobs, &timeout)?;
@@ -435,13 +515,49 @@ pub fn restart_userborn_if_exists() -> anyhow::Result<()> {
 
     // We use restart rather than start because userborn is a oneshot service
     // with RemainAfterExit=true.
+    let mut refused = vec![];
     let jobs = for_each_unit(
         |unit| service_manager.restart_unit(unit),
         ["userborn.service"],
         "restarting",
+        |_| false,
+        &mut refused,
     );
 
     wait_for_jobs(&service_manager, &job_monitor, jobs, &timeout)?;
+    if !refused.is_empty() {
+        anyhow::bail!(refused.join("; "));
+    }
+    // A oneshot's job finishes whether it succeeded or not: users exist only if it did.
+    if !service_manager
+        .list_units_by_patterns(&["failed"], &["userborn.service"])?
+        .is_empty()
+    {
+        anyhow::bail!("userborn.service failed");
+    }
     log::info!("userborn.service completed");
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_unit_systemd_has_not_loaded_needs_no_stop() {
+        let not_loaded: anyhow::Error = dbus::Error::new_custom(
+            "org.freedesktop.systemd1.NoSuchUnit",
+            "Unit gone.service not loaded.",
+        )
+        .into();
+        assert!(is_not_loaded(&not_loaded));
+
+        let refused: anyhow::Error = dbus::Error::new_custom(
+            "org.freedesktop.systemd1.OnlyByDependency",
+            "Operation refused, unit pinned.service may be requested by dependency only.",
+        )
+        .into();
+        assert!(!is_not_loaded(&refused));
+        assert!(!is_not_loaded(&anyhow::anyhow!("something else")));
+    }
 }
