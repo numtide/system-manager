@@ -1,7 +1,9 @@
 # Test that activation's exit status says whether the profile was applied:
 # 0 when it was (including when it drops a unit that already exited), 1 when
-# part of it wasn't (here, a restart systemd refused), and 4 when it was but
-# managed units failed afterwards (as NixOS' switch-to-configuration exits).
+# part of it wasn't (here, a restart systemd refused, and a mount the profile
+# drops that doesn't unmount), and 4 when it was but managed units failed
+# (failed afterwards, or a reload that failed; as NixOS'
+# switch-to-configuration exits).
 {
   forEachDistro,
   system-manager,
@@ -15,6 +17,8 @@ let
       changing ? "valid",
       failing ? false,
       ranOnce ? false,
+      reload ? "succeeds",
+      mount ? false,
     }:
     { pkgs, lib, ... }:
     {
@@ -52,6 +56,25 @@ let
           serviceConfig.Type = "oneshot";
           script = "true";
         };
+
+        # A changed unit that can reload is reloaded, and a reload that fails
+        # leaves it active, on its old configuration, rather than failed.
+        exit-codes-reloading = {
+          wantedBy = [ "system-manager.target" ];
+          serviceConfig.ExecStart = "${pkgs.coreutils}/bin/sleep infinity";
+          serviceConfig.ExecReload = "${pkgs.coreutils}/bin/${
+            if reload == "succeeds" then "true" else "false"
+          }";
+        };
+      };
+
+      # systemd accepts the stop of a mount, and the job fails when it can't
+      # unmount: the mount stays.
+      systemd.mounts = lib.optional mount {
+        what = "tmpfs";
+        where = "/mnt/exitcodes";
+        type = "tmpfs";
+        wantedBy = [ "system-manager.target" ];
       };
     };
 
@@ -72,12 +95,16 @@ let
     ranOnce = true;
   };
   badSettingToplevel = makeToplevel { changing = "bad-setting"; };
+  failingReloadToplevel = makeToplevel { reload = "fails"; };
+  mountToplevel = makeToplevel { mount = true; };
 in
 forEachDistro "activation-exit-codes" {
   modules = [ (services { }) ];
   extraPathsToRegister = [
     failingToplevel
     badSettingToplevel
+    failingReloadToplevel
+    mountToplevel
   ];
   testScriptFunction =
     { toplevel, ... }:
@@ -112,5 +139,29 @@ forEachDistro "activation-exit-codes" {
       with subtest("activating the previous profile again exits 0"):
           activate("${toplevel}", 0)
           machine.wait_for_unit("exit-codes-changing.service")
+
+      with subtest("a reload that fails exits 4 and is named"):
+          out = activate("${failingReloadToplevel}", 4)
+          assert "units failed after activation: exit-codes-reloading.service (job failed)" in out, out
+          machine.succeed("systemctl is-active exit-codes-reloading.service")
+          activate("${toplevel}", 0)
+
+      with subtest("a unit the profile drops that doesn't stop exits 1 and is named"):
+          activate("${mountToplevel}", 0)
+          machine.succeed("mountpoint -q /mnt/exitcodes")
+          # A process working in the mount keeps it busy, without depending on it.
+          machine.succeed("systemd-run --unit=exit-codes-busy /bin/sh -c 'cd /mnt/exitcodes && exec sleep infinity'")
+          machine.wait_until_succeeds(
+              "test \"$(readlink /proc/$(systemctl show -P MainPID exit-codes-busy.service)/cwd)\" = /mnt/exitcodes",
+              timeout=30,
+          )
+          out = activate("${toplevel}", 1)
+          assert "activation incomplete: " in out, out
+          assert "mnt-exitcodes.mount not stopped (job failed)" in out, out
+          machine.succeed("mountpoint -q /mnt/exitcodes")
+          machine.succeed("systemctl stop exit-codes-busy.service")
+          machine.succeed("umount /mnt/exitcodes")
+          # The state recorded what was applied: the next activation starts from it.
+          activate("${toplevel}", 0)
     '';
 }

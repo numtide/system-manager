@@ -41,12 +41,14 @@ pub type ActivationResult<R> = Result<R, ActivationError<R>>;
 /// starts from the truth.
 #[derive(Error, Debug)]
 pub enum ActivationFailure {
-    /// Part of the profile wasn't applied: a job systemd refused, a failed userborn.service,
-    /// a services phase cut short. The system runs a mix of the old and the new profile.
+    /// Part of the profile wasn't applied: a job systemd refused, a unit the profile drops or
+    /// masks that didn't stop, a failed userborn.service, a services phase cut short. The
+    /// system runs a mix of the old and the new profile.
     #[error("activation incomplete: {}", .0.join("; "))]
     Incomplete(Vec<String>),
-    /// Everything was applied, and these managed units are failed afterwards (as NixOS'
-    /// switch-to-configuration exits 4 for). Whether that is new is the caller's to judge.
+    /// Everything was applied, and these managed units failed: they are failed afterwards, or
+    /// their (re)start or reload job didn't complete (as NixOS' switch-to-configuration exits
+    /// 4 for). Whether that is new is the caller's to judge.
     #[error("units failed after activation: {}", .0.join(", "))]
     UnitsFailed(Vec<String>),
 }
@@ -193,7 +195,15 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
             }
 
             log::info!("Activating systemd services...");
-            let final_state = match services::activate(store_path, old_state.services, ephemeral) {
+            // Jobs that didn't complete on units the profile keeps: reported with the failed
+            // units.
+            let mut failed_jobs = vec![];
+            let final_state = match services::activate(
+                store_path,
+                old_state.services,
+                ephemeral,
+                &mut failed_jobs,
+            ) {
                 Ok(services) => StateV1 {
                     file_tree: etc_tree,
                     services,
@@ -219,7 +229,7 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
                 return Err(ActivationFailure::Incomplete(incomplete).into());
             }
 
-            let failed = services::failed_units(&final_state.services)?;
+            let failed = services::failed_units(&final_state.services, &failed_jobs)?;
             if !failed.is_empty() {
                 log::error!("Units failed after activation: {}", failed.join(", "));
                 return Err(ActivationFailure::UnitsFailed(failed).into());

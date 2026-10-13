@@ -3,7 +3,7 @@ use im::{HashMap, HashSet};
 use serde::{Deserialize, Serialize};
 use std::path::{self, Path, PathBuf};
 use std::time::Duration;
-use std::{fs, io};
+use std::{fmt, fs, io};
 
 use super::ActivationResult;
 use crate::activate::ActivationError;
@@ -22,6 +22,20 @@ pub struct ServiceConfig {
 }
 
 pub type Services = HashMap<String, ServiceConfig>;
+
+/// A job systemd accepted and then didn't complete: its unit, and the result systemd's
+/// JobRemoved signal gave (`failed`, `dependency`, `timeout`, `canceled`, ...).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UnfinishedJob {
+    unit: String,
+    result: String,
+}
+
+impl fmt::Display for UnfinishedJob {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} (job {})", self.unit, self.result)
+    }
+}
 
 fn print_services(services: &Services) -> String {
     let out = itertools::intersperse(
@@ -58,10 +72,13 @@ pub fn get_active_services(
     Ok(services)
 }
 
+/// A (re)start or reload job that didn't complete, on a unit the profile keeps, is added to
+/// `failed_jobs`: that is a unit failure, for `failed_units` to report.
 pub fn activate(
     store_path: &StorePath,
     old_services: Services,
     ephemeral: bool,
+    failed_jobs: &mut Vec<UnfinishedJob>,
 ) -> ServiceActivationResult {
     verify_systemd_dir(ephemeral)
         .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
@@ -84,21 +101,32 @@ pub fn activate(
         .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
     let timeout = Some(Duration::from_secs(30));
 
-    // Units systemd refused a job for: the activation isn't complete.
-    let mut refused = vec![];
+    // What wasn't applied: units systemd refused a job for, and units the profile drops or
+    // masks whose stop didn't complete, which may still be running. The activation isn't
+    // complete.
+    let mut incomplete = vec![];
 
     // Stop removed services and any masked services that might still be running
     // (e.g. distro-provided units). Must happen before daemon-reload so systemd
     // still knows about these units.
     let mut units_to_stop = convert_services(&services_to_stop);
     units_to_stop.extend(convert_services(&masked));
-    wait_for_jobs(
+    let mut unfinished_stops = vec![];
+    let stopped = wait_for_jobs(
         &service_manager,
         &job_monitor,
-        stop_services(&service_manager, units_to_stop, &mut refused),
+        stop_services(&service_manager, units_to_stop, &mut incomplete),
         &timeout,
-    )
-    .map_err(|e| ActivationError::with_partial_result(services.clone(), e))?;
+        &mut unfinished_stops,
+    );
+    incomplete.extend(
+        unfinished_stops
+            .iter()
+            .map(|job| format!("{} not stopped (job {})", job.unit, job.result)),
+    );
+    stopped.map_err(|e| {
+        ActivationError::with_partial_result(services.clone(), cut_short(&incomplete, e))
+    })?;
 
     wait_for_jobs(
         &service_manager,
@@ -106,11 +134,14 @@ pub fn activate(
         reload_or_restart_units(
             &service_manager,
             convert_services(&services_to_reload),
-            &mut refused,
-        ) + start_units(&service_manager, ["system-manager.target"], &mut refused),
+            &mut incomplete,
+        ) + start_units(&service_manager, ["system-manager.target"], &mut incomplete),
         &timeout,
+        failed_jobs,
     )
-    .map_err(|e| ActivationError::with_partial_result(services.clone(), e))?;
+    .map_err(|e| {
+        ActivationError::with_partial_result(services.clone(), cut_short(&incomplete, e))
+    })?;
 
     if !masked.is_empty() {
         let unit_names: Vec<&str> = masked.keys().map(AsRef::as_ref).collect();
@@ -131,10 +162,10 @@ pub fn activate(
         );
     }
 
-    if !refused.is_empty() {
+    if !incomplete.is_empty() {
         return Err(ActivationError::with_partial_result(
             services,
-            anyhow::anyhow!(refused.join("; ")),
+            anyhow::anyhow!(incomplete.join("; ")),
         ));
     }
 
@@ -142,27 +173,54 @@ pub fn activate(
     Ok(services)
 }
 
-/// The managed units systemd reports as failed once activation is done: as NixOS'
-/// switch-to-configuration does, a unit that failed to (re)start doesn't fail the activation
-/// by itself, but it is reported, so that the caller can judge it against what was failing
+/// The error for a services phase cut short (a job timeout, a D-Bus error), naming what
+/// wasn't applied before it was, so that the diagnostic doesn't lose it.
+fn cut_short(incomplete: &[String], e: anyhow::Error) -> anyhow::Error {
+    if incomplete.is_empty() {
+        e
+    } else {
+        anyhow::anyhow!("{}; {e:#}", incomplete.join("; "))
+    }
+}
+
+/// The managed units that failed: those systemd reports as failed once activation is done,
+/// and those whose (re)start or reload job didn't complete (`failed_jobs`, from `activate`),
+/// which can leave a unit active on its old configuration or inactive rather than failed. As
+/// NixOS' switch-to-configuration does, a unit that failed doesn't fail the activation by
+/// itself, but it is reported, so that the caller can judge it against what was failing
 /// before.
-pub fn failed_units(services: &Services) -> anyhow::Result<Vec<String>> {
+pub fn failed_units(
+    services: &Services,
+    failed_jobs: &[UnfinishedJob],
+) -> anyhow::Result<Vec<String>> {
     let names: Vec<&str> = services
         .iter()
         .filter(|(_, cfg)| !cfg.masked)
         .map(|(name, _)| name.as_str())
         .collect();
-    if names.is_empty() {
-        return Ok(vec![]);
-    }
-    let service_manager = systemd::ServiceManager::new_session()?;
-    let mut failed: Vec<String> = service_manager
-        .list_units_by_patterns(&["failed"], &names)?
-        .into_iter()
-        .map(|unit| unit.name)
+    let in_failed_state = if names.is_empty() {
+        vec![]
+    } else {
+        systemd::ServiceManager::new_session()?
+            .list_units_by_patterns(&["failed"], &names)?
+            .into_iter()
+            .map(|unit| unit.name)
+            .collect()
+    };
+    Ok(name_failed(in_failed_state, failed_jobs))
+}
+
+/// Names each failed unit once: by its name when systemd reports it failed, else by its
+/// job's result.
+fn name_failed(mut failed: Vec<String>, failed_jobs: &[UnfinishedJob]) -> Vec<String> {
+    let not_failed_state: Vec<String> = failed_jobs
+        .iter()
+        .filter(|job| !failed.contains(&job.unit))
+        .map(ToString::to_string)
         .collect();
+    failed.extend(not_failed_state);
     failed.sort();
-    Ok(failed)
+    failed
 }
 
 fn get_services_to_reload(services: Services, old_services: Services) -> Services {
@@ -294,6 +352,7 @@ pub fn deactivate(old_services: Services) -> ServiceActivationResult {
             &job_monitor,
             stop_services(&service_manager, units_to_stop, &mut vec![]),
             &timeout,
+            &mut vec![],
         )
         // We consider all jobs stopped now..
         .map_err(|e| ActivationError::with_partial_result(im::HashMap::new(), e))?;
@@ -411,7 +470,7 @@ fn convert_services(services: &Services) -> Vec<&str> {
 /// Queues `action` for each unit, returning the jobs to wait for. A unit systemd refuses a
 /// job for is logged and added to `refused`, unless `nothing_to_do` says the error means the
 /// unit is already where `action` would put it.
-fn for_each_unit<'a, F, N, R, S>(
+fn for_each_unit<'a, 'm, F, N, S>(
     action: F,
     units: S,
     log_action: &str,
@@ -419,7 +478,7 @@ fn for_each_unit<'a, F, N, R, S>(
     refused: &mut Vec<String>,
 ) -> HashSet<JobId>
 where
-    F: Fn(&str) -> anyhow::Result<R>,
+    F: Fn(&str) -> anyhow::Result<systemd::Job<'m>>,
     N: Fn(&anyhow::Error) -> bool,
     S: AsRef<[&'a str]>,
 {
@@ -427,11 +486,9 @@ where
         .as_ref()
         .iter()
         .fold(HashSet::new(), |mut set, unit| match action(unit) {
-            Ok(_) => {
-                log::debug!("Unit {}: {}...", unit, log_action);
-                set.insert(JobId {
-                    id: (*unit).to_owned(),
-                });
+            Ok(job) => {
+                log::debug!("Unit {}: {} ({})...", unit, log_action, job.path());
+                set.insert(JobId { id: job.path() });
                 set
             }
             Err(e) if nothing_to_do(&e) => {
@@ -450,18 +507,40 @@ where
         })
 }
 
+/// Waits for `jobs`, adding each one that finished without completing to `unfinished`, also
+/// when the wait is then cut short.
 fn wait_for_jobs(
     service_manager: &systemd::ServiceManager,
     job_monitor: &systemd::JobMonitor,
     jobs: HashSet<JobId>,
     timeout: &Option<Duration>,
+    unfinished: &mut Vec<UnfinishedJob>,
 ) -> anyhow::Result<()> {
-    if !service_manager.monitor_jobs_finish(job_monitor, timeout, jobs)? {
+    let mut results = vec![];
+    let finished = service_manager.monitor_jobs_finish(job_monitor, timeout, jobs, &mut results);
+    unfinished.extend(
+        results
+            .into_iter()
+            .filter(|(_, result)| !job_completed(result))
+            .map(|(unit, result)| {
+                log::error!("Unit {unit}: job didn't complete: {result}");
+                UnfinishedJob { unit, result }
+            }),
+    );
+    if !finished? {
         anyhow::bail!("Timeout waiting for systemd jobs");
     }
     Ok(())
 }
 
+/// Whether a job did what it was asked. `skipped` is a job that didn't apply to the unit's
+/// current state: there was nothing for it to do. Anything else but `done` (`failed`,
+/// `dependency`, `timeout`, `canceled`, ...) means the unit isn't where the job was to put it.
+fn job_completed(result: &str) -> bool {
+    matches!(result, "done" | "skipped")
+}
+
+/// A job's object path.
 #[derive(PartialEq, Eq, Hash, Clone)]
 struct JobId {
     id: String,
@@ -473,9 +552,9 @@ impl From<JobId> for String {
     }
 }
 
-/// A job systemd refuses is added to `refused` rather than returned, so that the activation
-/// carries on and records what it applied.
-pub fn restart_sysinit_reactivation_target(refused: &mut Vec<String>) -> anyhow::Result<()> {
+/// A job systemd refuses, or that doesn't complete, is added to `incomplete` rather than
+/// returned, so that the activation carries on and records what it applied.
+pub fn restart_sysinit_reactivation_target(incomplete: &mut Vec<String>) -> anyhow::Result<()> {
     let service_manager = systemd::ServiceManager::new_session()?;
     let job_monitor = service_manager.monitor_jobs_init()?;
     let timeout = Some(Duration::from_secs(30));
@@ -488,11 +567,19 @@ pub fn restart_sysinit_reactivation_target(refused: &mut Vec<String>) -> anyhow:
         ["sysinit-reactivation.target"],
         "restarting",
         |_| false,
-        refused,
+        incomplete,
     );
 
-    wait_for_jobs(&service_manager, &job_monitor, jobs, &timeout)?;
-    Ok(())
+    let mut unfinished = vec![];
+    let finished = wait_for_jobs(
+        &service_manager,
+        &job_monitor,
+        jobs,
+        &timeout,
+        &mut unfinished,
+    );
+    incomplete.extend(unfinished.iter().map(ToString::to_string));
+    finished
 }
 
 /// This must be called after daemon-reload so systemd knows about the unit,
@@ -515,25 +602,27 @@ pub fn restart_userborn_if_exists() -> anyhow::Result<()> {
 
     // We use restart rather than start because userborn is a oneshot service
     // with RemainAfterExit=true.
-    let mut refused = vec![];
+    let mut incomplete = vec![];
     let jobs = for_each_unit(
         |unit| service_manager.restart_unit(unit),
         ["userborn.service"],
         "restarting",
         |_| false,
-        &mut refused,
+        &mut incomplete,
     );
 
-    wait_for_jobs(&service_manager, &job_monitor, jobs, &timeout)?;
-    if !refused.is_empty() {
-        anyhow::bail!(refused.join("; "));
-    }
-    // A oneshot's job finishes whether it succeeded or not: users exist only if it did.
-    if !service_manager
-        .list_units_by_patterns(&["failed"], &["userborn.service"])?
-        .is_empty()
-    {
-        anyhow::bail!("userborn.service failed");
+    // A oneshot's job fails when it does: users exist only if the job completed.
+    let mut unfinished = vec![];
+    wait_for_jobs(
+        &service_manager,
+        &job_monitor,
+        jobs,
+        &timeout,
+        &mut unfinished,
+    )?;
+    incomplete.extend(unfinished.iter().map(ToString::to_string));
+    if !incomplete.is_empty() {
+        anyhow::bail!(incomplete.join("; "));
     }
     log::info!("userborn.service completed");
     Ok(())
@@ -559,5 +648,61 @@ mod tests {
         .into();
         assert!(!is_not_loaded(&refused));
         assert!(!is_not_loaded(&anyhow::anyhow!("something else")));
+    }
+
+    #[test]
+    fn only_done_and_skipped_jobs_completed() {
+        assert!(job_completed("done"));
+        assert!(job_completed("skipped"));
+        for result in ["failed", "dependency", "timeout", "canceled", "assert"] {
+            assert!(!job_completed(result), "{result}");
+        }
+    }
+
+    #[test]
+    fn a_phase_cut_short_still_names_what_was_not_applied() {
+        let timeout = || anyhow::anyhow!("Timeout waiting for systemd jobs");
+        assert_eq!(
+            cut_short(&[], timeout()).to_string(),
+            "Timeout waiting for systemd jobs"
+        );
+        assert_eq!(
+            cut_short(
+                &[
+                    "pinned.service: error stopping: refused".to_owned(),
+                    "busy.mount not stopped (job failed)".to_owned(),
+                ],
+                timeout().context("stopping")
+            )
+            .to_string(),
+            "pinned.service: error stopping: refused; busy.mount not stopped (job failed); \
+             stopping: Timeout waiting for systemd jobs"
+        );
+    }
+
+    #[test]
+    fn a_failed_unit_is_named_once() {
+        let job = |unit: &str, result: &str| UnfinishedJob {
+            unit: unit.to_owned(),
+            result: result.to_owned(),
+        };
+        assert_eq!(
+            name_failed(
+                vec!["b.service".to_owned()],
+                &[
+                    // Failed state and failed job: named once, by the failed state.
+                    job("b.service", "failed"),
+                    // A reload that failed leaves the unit active.
+                    job("c.service", "failed"),
+                    job("a.service", "dependency"),
+                ],
+            ),
+            [
+                "a.service (job dependency)",
+                "b.service",
+                "c.service (job failed)"
+            ]
+        );
+        assert!(name_failed(vec![], &[]).is_empty());
     }
 }
