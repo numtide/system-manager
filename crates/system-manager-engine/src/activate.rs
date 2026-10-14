@@ -176,6 +176,10 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
 
     match etc_files::activate(store_path, old_state.file_tree, ephemeral) {
         Ok(etc_tree) => {
+            if let Err(e) = services::reset_failed_units(store_path) {
+                log::warn!("Error resetting the failed state of managed units: {e:#}");
+            }
+
             log::info!("Restarting sysinit-reactivation.target...");
             services::restart_sysinit_reactivation_target(&mut incomplete)?;
 

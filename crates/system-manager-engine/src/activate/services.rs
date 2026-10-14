@@ -598,6 +598,29 @@ impl From<JobId> for String {
     }
 }
 
+/// Forgets the failed state and the start rate limit of each unit the profile manages, as
+/// NixOS' switch-to-configuration does for every unit. An activation restarts some units
+/// every time (userborn.service twice: through sysinit-reactivation.target, then on its
+/// own), so a few activations in a row would reach their start limit (by default, 5 starts
+/// in 10 seconds) and systemd would refuse the next restart. The host's other units keep
+/// their failed states: they aren't the profile's.
+pub fn reset_failed_units(store_path: &StorePath) -> anyhow::Result<()> {
+    let file = fs::File::open(
+        Path::new(&store_path.store_path)
+            .join("services")
+            .join("services.json"),
+    )?;
+    let services: Services = serde_json::from_reader(io::BufReader::new(file))?;
+    let service_manager = systemd::ServiceManager::new_session()?;
+    for unit in services.keys() {
+        // A unit systemd hasn't loaded (a new one, before the daemon reload) has none.
+        if let Err(e) = service_manager.reset_failed_unit(unit) {
+            log::debug!("Unit {unit}: failed state not reset: {e}");
+        }
+    }
+    Ok(())
+}
+
 /// A job systemd refuses, or that doesn't complete, is added to `incomplete` rather than
 /// returned, so that the activation carries on and records what it applied.
 pub fn restart_sysinit_reactivation_target(incomplete: &mut Vec<String>) -> anyhow::Result<()> {

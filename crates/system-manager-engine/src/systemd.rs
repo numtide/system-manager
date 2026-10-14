@@ -157,6 +157,12 @@ impl ServiceManager {
         Ok(())
     }
 
+    /// Resets a unit's failed state, and with it its start rate limit.
+    pub fn reset_failed_unit(&self, unit_name: &str) -> Result<(), Error> {
+        OrgFreedesktopSystemd1Manager::reset_failed_unit(&self.proxy, unit_name)?;
+        Ok(())
+    }
+
     /// Builds a unit manager for the unit with the given status.
     pub fn unit_manager(&'_ self, unit_status: &UnitStatus) -> UnitManager<'_> {
         UnitManager {
