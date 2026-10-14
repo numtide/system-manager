@@ -15,6 +15,7 @@ let
           imports = [ sops-nix.nixosModules.sops ];
           config = {
             nixpkgs.hostPlatform = system;
+            system-manager.allowAnyDistro = true;
 
             services.nginx.enable = false;
 
