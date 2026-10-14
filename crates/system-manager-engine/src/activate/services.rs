@@ -12,7 +12,7 @@ use crate::{create_link, etc_dir, systemd, StorePath};
 
 type ServiceActivationResult = ActivationResult<Services>;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ServiceConfig {
     /// absent for masked units
@@ -111,11 +111,17 @@ pub fn activate(
     // still knows about these units.
     let mut units_to_stop = convert_services(&services_to_stop);
     units_to_stop.extend(convert_services(&masked));
+    let mut refused_stops = vec![];
     let mut unfinished_stops = vec![];
     let stopped = wait_for_jobs(
         &service_manager,
         &job_monitor,
-        stop_services(&service_manager, units_to_stop, &mut incomplete),
+        stop_services(
+            &service_manager,
+            units_to_stop,
+            &mut incomplete,
+            &mut refused_stops,
+        ),
         &timeout,
         &mut unfinished_stops,
     );
@@ -124,9 +130,22 @@ pub fn activate(
             .iter()
             .map(|job| format!("{} not stopped (job {})", job.unit, job.result)),
     );
+    // A unit the profile drops keeps its entry in the state until its stop completes, so
+    // that activating the profile again retries the stop and deactivating still stops it.
+    // When the wait is cut short, which stops completed isn't known: they all keep theirs.
     stopped.map_err(|e| {
-        ActivationError::with_partial_result(services.clone(), cut_short(&incomplete, e))
+        ActivationError::with_partial_result(
+            keep_old_entries(&services, &old_services, services_to_stop.keys()),
+            cut_short(&incomplete, e),
+        )
     })?;
+    let applied = keep_old_entries(
+        &services,
+        &old_services,
+        refused_stops
+            .iter()
+            .chain(unfinished_stops.iter().map(|job| &job.unit)),
+    );
 
     wait_for_jobs(
         &service_manager,
@@ -140,7 +159,7 @@ pub fn activate(
         failed_jobs,
     )
     .map_err(|e| {
-        ActivationError::with_partial_result(services.clone(), cut_short(&incomplete, e))
+        ActivationError::with_partial_result(applied.clone(), cut_short(&incomplete, e))
     })?;
 
     if !masked.is_empty() {
@@ -148,12 +167,12 @@ pub fn activate(
         service_manager
             .mask_unit_files(&unit_names, ephemeral)
             .with_context(|| format!("masking {} unit(s)", masked.len()))
-            .map_err(|e| ActivationError::with_partial_result(services.clone(), e))?;
+            .map_err(|e| ActivationError::with_partial_result(applied.clone(), e))?;
 
         log::info!("Reloading systemd daemon after masking...");
         service_manager
             .daemon_reload()
-            .map_err(|e| ActivationError::with_partial_result(services.clone(), e))?;
+            .map_err(|e| ActivationError::with_partial_result(applied.clone(), e))?;
 
         log::info!(
             "Masked {} unit(s): {}",
@@ -164,7 +183,7 @@ pub fn activate(
 
     if !incomplete.is_empty() {
         return Err(ActivationError::with_partial_result(
-            services,
+            applied,
             anyhow::anyhow!(incomplete.join("; ")),
         ));
     }
@@ -181,6 +200,24 @@ fn cut_short(incomplete: &[String], e: anyhow::Error) -> anyhow::Error {
     } else {
         anyhow::anyhow!("{}; {e:#}", incomplete.join("; "))
     }
+}
+
+/// The services to record as applied: `services`, plus the old entry of each of `units` the
+/// profile drops. A unit the profile keeps or masks has its new entry already.
+fn keep_old_entries<'a, I>(services: &Services, old_services: &Services, units: I) -> Services
+where
+    I: IntoIterator<Item = &'a String>,
+{
+    units
+        .into_iter()
+        .fold(services.clone(), |mut applied, unit| {
+            if !applied.contains_key(unit) {
+                if let Some(old) = old_services.get(unit) {
+                    applied.insert(unit.clone(), old.clone());
+                }
+            }
+            applied
+        })
 }
 
 /// The managed units that failed: those systemd reports as failed once activation is done,
@@ -350,7 +387,7 @@ pub fn deactivate(old_services: Services) -> ServiceActivationResult {
         wait_for_jobs(
             &service_manager,
             &job_monitor,
-            stop_services(&service_manager, units_to_stop, &mut vec![]),
+            stop_services(&service_manager, units_to_stop, &mut vec![], &mut vec![]),
             &timeout,
             &mut vec![],
         )
@@ -405,16 +442,25 @@ fn restore_ephemeral_system_dir() -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Queues a stop for each unit. A unit systemd refuses a stop for is also added to
+/// `not_stopped`: it may still be running.
 fn stop_services<'a, U>(
     service_manager: &systemd::ServiceManager,
     units: U,
     refused: &mut Vec<String>,
+    not_stopped: &mut Vec<String>,
 ) -> HashSet<JobId>
 where
     U: AsRef<[&'a str]>,
 {
     for_each_unit(
-        |s| service_manager.stop_unit(s),
+        |unit| {
+            service_manager.stop_unit(unit).inspect_err(|e| {
+                if !is_not_loaded(e) {
+                    not_stopped.push(unit.to_owned());
+                }
+            })
+        },
         units.as_ref(),
         "stopping",
         // An inactive unit whose file is gone isn't loaded any more: it is already stopped.
@@ -471,14 +517,14 @@ fn convert_services(services: &Services) -> Vec<&str> {
 /// job for is logged and added to `refused`, unless `nothing_to_do` says the error means the
 /// unit is already where `action` would put it.
 fn for_each_unit<'a, 'm, F, N, S>(
-    action: F,
+    mut action: F,
     units: S,
     log_action: &str,
     nothing_to_do: N,
     refused: &mut Vec<String>,
 ) -> HashSet<JobId>
 where
-    F: Fn(&str) -> anyhow::Result<systemd::Job<'m>>,
+    F: FnMut(&str) -> anyhow::Result<systemd::Job<'m>>,
     N: Fn(&anyhow::Error) -> bool,
     S: AsRef<[&'a str]>,
 {
@@ -704,5 +750,65 @@ mod tests {
             ]
         );
         assert!(name_failed(vec![], &[]).is_empty());
+    }
+
+    #[test]
+    fn a_dropped_unit_keeps_its_entry_until_its_stop_completes() {
+        let unit = |path: &str| ServiceConfig {
+            store_path: Some(StorePath {
+                store_path: PathBuf::from(path),
+            }),
+            masked: false,
+        };
+        let masked = ServiceConfig {
+            store_path: None,
+            masked: true,
+        };
+        let services = |entries: &[(&str, &ServiceConfig)]| -> Services {
+            entries
+                .iter()
+                .map(|(name, cfg)| ((*name).to_owned(), (*cfg).clone()))
+                .collect()
+        };
+        let busy = unit("/nix/store/aaa-unit-busy.mount/busy.mount");
+        let gone = unit("/nix/store/bbb-unit-gone.service/gone.service");
+        let old_kept = unit("/nix/store/ccc-unit-kept.service/kept.service");
+        let new_kept = unit("/nix/store/ddd-unit-kept.service/kept.service");
+        let pinned = unit("/nix/store/eee-unit-pinned.service/pinned.service");
+
+        let old = services(&[
+            ("busy.mount", &busy),
+            ("gone.service", &gone),
+            ("kept.service", &old_kept),
+            ("pinned.service", &pinned),
+        ]);
+        let new = services(&[("kept.service", &new_kept), ("pinned.service", &masked)]);
+
+        // busy.mount's stop failed and gone.service's completed; pinned.service, which the
+        // profile masks, didn't stop either.
+        let not_stopped = ["busy.mount".to_owned(), "pinned.service".to_owned()];
+        let applied = keep_old_entries(&new, &old, &not_stopped);
+        assert_eq!(
+            applied,
+            services(&[
+                ("busy.mount", &busy),
+                ("kept.service", &new_kept),
+                ("pinned.service", &masked),
+            ])
+        );
+
+        // Activating the profile again retries the stop.
+        let active: Services = new.clone().into_iter().filter(|(_, c)| !c.masked).collect();
+        let to_stop = get_services_to_stop(applied.clone().relative_complement(active));
+        assert!(to_stop.contains_key("busy.mount"));
+        assert!(!to_stop.contains_key("gone.service"));
+
+        // A rollback to the profile that has it finds it unchanged: no restart.
+        let to_reload = get_services_to_reload(old.clone(), applied.clone());
+        assert!(!to_reload.contains_key("busy.mount"));
+        assert!(to_reload.contains_key("kept.service"));
+
+        // Nothing left to stop: the new services, as they are.
+        assert_eq!(keep_old_entries(&new, &old, &[]), new);
     }
 }

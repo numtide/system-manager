@@ -1,9 +1,9 @@
 # Test that activation's exit status says whether the profile was applied:
 # 0 when it was (including when it drops a unit that already exited), 1 when
 # part of it wasn't (here, a restart systemd refused, and a mount the profile
-# drops that doesn't unmount), and 4 when it was but managed units failed
-# (failed afterwards, or a reload that failed; as NixOS'
-# switch-to-configuration exits).
+# drops that doesn't unmount, until an activation stops it), and 4 when it was
+# but managed units failed (failed afterwards, or a reload that failed; as
+# NixOS' switch-to-configuration exits).
 {
   forEachDistro,
   system-manager,
@@ -159,9 +159,21 @@ forEachDistro "activation-exit-codes" {
           assert "activation incomplete: " in out, out
           assert "mnt-exitcodes.mount not stopped (job failed)" in out, out
           machine.succeed("mountpoint -q /mnt/exitcodes")
+
+      with subtest("activating that profile again retries the stop"):
+          out = activate("${toplevel}", 1)
+          assert "mnt-exitcodes.mount not stopped (job failed)" in out, out
+
+      with subtest("a rollback to the profile that has the unit leaves it as it is"):
+          since = machine.succeed("systemctl show -P ActiveEnterTimestampMonotonic mnt-exitcodes.mount")
+          activate("${mountToplevel}", 0)
+          machine.succeed("mountpoint -q /mnt/exitcodes")
+          assert machine.succeed("systemctl show -P ActiveEnterTimestampMonotonic mnt-exitcodes.mount") == since
+          activate("${toplevel}", 1)
+
+      with subtest("once the stop can complete, activating again exits 0 and stops the unit"):
           machine.succeed("systemctl stop exit-codes-busy.service")
-          machine.succeed("umount /mnt/exitcodes")
-          # The state recorded what was applied: the next activation starts from it.
           activate("${toplevel}", 0)
+          machine.fail("mountpoint -q /mnt/exitcodes")
     '';
 }
