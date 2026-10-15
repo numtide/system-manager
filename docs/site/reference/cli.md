@@ -45,6 +45,17 @@ The `switch` subcommand builds and activates your configuration immediately, mak
 
 **--sudo**: Specifies that System Manager can use sudo.
 
+**--timeout SECONDS**: Sets how long each systemd job batch may run during activation.
+The default is 30 seconds.
+Set the value to `0` to wait indefinitely.
+
+**--no-timeout**: Waits indefinitely for systemd jobs.
+This option cannot be combined with `--timeout`.
+
+```sh
+system-manager switch --flake . --sudo --timeout 90
+```
+
 ### register
 
 The `register` subcommand builds and registers a System Manager configuration, but does not activate it. Compare this to `switch`, which does everything register does, but then activates it.
@@ -56,6 +67,7 @@ The `build` subcommand builds everything needed for a switch, but does not regis
 ### deactivate
 
 The `deactivate` deactivates System Manager.
+It accepts the same `--timeout SECONDS` and `--no-timeout` options as `switch`.
 
 ### pre-populate
 

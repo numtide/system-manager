@@ -89,7 +89,7 @@ The test script has access to these symbols:
 
 | Method | Description |
 |--------|-------------|
-| `machine.activate()` | Activate system-manager profile and display output |
+| `machine.activate(profile=None, timeout=30)` | Activate a system-manager profile and display output |
 | `machine.succeed(cmd)` | Run command, fail test if exit code != 0 |
 | `machine.fail(cmd)` | Run command, fail test if exit code == 0 |
 | `machine.wait_for_unit(unit)` | Wait for systemd unit to be active |
@@ -98,6 +98,19 @@ The test script has access to these symbols:
 | `machine.wait_until_succeeds(cmd)` | Retry command until it succeeds |
 | `machine.execute(cmd)` | Run command, return result (does not fail test) |
 | `machine.systemctl(args)` | Run systemctl with given arguments |
+
+Pass `timeout` to control how long each systemd job batch may run during activation:
+
+```python
+# Allow slow services up to 90 seconds per job batch.
+machine.activate(timeout=90)
+
+# Wait indefinitely for systemd jobs.
+machine.activate(timeout=None)
+```
+
+The command runner automatically allows enough time for the configured activation timeout.
+Passing `0` is equivalent to passing `None`.
 
 ### Testinfra assertions
 
