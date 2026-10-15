@@ -222,7 +222,7 @@ fn bail_on_failed_etc_files(failed: &[PathBuf]) -> Result<()> {
         return Ok(());
     }
     anyhow::bail!(
-        "Failed to create {} file(s) under /etc, see the warnings above: {}",
+        "Failed to create {} file(s) under /etc, see the errors above: {}",
         failed.len(),
         failed
             .iter()
