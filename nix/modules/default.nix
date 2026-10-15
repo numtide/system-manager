@@ -22,9 +22,10 @@
     {
       nixpkgs = {
         buildPlatform = lib.mkOption {
-          type = types.str;
+          type = with types; either str attrs;
           example = "x86_64-linux";
           default = config.nixpkgs.hostPlatform;
+          description = "The platform on which we are building the system configuration.";
         };
 
         hostPlatform = lib.mkOption {
@@ -265,7 +266,9 @@
         '';
 
         deactivationScript = pkgs.writeShellScript "deactivate" ''
-          export PATH="$PATH:${lib.makeBinPath [ config.services.userborn.package ]}"
+          export PATH="$PATH:${
+            lib.makeBinPath (lib.optionals config.services.userborn.enable [ config.services.userborn.package ])
+          }"
           ${system-manager}/bin/system-manager-engine deactivate "$@"
         '';
 
