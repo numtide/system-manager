@@ -106,6 +106,15 @@ pub fn activate(
     // complete.
     let mut incomplete = vec![];
 
+    // What the state records. A unit the profile drops or changes keeps its old entry until
+    // systemd confirms its stop or restart, so that whatever cuts the activation short,
+    // activating the profile again retries it, and deactivating still stops a dropped unit.
+    let mut applied = pending_entries(
+        &services,
+        &old_services,
+        services_to_stop.keys().chain(services_to_reload.keys()),
+    );
+
     // Stop removed services and any masked services that might still be running
     // (e.g. distro-provided units). Must happen before daemon-reload so systemd
     // still knows about these units.
@@ -130,21 +139,20 @@ pub fn activate(
             .iter()
             .map(|job| format!("{} not stopped (job {})", job.unit, job.result)),
     );
-    // A unit the profile drops keeps its entry in the state until its stop completes, so
-    // that activating the profile again retries the stop and deactivating still stops it.
-    // When the wait is cut short, which stops completed isn't known: they all keep theirs.
+    // When the wait is cut short, which stops completed isn't known.
     stopped.map_err(|e| {
-        ActivationError::with_partial_result(
-            keep_old_entries(&services, &old_services, services_to_stop.keys()),
-            cut_short(&incomplete, e),
-        )
+        ActivationError::with_partial_result(applied.clone(), cut_short(&incomplete, e))
     })?;
-    let applied = keep_old_entries(
+    let not_stopped: Vec<&String> = refused_stops
+        .iter()
+        .chain(unfinished_stops.iter().map(|job| &job.unit))
+        .collect();
+    applied = settled(
+        applied,
         &services,
-        &old_services,
-        refused_stops
-            .iter()
-            .chain(unfinished_stops.iter().map(|job| &job.unit)),
+        services_to_stop
+            .keys()
+            .filter(|unit| !not_stopped.contains(unit)),
     );
 
     let mut refused_reloads = vec![];
@@ -163,22 +171,21 @@ pub fn activate(
         &timeout,
         failed_jobs,
     );
-    // A changed unit whose (re)start or reload didn't complete keeps its old entry, so that
-    // activating the profile again sees it changed and retries. When the wait is cut short,
-    // which ones completed isn't known: they all keep theirs.
-    let not_reloaded: Vec<&String> = if waited.is_err() {
-        services_to_reload.keys().collect()
-    } else {
-        refused_reloads
-            .iter()
-            .chain(failed_jobs[failed_before..].iter().map(|job| &job.unit))
-            .filter(|unit| services_to_reload.contains_key(*unit))
-            .collect()
-    };
-    let applied = keep_old_entries_of_changed(applied, &old_services, not_reloaded);
+    // When the wait is cut short, which restarts completed isn't known.
     waited.map_err(|e| {
         ActivationError::with_partial_result(applied.clone(), cut_short(&incomplete, e))
     })?;
+    let not_reloaded: Vec<&String> = refused_reloads
+        .iter()
+        .chain(failed_jobs[failed_before..].iter().map(|job| &job.unit))
+        .collect();
+    applied = settled(
+        applied,
+        &services,
+        services_to_reload
+            .keys()
+            .filter(|unit| !not_reloaded.contains(unit)),
+    );
 
     if !masked.is_empty() {
         let unit_names: Vec<&str> = masked.keys().map(AsRef::as_ref).collect();
@@ -207,7 +214,9 @@ pub fn activate(
     }
 
     log::info!("Done");
-    Ok(services)
+    // `services`, but for a changed unit whose restart or reload ran and didn't complete
+    // (reported with the failed units): it keeps its old entry, and is retried.
+    Ok(applied)
 }
 
 /// The error for a services phase cut short (a job timeout, a D-Bus error), naming what
@@ -220,37 +229,35 @@ fn cut_short(incomplete: &[String], e: anyhow::Error) -> anyhow::Error {
     }
 }
 
-/// The services to record as applied: `services`, plus the old entry of each of `units` the
-/// profile drops. A unit the profile keeps or masks has its new entry already.
-fn keep_old_entries<'a, I>(services: &Services, old_services: &Services, units: I) -> Services
+/// `services`, with each of `units` that the profile drops or changes on its old entry: what
+/// to record while their stops and restarts are pending. A unit the profile masks has its new
+/// entry: it is masked whether its stop completes or not.
+fn pending_entries<'a, I>(services: &Services, old_services: &Services, units: I) -> Services
 where
     I: IntoIterator<Item = &'a String>,
 {
     units
         .into_iter()
         .fold(services.clone(), |mut applied, unit| {
-            if !applied.contains_key(unit) {
-                if let Some(old) = old_services.get(unit) {
-                    applied.insert(unit.clone(), old.clone());
-                }
+            let masked = services.get(unit).is_some_and(|cfg| cfg.masked);
+            if let (false, Some(old)) = (masked, old_services.get(unit)) {
+                applied.insert(unit.clone(), old.clone());
             }
             applied
         })
 }
 
-/// `applied` with each of `units`, changed units the profile keeps, back on its old entry.
-fn keep_old_entries_of_changed<'a, I>(
-    applied: Services,
-    old_services: &Services,
-    units: I,
-) -> Services
+/// `applied`, with each of `units`, whose stop or restart completed, as the profile has it:
+/// its new entry, or none for a unit it drops.
+fn settled<'a, I>(applied: Services, services: &Services, units: I) -> Services
 where
     I: IntoIterator<Item = &'a String>,
 {
     units.into_iter().fold(applied, |mut applied, unit| {
-        if let Some(old) = old_services.get(unit) {
-            applied.insert(unit.clone(), old.clone());
-        }
+        match services.get(unit) {
+            Some(cfg) => applied.insert(unit.clone(), cfg.clone()),
+            None => applied.remove(unit),
+        };
         applied
     })
 }
@@ -863,10 +870,27 @@ mod tests {
         ]);
         let new = services(&[("kept.service", &new_kept), ("pinned.service", &masked)]);
 
-        // busy.mount's stop failed and gone.service's completed; pinned.service, which the
-        // profile masks, didn't stop either.
-        let not_stopped = ["busy.mount".to_owned(), "pinned.service".to_owned()];
-        let applied = keep_old_entries(&new, &old, &not_stopped);
+        // While the stops are pending, the units the profile drops keep their old entries,
+        // and pinned.service, which the profile masks, has its new one.
+        let to_stop = [
+            "busy.mount".to_owned(),
+            "gone.service".to_owned(),
+            "pinned.service".to_owned(),
+        ];
+        let pending = pending_entries(&new, &old, &to_stop);
+        assert_eq!(
+            pending,
+            services(&[
+                ("busy.mount", &busy),
+                ("gone.service", &gone),
+                ("kept.service", &new_kept),
+                ("pinned.service", &masked),
+            ])
+        );
+
+        // gone.service's stop completed; busy.mount's failed, and pinned.service didn't stop
+        // either.
+        let applied = settled(pending, &new, &to_stop[1..2]);
         assert_eq!(
             applied,
             services(&[
@@ -887,8 +911,8 @@ mod tests {
         assert!(!to_reload.contains_key("busy.mount"));
         assert!(to_reload.contains_key("kept.service"));
 
-        // Nothing left to stop: the new services, as they are.
-        assert_eq!(keep_old_entries(&new, &old, &[]), new);
+        // Nothing pending: the new services, as they are.
+        assert_eq!(settled(pending_entries(&new, &old, &[]), &new, &[]), new);
     }
 
     #[test]
@@ -921,10 +945,20 @@ mod tests {
             ("added.service", &added),
         ]);
 
-        // systemd refused refused.service's restart; restarted.service's completed. A unit
-        // with no old entry keeps its new one: system-manager.target starts it every time.
-        let not_reloaded = ["refused.service".to_owned(), "added.service".to_owned()];
-        let applied = keep_old_entries_of_changed(new.clone(), &old, &not_reloaded);
+        // Both restarts are pending; systemd refused refused.service's, and
+        // restarted.service's completed. A new unit has its new entry throughout:
+        // system-manager.target starts it every time.
+        let to_reload = ["refused.service".to_owned(), "restarted.service".to_owned()];
+        let pending = pending_entries(&new, &old, &to_reload);
+        assert_eq!(
+            pending,
+            services(&[
+                ("refused.service", &old_refused),
+                ("restarted.service", &old_restarted),
+                ("added.service", &added),
+            ])
+        );
+        let applied = settled(pending, &new, &to_reload[1..]);
         assert_eq!(
             applied,
             services(&[

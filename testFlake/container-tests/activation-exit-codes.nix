@@ -162,6 +162,10 @@ forEachDistro "activation-exit-codes" {
           out = activate("${failingReloadToplevel}", 4)
           assert "units failed after activation: exit-codes-reloading.service (job failed)" in out, out
           machine.succeed("systemctl is-active exit-codes-reloading.service")
+
+      with subtest("activating that profile again retries the reload"):
+          out = activate("${failingReloadToplevel}", 4)
+          assert "exit-codes-reloading.service (job failed)" in out, out
           activate("${toplevel}", 0)
 
       with subtest("a unit whose start fails on an unmanaged dependency exits 4 and is named"):
