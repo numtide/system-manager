@@ -1,9 +1,10 @@
 # Test that activation's exit status says whether the profile was applied:
 # 0 when it was (including when it drops a unit that already exited), 1 when
-# part of it wasn't (here, a restart systemd refused, and a mount the profile
-# drops that doesn't unmount, until an activation stops it), and 4 when it was
-# but managed units failed (failed afterwards, or a reload that failed; as
-# NixOS' switch-to-configuration exits).
+# part of it wasn't (here, a restart systemd refused, until an activation
+# restarts it, and a mount the profile drops that doesn't unmount, until an
+# activation stops it), and 4 when it was but managed units failed (failed
+# afterwards, a reload that failed, or a start that failed on a dependency the
+# profile doesn't manage; as NixOS' switch-to-configuration exits).
 {
   forEachDistro,
   system-manager,
@@ -19,6 +20,7 @@ let
       ranOnce ? false,
       reload ? "succeeds",
       mount ? false,
+      dependency ? false,
     }:
     { pkgs, lib, ... }:
     {
@@ -68,6 +70,16 @@ let
         };
       };
 
+      # New, so started only through system-manager.target. When the unit it
+      # requires, which the profile doesn't manage, fails, its start ends with
+      # "dependency": inactive, not failed.
+      systemd.services.exit-codes-dependent = lib.mkIf dependency {
+        wantedBy = [ "system-manager.target" ];
+        requires = [ "exit-codes-unmanaged.service" ];
+        after = [ "exit-codes-unmanaged.service" ];
+        script = "sleep infinity";
+      };
+
       # systemd accepts the stop of a mount, and the job fails when it can't
       # unmount: the mount stays.
       systemd.mounts = lib.optional mount {
@@ -97,6 +109,7 @@ let
   badSettingToplevel = makeToplevel { changing = "bad-setting"; };
   failingReloadToplevel = makeToplevel { reload = "fails"; };
   mountToplevel = makeToplevel { mount = true; };
+  dependencyToplevel = makeToplevel { dependency = true; };
 in
 forEachDistro "activation-exit-codes" {
   modules = [ (services { }) ];
@@ -105,6 +118,7 @@ forEachDistro "activation-exit-codes" {
     badSettingToplevel
     failingReloadToplevel
     mountToplevel
+    dependencyToplevel
   ];
   testScriptFunction =
     { toplevel, ... }:
@@ -136,6 +150,10 @@ forEachDistro "activation-exit-codes" {
           # The rest of the profile was still applied.
           machine.wait_for_unit("exit-codes-healthy.service")
 
+      with subtest("activating that profile again retries the restart"):
+          out = activate("${badSettingToplevel}", 1)
+          assert "exit-codes-changing.service: error reloading" in out, out
+
       with subtest("activating the previous profile again exits 0"):
           activate("${toplevel}", 0)
           machine.wait_for_unit("exit-codes-changing.service")
@@ -145,6 +163,17 @@ forEachDistro "activation-exit-codes" {
           assert "units failed after activation: exit-codes-reloading.service (job failed)" in out, out
           machine.succeed("systemctl is-active exit-codes-reloading.service")
           activate("${toplevel}", 0)
+
+      with subtest("a unit whose start fails on an unmanaged dependency exits 4 and is named"):
+          machine.succeed(
+              "printf '[Service]\\nType=oneshot\\nExecStart=/bin/false\\n' > /run/systemd/system/exit-codes-unmanaged.service"
+          )
+          machine.succeed("systemctl daemon-reload")
+          out = activate("${dependencyToplevel}", 4)
+          assert "units failed after activation: exit-codes-dependent.service (job dependency)" in out, out
+          machine.fail("systemctl is-active exit-codes-dependent.service")
+          activate("${toplevel}", 0)
+          machine.succeed("rm /run/systemd/system/exit-codes-unmanaged.service && systemctl daemon-reload")
 
       with subtest("a unit the profile drops that doesn't stop exits 1 and is named"):
           activate("${mountToplevel}", 0)

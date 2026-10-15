@@ -280,6 +280,26 @@ impl ServiceManager {
         })
     }
 
+    /// Starts a unit, returning its job and, as (unit, job path), every other job systemd
+    /// queued in the same transaction: the units it pulls in, whose jobs StartUnit doesn't
+    /// return.
+    pub fn start_unit_and_pulled_in(
+        &'_ self,
+        unit_name: &str,
+    ) -> Result<(Job<'_>, Vec<(String, String)>), Error> {
+        let (_, path, _, _, _, affected) = OrgFreedesktopSystemd1Manager::enqueue_unit_job(
+            &self.proxy,
+            unit_name,
+            "start",
+            "replace",
+        )?;
+        let pulled_in = affected
+            .into_iter()
+            .map(|(_, job, unit, _, _)| (unit, job.to_string()))
+            .collect();
+        Ok((Job { path }, pulled_in))
+    }
+
     pub fn stop_unit(&'_ self, unit_name: &str) -> Result<Job<'_>, Error> {
         Ok(Job {
             path: OrgFreedesktopSystemd1Manager::stop_unit(&self.proxy, unit_name, "replace")?,

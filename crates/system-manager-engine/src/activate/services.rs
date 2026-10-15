@@ -147,18 +147,36 @@ pub fn activate(
             .chain(unfinished_stops.iter().map(|job| &job.unit)),
     );
 
-    wait_for_jobs(
+    let mut refused_reloads = vec![];
+    let reload_jobs = reload_or_restart_units(
+        &service_manager,
+        convert_services(&services_to_reload),
+        &mut incomplete,
+        &mut refused_reloads,
+    );
+    let target_jobs = start_target(&service_manager, &active, &mut incomplete);
+    let failed_before = failed_jobs.len();
+    let waited = wait_for_jobs(
         &service_manager,
         &job_monitor,
-        reload_or_restart_units(
-            &service_manager,
-            convert_services(&services_to_reload),
-            &mut incomplete,
-        ) + start_units(&service_manager, ["system-manager.target"], &mut incomplete),
+        reload_jobs + target_jobs,
         &timeout,
         failed_jobs,
-    )
-    .map_err(|e| {
+    );
+    // A changed unit whose (re)start or reload didn't complete keeps its old entry, so that
+    // activating the profile again sees it changed and retries. When the wait is cut short,
+    // which ones completed isn't known: they all keep theirs.
+    let not_reloaded: Vec<&String> = if waited.is_err() {
+        services_to_reload.keys().collect()
+    } else {
+        refused_reloads
+            .iter()
+            .chain(failed_jobs[failed_before..].iter().map(|job| &job.unit))
+            .filter(|unit| services_to_reload.contains_key(*unit))
+            .collect()
+    };
+    let applied = keep_old_entries_of_changed(applied, &old_services, not_reloaded);
+    waited.map_err(|e| {
         ActivationError::with_partial_result(applied.clone(), cut_short(&incomplete, e))
     })?;
 
@@ -220,6 +238,23 @@ where
         })
 }
 
+/// `applied` with each of `units`, changed units the profile keeps, back on its old entry.
+fn keep_old_entries_of_changed<'a, I>(
+    applied: Services,
+    old_services: &Services,
+    units: I,
+) -> Services
+where
+    I: IntoIterator<Item = &'a String>,
+{
+    units.into_iter().fold(applied, |mut applied, unit| {
+        if let Some(old) = old_services.get(unit) {
+            applied.insert(unit.clone(), old.clone());
+        }
+        applied
+    })
+}
+
 /// The managed units that failed: those systemd reports as failed once activation is done,
 /// and those whose (re)start or reload job didn't complete (`failed_jobs`, from `activate`),
 /// which can leave a unit active on its old configuration or inactive rather than failed. As
@@ -257,6 +292,8 @@ fn name_failed(mut failed: Vec<String>, failed_jobs: &[UnfinishedJob]) -> Vec<St
         .collect();
     failed.extend(not_failed_state);
     failed.sort();
+    // Two jobs on one unit, say a restart and the target's start, may both not complete.
+    failed.dedup();
     failed
 }
 
@@ -475,16 +512,23 @@ fn is_not_loaded(e: &anyhow::Error) -> bool {
         .is_some_and(|name| name == "org.freedesktop.systemd1.NoSuchUnit")
 }
 
+/// Queues a reload or restart for each unit. A unit systemd refuses one for is also added to
+/// `not_reloaded`: it still runs its old configuration.
 fn reload_or_restart_units<'a, U>(
     service_manager: &systemd::ServiceManager,
     units: U,
     refused: &mut Vec<String>,
+    not_reloaded: &mut Vec<String>,
 ) -> HashSet<JobId>
 where
     U: AsRef<[&'a str]>,
 {
     for_each_unit(
-        |s| service_manager.reload_or_restart_unit(s),
+        |unit| {
+            service_manager
+                .reload_or_restart_unit(unit)
+                .inspect_err(|_| not_reloaded.push(unit.to_owned()))
+        },
         units.as_ref(),
         "reloading",
         |_| false,
@@ -492,21 +536,33 @@ where
     )
 }
 
-fn start_units<'a, U>(
+/// Starts system-manager.target, returning its job and the jobs of the managed units it pulls
+/// in (`managed`): a unit whose start fails on a dependency ends up inactive, not failed, and
+/// the target's own job completes all the same. Jobs for units the profile doesn't manage
+/// aren't waited for. A refusal is added to `refused`.
+fn start_target(
     service_manager: &systemd::ServiceManager,
-    units: U,
+    managed: &Services,
     refused: &mut Vec<String>,
-) -> HashSet<JobId>
-where
-    U: AsRef<[&'a str]>,
-{
-    for_each_unit(
-        |unit| service_manager.start_unit(unit),
-        units.as_ref(),
-        "starting",
-        |_| false,
-        refused,
-    )
+) -> HashSet<JobId> {
+    let unit = "system-manager.target";
+    match service_manager.start_unit_and_pulled_in(unit) {
+        Ok((job, pulled_in)) => {
+            log::debug!("Unit {unit}: starting ({})...", job.path());
+            pulled_in
+                .into_iter()
+                .filter(|(unit, _)| managed.contains_key(unit))
+                .map(|(_, id)| JobId { id })
+                .collect::<HashSet<_>>()
+                .update(JobId { id: job.path() })
+        }
+        Err(e) => {
+            log::error!("Service {unit}: error starting, please consult the logs");
+            log::error!("{e}");
+            refused.push(format!("{unit}: error starting: {e}"));
+            HashSet::new()
+        }
+    }
 }
 
 fn convert_services(services: &Services) -> Vec<&str> {
@@ -833,5 +889,54 @@ mod tests {
 
         // Nothing left to stop: the new services, as they are.
         assert_eq!(keep_old_entries(&new, &old, &[]), new);
+    }
+
+    #[test]
+    fn a_changed_unit_keeps_its_old_entry_until_its_restart_completes() {
+        let unit = |path: &str| ServiceConfig {
+            store_path: Some(StorePath {
+                store_path: PathBuf::from(path),
+            }),
+            masked: false,
+        };
+        let services = |entries: &[(&str, &ServiceConfig)]| -> Services {
+            entries
+                .iter()
+                .map(|(name, cfg)| ((*name).to_owned(), (*cfg).clone()))
+                .collect()
+        };
+        let old_refused = unit("/nix/store/aaa-unit-refused.service/refused.service");
+        let new_refused = unit("/nix/store/bbb-unit-refused.service/refused.service");
+        let old_restarted = unit("/nix/store/ccc-unit-restarted.service/restarted.service");
+        let new_restarted = unit("/nix/store/ddd-unit-restarted.service/restarted.service");
+        let added = unit("/nix/store/eee-unit-added.service/added.service");
+
+        let old = services(&[
+            ("refused.service", &old_refused),
+            ("restarted.service", &old_restarted),
+        ]);
+        let new = services(&[
+            ("refused.service", &new_refused),
+            ("restarted.service", &new_restarted),
+            ("added.service", &added),
+        ]);
+
+        // systemd refused refused.service's restart; restarted.service's completed. A unit
+        // with no old entry keeps its new one: system-manager.target starts it every time.
+        let not_reloaded = ["refused.service".to_owned(), "added.service".to_owned()];
+        let applied = keep_old_entries_of_changed(new.clone(), &old, &not_reloaded);
+        assert_eq!(
+            applied,
+            services(&[
+                ("refused.service", &old_refused),
+                ("restarted.service", &new_restarted),
+                ("added.service", &added),
+            ])
+        );
+
+        // Activating the profile again retries the restart, and only that one.
+        let to_reload = get_services_to_reload(new.clone(), applied);
+        assert!(to_reload.contains_key("refused.service"));
+        assert!(!to_reload.contains_key("restarted.service"));
     }
 }
