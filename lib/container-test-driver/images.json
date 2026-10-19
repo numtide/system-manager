@@ -1,12 +1,12 @@
 {
   "debian-13": {
     "aarch64-linux": {
-      "sha256": "0r9k96i1zi4cihbsyh3a8hdjgnq00kkkx85saxn5fhswj8fr0ccm",
-      "url": "https://cloud.debian.org/images/cloud/trixie/20261001-2618/debian-13-genericcloud-arm64-20261001-2618.tar.xz"
+      "sha256": "1phllq3fkw2cmqfnkmbqmiyzd7lz0lj4lba4yywrn80gqvrsci0l",
+      "url": "https://cloud.debian.org/images/cloud/trixie/20261017-2634/debian-13-genericcloud-arm64-20261017-2634.tar.xz"
     },
     "x86_64-linux": {
-      "sha256": "0198v2a4wm25shnnzz099z28ihdjcrf6rad1hmgnmmqs000c9vw7",
-      "url": "https://cloud.debian.org/images/cloud/trixie/20261001-2618/debian-13-genericcloud-amd64-20261001-2618.tar.xz"
+      "sha256": "1l6y0db47c3hgay7wcraqdbs5ji1icj0a3y0n5w6mg0iyirzs85s",
+      "url": "https://cloud.debian.org/images/cloud/trixie/20261017-2634/debian-13-genericcloud-amd64-20261017-2634.tar.xz"
     }
   },
   "ubuntu-22_04": {
@@ -21,12 +21,12 @@
   },
   "ubuntu-24_04": {
     "aarch64-linux": {
-      "sha256": "0bjz9bgn73mza83a9w88nxxny8b1ki3daq04yfqybgyyhsf6rx1f",
-      "url": "https://cloud-images.ubuntu.com/releases/noble/release-20260926/ubuntu-24.04-server-cloudimg-arm64-root.tar.xz"
+      "sha256": "0ll6sv31ianqgpni86sa5v4zngsm1kxwrs771bqf8v559i2g13mn",
+      "url": "https://cloud-images.ubuntu.com/releases/noble/release-20261017/ubuntu-24.04-server-cloudimg-arm64-root.tar.xz"
     },
     "x86_64-linux": {
-      "sha256": "0qgjdlijlivhglwyf2bi87li4lh605n3sr52iimdfd7a73i120w2",
-      "url": "https://cloud-images.ubuntu.com/releases/noble/release-20260926/ubuntu-24.04-server-cloudimg-amd64-root.tar.xz"
+      "sha256": "00wskyikdliraqwwgbnghjdpd49zmvjh9llrab2hbgd2ispp4sgc",
+      "url": "https://cloud-images.ubuntu.com/releases/noble/release-20261017/ubuntu-24.04-server-cloudimg-amd64-root.tar.xz"
     }
   },
   "ubuntu-26_04": {
