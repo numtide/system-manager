@@ -90,7 +90,7 @@ $ which system-manager
 And you can run System Manager:
 
 ```sh
-system-manager switch --flake . --sudo
+system-manager switch --sudo
 ```
 
 !!! Tip
