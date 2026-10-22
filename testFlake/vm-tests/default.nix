@@ -7,8 +7,11 @@
 }:
 
 let
-  imageNames = builtins.attrNames (
-    builtins.fromJSON (builtins.readFile ../../lib/container-test-driver/images.json)
+  # container-only: nix-vm-test has no fedora 44, and fedora is not in supportedIds
+  imageNames = lib.filter (image: !lib.hasPrefix "fedora-" image) (
+    builtins.attrNames (
+      builtins.fromJSON (builtins.readFile ../../lib/container-test-driver/images.json)
+    )
   );
 
   forEachImage =

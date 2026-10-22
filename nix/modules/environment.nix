@@ -174,13 +174,26 @@
             ${config.environment.extraInit}
           '';
 
-          "environment.d/10-system-manager.conf".text = ''
-            ${lib.concatLines (lib.mapAttrsToList (k: v: ''${k}="${v}"'') config.environment.variables)}
-            PATH=/etc/profiles/per-user/''${USER}/bin:${pathDir}/bin:''${PATH}
-            XDG_DATA_DIRS=/etc/profiles/per-user/''${USER}/share:${pathDir}/share:''${XDG_DATA_DIRS:-/usr/local/share:/usr/share}
-            NIX_USER_PROFILE_DIR=/nix/var/nix/profiles/per-user/''${USER}
-            NIX_PROFILES="${nixProfiles}"
-          '';
+          # Not environment.d: libeconf pam_env (Fedora) reads it without
+          # ''${VAR} expansion. Generator output is not expanded either, so the
+          # shell expands. 50 runs after the environment.d generator, whose
+          # PATH (Ubuntu: /etc/environment) would otherwise replace ours.
+          "systemd/user-environment-generators/50-system-manager".source =
+            pkgs.writeShellScript "system-manager-user-environment" ''
+              emit() {
+                local v=$2
+                v=''${v//\\/\\\\}
+                v=''${v//\"/\\\"}
+                v=''${v//\$/\\\$}
+                v=''${v//\`/\\\`}
+                printf '%s="%s"\n' "$1" "$v"
+              }
+              ${lib.concatLines (lib.mapAttrsToList (k: v: ''emit ${k} "${v}"'') config.environment.variables)}
+              emit PATH "/etc/profiles/per-user/$USER/bin:${pathDir}/bin:$PATH"
+              emit XDG_DATA_DIRS "/etc/profiles/per-user/$USER/share:${pathDir}/share:''${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+              emit NIX_USER_PROFILE_DIR "/nix/var/nix/profiles/per-user/$USER"
+              emit NIX_PROFILES "${nixProfiles}"
+            '';
 
           # TODO: figure out how to properly add fish support. We could start by
           # looking at what NixOS and HM do to set up the fish env.
