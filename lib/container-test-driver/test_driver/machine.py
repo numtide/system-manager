@@ -20,6 +20,11 @@ from .logger import AbstractLogger
 from .utils import CONTAINER_PATH, prepare_machine_root, retry
 
 
+DEFAULT_ACTIVATION_TIMEOUT = 30
+MINIMUM_ACTIVATION_COMMAND_TIMEOUT = 300
+ACTIVATION_COMMAND_GRACE_PERIOD = 30
+
+
 class TestInfraBackendNix(testinfra.backend.base.BaseBackend):
     """Testinfra backend that uses the container-test-driver Machine to run commands."""
 
@@ -482,24 +487,48 @@ class Machine(testinfra.host.Host):
                 raise RuntimeError(msg)
             return res.stdout
 
-    def activate(self, profile: str | None = None) -> str:
+    def activate(
+        self,
+        profile: str | None = None,
+        timeout: int | None = DEFAULT_ACTIVATION_TIMEOUT,
+    ) -> str:
         """Activate system-manager profile and display the output.
 
         Args:
             profile: Path to system-manager profile. If None, uses the profile
                      passed to the container.
+            timeout: Maximum time in seconds to wait for systemd jobs. None or
+                     zero disables the timeout.
         """
         if profile is None:
             profile = str(self.profile) if self.profile else None
         if profile is None:
             msg = "No profile specified for activation"
             raise Error(msg)
+        if timeout is not None and timeout < 0:
+            msg = "Activation timeout cannot be negative"
+            raise ValueError(msg)
 
-        activate_cmd = f"RUST_LOG=debug {profile}/bin/activate"
+        timeout_seconds = 0 if timeout is None else timeout
+        timeout_arg = (
+            ""
+            if timeout_seconds == DEFAULT_ACTIVATION_TIMEOUT
+            else f" --timeout {timeout_seconds}"
+        )
+        activate_path = shlex.quote(f"{profile}/bin/activate")
+        activate_cmd = f"RUST_LOG=debug {activate_path}{timeout_arg}"
+        command_timeout = (
+            None
+            if timeout_seconds == 0
+            else max(
+                MINIMUM_ACTIVATION_COMMAND_TIMEOUT,
+                timeout_seconds + ACTIVATION_COMMAND_GRACE_PERIOD,
+            )
+        )
         print(f"\n{Fore.CYAN}=== Activating system-manager ==={Style.RESET_ALL}")
         print(f"Profile: {profile}")
 
-        res = self.execute(activate_cmd, timeout=300)
+        res = self.execute(activate_cmd, timeout=command_timeout)
 
         # Always show the output
         if res.stdout.strip():

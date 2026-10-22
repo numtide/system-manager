@@ -62,6 +62,7 @@ pub fn activate(
     store_path: &StorePath,
     old_services: Services,
     ephemeral: bool,
+    timeout: &Option<Duration>,
 ) -> ServiceActivationResult {
     verify_systemd_dir(ephemeral)
         .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
@@ -82,7 +83,6 @@ pub fn activate(
     let job_monitor = service_manager
         .monitor_jobs_init()
         .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
-    let timeout = Some(Duration::from_secs(30));
 
     // Stop removed services and any masked services that might still be running
     // (e.g. distro-provided units). Must happen before daemon-reload so systemd
@@ -93,7 +93,7 @@ pub fn activate(
         &service_manager,
         &job_monitor,
         stop_services(&service_manager, units_to_stop),
-        &timeout,
+        timeout,
     )
     .map_err(|e| ActivationError::with_partial_result(services.clone(), e))?;
 
@@ -102,7 +102,7 @@ pub fn activate(
         &job_monitor,
         reload_or_restart_units(&service_manager, convert_services(&services_to_reload))
             + start_units(&service_manager, ["system-manager.target"]),
-        &timeout,
+        timeout,
     )
     .map_err(|e| ActivationError::with_partial_result(services.clone(), e))?;
 
@@ -228,7 +228,7 @@ fn verify_systemd_dir(ephemeral: bool) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn deactivate(old_services: Services) -> ServiceActivationResult {
+pub fn deactivate(old_services: Services, timeout: &Option<Duration>) -> ServiceActivationResult {
     log::debug!("{:?}", old_services);
 
     restore_ephemeral_system_dir()
@@ -247,7 +247,6 @@ pub fn deactivate(old_services: Services) -> ServiceActivationResult {
         let job_monitor = service_manager
             .monitor_jobs_init()
             .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
-        let timeout = Some(Duration::from_secs(30));
 
         let mut units_to_stop = convert_services(&stoppable);
         units_to_stop.push("system-manager.target");
@@ -257,7 +256,7 @@ pub fn deactivate(old_services: Services) -> ServiceActivationResult {
             &service_manager,
             &job_monitor,
             stop_services(&service_manager, units_to_stop),
-            &timeout,
+            timeout,
         )
         // We consider all jobs stopped now..
         .map_err(|e| ActivationError::with_partial_result(im::HashMap::new(), e))?;
@@ -397,10 +396,9 @@ impl From<JobId> for String {
     }
 }
 
-pub fn restart_sysinit_reactivation_target() -> anyhow::Result<()> {
+pub fn restart_sysinit_reactivation_target(timeout: &Option<Duration>) -> anyhow::Result<()> {
     let service_manager = systemd::ServiceManager::new_session()?;
     let job_monitor = service_manager.monitor_jobs_init()?;
-    let timeout = Some(Duration::from_secs(30));
 
     log::info!("Reloading the systemd daemon...");
     service_manager.daemon_reload()?;
@@ -411,14 +409,14 @@ pub fn restart_sysinit_reactivation_target() -> anyhow::Result<()> {
         "restarting",
     );
 
-    wait_for_jobs(&service_manager, &job_monitor, jobs, &timeout)?;
+    wait_for_jobs(&service_manager, &job_monitor, jobs, timeout)?;
     Ok(())
 }
 
 /// This must be called after daemon-reload so systemd knows about the unit,
 /// but before tmpfiles activation since tmpfiles may reference users that
 /// userborn needs to create.
-pub fn restart_userborn_if_exists() -> anyhow::Result<()> {
+pub fn restart_userborn_if_exists(timeout: &Option<Duration>) -> anyhow::Result<()> {
     let service_manager = systemd::ServiceManager::new_session()?;
 
     // Check if userborn.service exists by listing units matching the pattern
@@ -431,7 +429,6 @@ pub fn restart_userborn_if_exists() -> anyhow::Result<()> {
 
     log::info!("Restarting userborn.service to create users before tmpfiles...");
     let job_monitor = service_manager.monitor_jobs_init()?;
-    let timeout = Some(Duration::from_secs(30));
 
     // We use restart rather than start because userborn is a oneshot service
     // with RemainAfterExit=true.
@@ -441,7 +438,7 @@ pub fn restart_userborn_if_exists() -> anyhow::Result<()> {
         "restarting",
     );
 
-    wait_for_jobs(&service_manager, &job_monitor, jobs, &timeout)?;
+    wait_for_jobs(&service_manager, &job_monitor, jobs, timeout)?;
     log::info!("userborn.service completed");
     Ok(())
 }
