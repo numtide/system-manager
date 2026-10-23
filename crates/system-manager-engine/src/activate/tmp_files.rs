@@ -2,10 +2,28 @@ use crate::activate;
 
 use super::ActivationResult;
 use std::collections::HashSet;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process;
 
 type TmpFilesActivationResult = ActivationResult<()>;
+
+fn find_systemd_tmpfiles_bin() -> Option<PathBuf> {
+    const FALLBACK_DIRS: &[&str] = &["/usr/bin", "/bin", "/run/current-system/sw/bin"];
+
+    let path_var = std::env::var("PATH").unwrap_or_default();
+    let search_dirs = path_var
+        .split(':')
+        .filter(|d| !d.is_empty())
+        .chain(FALLBACK_DIRS.iter().copied());
+
+    for dir in search_dirs {
+        let p = Path::new(dir).join("systemd-tmpfiles");
+        if p.is_file() {
+            return Some(p);
+        }
+    }
+    None
+}
 
 pub fn activate(etc_tree: &HashSet<PathBuf>) -> TmpFilesActivationResult {
     let tmp_files_prefix = PathBuf::from("/etc/tmpfiles.d");
@@ -20,7 +38,19 @@ pub fn activate(etc_tree: &HashSet<PathBuf>) -> TmpFilesActivationResult {
             }
         })
         .collect();
-    let mut cmd = process::Command::new("systemd-tmpfiles");
+
+    let exe = find_systemd_tmpfiles_bin().ok_or_else(|| {
+        let path_env = std::env::var("PATH").unwrap_or_else(|_| "<not set>".to_string());
+        activate::ActivationError::WithPartialResult {
+            result: (),
+            source: anyhow::anyhow!(
+                "Could not find 'systemd-tmpfiles' binary (PATH: '{}', checked standard paths: /usr/bin, /bin, /run/current-system/sw/bin)",
+                path_env
+            ),
+        }
+    })?;
+
+    let mut cmd = process::Command::new(exe);
     cmd.arg("--create")
         .arg("--remove")
         .args(tmpfiles_conf_files);
@@ -29,7 +59,10 @@ pub fn activate(etc_tree: &HashSet<PathBuf>) -> TmpFilesActivationResult {
         .stdout(process::Stdio::inherit())
         .stderr(process::Stdio::inherit())
         .output()
-        .expect("Error forking process");
+        .map_err(|e| activate::ActivationError::WithPartialResult {
+            result: (),
+            source: anyhow::anyhow!("Error executing systemd-tmpfiles: {e}"),
+        })?;
 
     output.status.success().then_some(()).ok_or_else(|| {
         activate::ActivationError::WithPartialResult {
