@@ -35,6 +35,22 @@ in
       default = pkgs.systemdMinimal;
     };
 
+    defaultPath = lib.mkOption {
+      type =
+        with lib.types;
+        listOf (oneOf [
+          package
+          str
+        ]);
+      default = [ ];
+      description = lib.mdDoc ''
+        Packages appended to the {env}`PATH` environment variable of all
+        system and user services.
+
+        Individual services can opt out by setting `enableDefaultPath = false`.
+      '';
+    };
+
     globalEnvironment = lib.mkOption {
       type =
         with lib.types;
@@ -176,6 +192,14 @@ in
   config = {
     systemd = {
       sysusers.enable = false;
+
+      defaultPath = [
+        pkgs.coreutils
+        pkgs.findutils
+        pkgs.gnugrep
+        pkgs.gnused
+        cfg.package
+      ];
 
       targets.system-manager = {
         wantedBy = [ "default.target" ];
