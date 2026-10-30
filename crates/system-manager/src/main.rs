@@ -175,6 +175,49 @@ impl From<&BuildArgs> for NixBuildOptions {
 }
 
 #[derive(clap::Args, Debug)]
+#[group(multiple = false)]
+struct TimeoutArgs {
+    #[arg(long, action)]
+    /// If set disable timeout; wait indefinitely until for action to finish
+    no_timeout: bool,
+    /// Set timeout for action, in seconds. Defaults to the engine's timeout.
+    #[arg(short, long)]
+    timeout: Option<u64>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum EngineTimeoutArg {
+    Default,
+    Disabled,
+    Seconds(u64),
+}
+
+impl EngineTimeoutArg {
+    fn push_to(self, args: &mut Vec<String>) {
+        let value = match self {
+            Self::Default => return,
+            Self::Disabled => 0,
+            Self::Seconds(seconds) => seconds,
+        };
+
+        args.push("--timeout".to_string());
+        args.push(value.to_string());
+    }
+}
+
+impl From<&TimeoutArgs> for EngineTimeoutArg {
+    fn from(timeout_args: &TimeoutArgs) -> Self {
+        if timeout_args.no_timeout {
+            Self::Disabled
+        } else if let Some(seconds) = timeout_args.timeout {
+            Self::Seconds(seconds)
+        } else {
+            Self::Default
+        }
+    }
+}
+
+#[derive(clap::Args, Debug)]
 struct ActivationArgs {
     #[arg(long, action)]
     /// If true, only write under /run, otherwise write under /etc
@@ -223,6 +266,8 @@ enum Action {
         activation_args: ActivationArgs,
         #[command(flatten)]
         sudo_args: SudoArgs,
+        #[command(flatten)]
+        timeout_args: TimeoutArgs,
     },
     /// Build a new system-manager generation and register it as the active system-manager profile
     Register {
@@ -242,6 +287,8 @@ enum Action {
         optional_store_path_args: OptionalStorePathArg,
         #[command(flatten)]
         sudo_args: SudoArgs,
+        #[command(flatten)]
+        timeout_args: TimeoutArgs,
     },
     /// Put all files defined by the given generation in place, but do not start services
     PrePopulate {
@@ -261,6 +308,8 @@ enum Action {
         activation_args: ActivationArgs,
         #[command(flatten)]
         sudo_args: SudoArgs,
+        #[command(flatten)]
+        timeout_args: TimeoutArgs,
     },
 }
 
@@ -327,6 +376,7 @@ fn go(args: Args) -> Result<()> {
         Action::Deactivate {
             optional_store_path_args: OptionalStorePathArg { maybe_store_path },
             sudo_args,
+            timeout_args,
         } => {
             let sudo_options = sudo_args.to_sudo_options(legacy_use_remote_sudo)?;
             deactivate(
@@ -335,6 +385,7 @@ fn go(args: Args) -> Result<()> {
                 &sudo_options,
                 &ssh_options,
                 verbose,
+                &EngineTimeoutArg::from(&timeout_args),
             )
         }
 
@@ -405,6 +456,7 @@ fn go(args: Args) -> Result<()> {
             build_args,
             activation_args: ActivationArgs { ephemeral },
             sudo_args,
+            timeout_args,
         } => {
             let mut nix_build_options = NixBuildOptions::from(&build_args);
             let sudo_options = sudo_args.to_sudo_options(legacy_use_remote_sudo)?;
@@ -424,6 +476,7 @@ fn go(args: Args) -> Result<()> {
                 &sudo_options,
                 &ssh_options,
                 verbose,
+                &EngineTimeoutArg::from(&timeout_args),
             )
         }
 
@@ -431,6 +484,7 @@ fn go(args: Args) -> Result<()> {
             store_path,
             activation_args: ActivationArgs { ephemeral },
             sudo_args,
+            timeout_args,
         } => {
             let sudo_options = sudo_args.to_sudo_options(legacy_use_remote_sudo)?;
             copy_closure(&store_path, &target_host, &ssh_options)?;
@@ -441,6 +495,7 @@ fn go(args: Args) -> Result<()> {
                 &sudo_options,
                 &ssh_options,
                 verbose,
+                &EngineTimeoutArg::from(&timeout_args),
             )
         }
     }
@@ -618,9 +673,17 @@ fn deactivate(
     sudo_options: &SudoOptions,
     ssh_options: &[String],
     verbose: bool,
+    timeout: &EngineTimeoutArg,
 ) -> Result<()> {
     let store_path = store_path_or_active_profile(maybe_store_path);
-    invoke_engine_deactivate(&store_path, target_host, sudo_options, ssh_options, verbose)
+    invoke_engine_deactivate(
+        &store_path,
+        target_host,
+        sudo_options,
+        ssh_options,
+        verbose,
+        timeout,
+    )
 }
 
 // --- Engine invocation functions ---
@@ -653,6 +716,7 @@ fn invoke_engine_activate(
     sudo_options: &SudoOptions,
     ssh_options: &[String],
     verbose: bool,
+    timeout: &EngineTimeoutArg,
 ) -> Result<()> {
     let engine_path = store_path.store_path.join("bin").join(ENGINE_BIN);
     let mut args = vec![
@@ -666,6 +730,7 @@ fn invoke_engine_activate(
     if verbose {
         args.push("--verbose".to_string());
     }
+    timeout.push_to(&mut args);
     invoke_engine(&engine_path, &args, target_host, sudo_options, ssh_options)
 }
 
@@ -700,6 +765,7 @@ fn invoke_engine_deactivate(
     sudo_options: &SudoOptions,
     ssh_options: &[String],
     verbose: bool,
+    timeout: &EngineTimeoutArg,
 ) -> Result<()> {
     // For deactivate, we need to find the engine in the profile
     // If we have a specific store path, use it; otherwise use the active profile
@@ -717,6 +783,7 @@ fn invoke_engine_deactivate(
     if verbose {
         args.push("--verbose".to_string());
     }
+    timeout.push_to(&mut args);
     invoke_engine(&engine_path, &args, target_host, sudo_options, ssh_options)
 }
 
@@ -1030,5 +1097,77 @@ mod tests {
             .expect("failed to parse args");
 
         assert!(args.ssh_options.is_empty());
+    }
+
+    fn switch_timeout_args(extra: &[&str]) -> EngineTimeoutArg {
+        let argv = ["system-manager", "switch", "--flake", ".#test"]
+            .into_iter()
+            .chain(extra.iter().copied());
+        let args = Args::try_parse_from(argv).expect("failed to parse args");
+
+        match args.action {
+            Action::Switch { timeout_args, .. } => EngineTimeoutArg::from(&timeout_args),
+            other => panic!("expected switch, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn omitted_timeout_uses_the_engine_default() {
+        let timeout = switch_timeout_args(&[]);
+        assert_eq!(timeout, EngineTimeoutArg::Default);
+
+        let mut args = vec!["activate".to_string()];
+        timeout.push_to(&mut args);
+        assert_eq!(args, vec!["activate"]);
+    }
+
+    #[test]
+    fn no_timeout_conflicts_with_timeout() {
+        Args::try_parse_from([
+            "system-manager",
+            "switch",
+            "--flake",
+            ".#test",
+            "--no-timeout",
+            "--timeout",
+            "5",
+        ])
+        .expect_err("--no-timeout and --timeout should be mutually exclusive");
+    }
+
+    #[test]
+    fn pre_populate_rejects_timeout() {
+        // pre-populate starts no service, so it must not advertise a timeout
+        Args::try_parse_from([
+            "system-manager",
+            "pre-populate",
+            "--flake",
+            ".#test",
+            "--timeout",
+            "5",
+        ])
+        .expect_err("pre-populate should not accept --timeout");
+    }
+
+    #[test]
+    fn no_timeout_is_passed_to_the_engine_as_zero() {
+        // The engine defaults to 30s, so omitting the flag would silently
+        // re-enable the timeout instead of disabling it.
+        let timeout = switch_timeout_args(&["--no-timeout"]);
+        assert_eq!(timeout, EngineTimeoutArg::Disabled);
+
+        let mut args = vec!["activate".to_string()];
+        timeout.push_to(&mut args);
+        assert_eq!(args, vec!["activate", "--timeout", "0"]);
+    }
+
+    #[test]
+    fn explicit_timeout_is_passed_to_the_engine() {
+        let timeout = switch_timeout_args(&["--timeout", "90"]);
+        assert_eq!(timeout, EngineTimeoutArg::Seconds(90));
+
+        let mut args = vec!["activate".to_string()];
+        timeout.push_to(&mut args);
+        assert_eq!(args, vec!["activate", "--timeout", "90"]);
     }
 }
