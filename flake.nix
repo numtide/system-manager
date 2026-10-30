@@ -48,10 +48,15 @@
         );
     in
     {
-      lib = (import ./nix/lib.nix { inherit nixpkgs userborn; }) // {
-        # Container test library for external projects
-        containerTest = import ./lib/container-test-driver { inherit (nixpkgs) lib; };
-      };
+      lib =
+        (import ./nix/lib.nix {
+          inherit nixpkgs userborn;
+          inherit (nixpkgs) lib;
+        })
+        // {
+          # Container test library for external projects
+          containerTest = import ./lib/container-test-driver { inherit (nixpkgs) lib; };
+        };
 
       # Get overlayed packages in toplevel output
       packages = eachSystem (
