@@ -7,11 +7,26 @@ on:
 jobs:
   bump-nix:
     runs-on: "ubuntu-latest"
+    # The App token carries the write access, so the job token needs none.
+    permissions:
+      contents: read
     steps:
+      # Actions may not open a pull request here, and one it opened would
+      # trigger no checks. See update-flake-lock.yml.
+      - name: "Generate a token for the system-manager-flake-updater App"
+        id: "app-token"
+        uses: "actions/create-github-app-token@v3"
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: "Checkout the repo"
         uses: "actions/checkout@v7"
+        with:
+          token: ${{ steps.app-token.outputs.token }}
       - name: "Install the Nix package manager"
         uses: "NixOS/nix-installer-action@main"
+      # Reads release tags from github.com/NixOS/nix, so the job token is
+      # enough: this one is not the pull request.
       - name: "Bump Nix version in nix-artifacts"
         run: python3 tools/bump_nix_version.py
         env:
@@ -19,6 +34,7 @@ jobs:
       - name: "Create Pull Request"
         uses: "peter-evans/create-pull-request@v8"
         with:
+          token: ${{ steps.app-token.outputs.token }}
           branch: "auto_update_nix_version"
           title: "Bump Nix version in nix-artifacts"
           body: |
