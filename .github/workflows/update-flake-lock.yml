@@ -7,6 +7,9 @@ on:
 jobs:
   lockfile:
     runs-on: "ubuntu-latest"
+    # The App token carries the write access, so the job token needs none.
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -14,10 +17,17 @@ jobs:
           - main
           - release-26.05
     steps:
+      - name: "Generate a token for the system-manager-flake-updater App"
+        id: "app-token"
+        uses: "actions/create-github-app-token@v3"
+        with:
+          client-id: ${{ secrets.CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: "Checkout the repo"
         uses: "actions/checkout@v7"
         with:
           ref: ${{ matrix.branch }}
+          token: ${{ steps.app-token.outputs.token }}
       - name: "Install the Nix package manager"
         uses: "NixOS/nix-installer-action@main"
       - name: "Update the lockfiles"
@@ -35,6 +45,7 @@ jobs:
       - name: "Create Pull Request"
         uses: "peter-evans/create-pull-request@v8"
         with:
+          token: ${{ steps.app-token.outputs.token }}
           base: ${{ matrix.branch }}
           branch: "auto_update_deps-${{ matrix.branch }}"
           title: "[${{ matrix.branch }}] Bump flake.lock, testFlake/flake.lock, and Cargo.lock"
