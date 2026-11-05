@@ -1,5 +1,6 @@
 {
   nixosModulesPath,
+  config,
   lib,
   pkgs,
   ...
@@ -90,10 +91,54 @@
         default = false;
       };
 
+      # Only the locale archive is consumed (nix/modules/locale.nix sets
+      # LOCALE_ARCHIVE from it), and pkgs.glibcLocales is built with
+      # allLocales = true, which is a 223 MB locale-archive. The default below
+      # reproduces nixos/modules/config/i18n.nix rather than hardcoding a list,
+      # so the installed set is a real option: a host whose LANG is not in the
+      # default pair (for example de_AT.UTF-8) declares it here, and "all"
+      # installs every locale glibc ships. Setting i18n.glibcLocales directly
+      # still bypasses this for a fully custom archive, or null for none.
+      i18n.supportedLocales = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [
+          "C.UTF-8/UTF-8"
+          "en_US.UTF-8/UTF-8"
+        ];
+        example = [
+          "en_US.UTF-8/UTF-8"
+          "de_AT.UTF-8/UTF-8"
+        ];
+        description = ''
+          Locales the generated locale archive should contain. The value
+          `"all"` installs every locale glibc supports, which is a much larger
+          archive. The default is the same pair NixOS enables by default.
+        '';
+      };
+
       i18n.glibcLocales = lib.mkOption {
-        type = lib.types.package;
-        default = pkgs.glibcLocales;
-        defaultText = lib.literalExpression "pkgs.glibcLocales";
+        type = lib.types.nullOr lib.types.package;
+        default =
+          if pkgs.glibcLocales != null then
+            pkgs.glibcLocales.override {
+              allLocales = lib.elem "all" config.i18n.supportedLocales;
+              locales = config.i18n.supportedLocales;
+            }
+          else
+            null;
+        defaultText = lib.literalExpression ''
+          if pkgs.glibcLocales != null then
+            pkgs.glibcLocales.override {
+              allLocales = lib.elem "all" config.i18n.supportedLocales;
+              locales = config.i18n.supportedLocales;
+            }
+          else
+            null
+        '';
+        description = ''
+          Customized `pkgs.glibcLocales`. Setting this directly bypasses
+          `i18n.supportedLocales`.
+        '';
       };
     };
 }
