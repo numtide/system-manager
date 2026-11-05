@@ -321,7 +321,14 @@ fn create_etc_file(
     // We want to override all the Ubuntu systemd .wants and .requires entries.
     // We did not find a proper way to do that from the Nix static env,
     // hardcoding this condition in the activation instead.
-    let target_is_in_systemd_dir = is_inside_systemd_dependency_dir(&target);
+
+    // Allow overriding systemd links pointing to the nix store (e.g. from an interrupted activation)
+    let is_systemd_link = target.starts_with("/etc/systemd/system")
+        && (target.is_symlink()
+            && fs::read_link(&target)
+                .map(|p| p.to_string_lossy().contains("/nix/store/"))
+                .unwrap_or(false));
+    let target_is_in_systemd_dir = is_inside_systemd_dependency_dir(&target) || is_systemd_link;
 
     if file.mode == "symlink" {
         // On some symlinks, target.exists() returns false. Not sure why.
