@@ -36,6 +36,34 @@ impl<R> ActivationError<R> {
 
 pub type ActivationResult<R> = Result<R, ActivationError<R>>;
 
+/// Why an activation that ran to its end still didn't succeed. The state file is written
+/// either way, describing what was applied, so that activating another profile (a rollback)
+/// starts from the truth.
+#[derive(Error, Debug)]
+pub enum ActivationFailure {
+    /// Part of the profile wasn't applied: a job systemd refused, a unit the profile drops or
+    /// masks that didn't stop, a failed userborn.service, a services phase cut short. The
+    /// system runs a mix of the old and the new profile.
+    #[error("activation incomplete: {}", .0.join("; "))]
+    Incomplete(Vec<String>),
+    /// Everything was applied, and these managed units failed: they are failed afterwards, or
+    /// their (re)start or reload job didn't complete (as NixOS' switch-to-configuration exits
+    /// 4 for). Whether that is new is the caller's to judge.
+    #[error("units failed after activation: {}", .0.join(", "))]
+    UnitsFailed(Vec<String>),
+}
+
+impl ActivationFailure {
+    /// The engine's exit status for this failure: 4 for failed units, as NixOS'
+    /// switch-to-configuration, so a caller can tell them from an activation that didn't apply.
+    pub fn exit_code(&self) -> u8 {
+        match self {
+            Self::Incomplete(_) => 1,
+            Self::UnitsFailed(_) => 4,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum FileStatus {
@@ -141,17 +169,24 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
 
     let state_file = &get_state_file()?;
     let old_state = StateV1::from_file(state_file)?;
+    // What wasn't applied, each naming its part.
+    let mut incomplete: Vec<String> = vec![];
 
     log::info!("Activating etc files...");
 
     match etc_files::activate(store_path, old_state.file_tree, ephemeral) {
         Ok(etc_tree) => {
+            if let Err(e) = services::reset_failed_units(store_path) {
+                log::warn!("Error resetting the failed state of managed units: {e:#}");
+            }
+
             log::info!("Restarting sysinit-reactivation.target...");
-            services::restart_sysinit_reactivation_target()?;
+            services::restart_sysinit_reactivation_target(&mut incomplete)?;
 
             // Restart userborn before tmpfiles so users exist when tmpfiles runs
             if let Err(e) = services::restart_userborn_if_exists() {
                 log::error!("Error restarting userborn.service: {e}");
+                incomplete.push(format!("userborn: {e:#}"));
             }
 
             log::info!("Activating tmp files...");
@@ -164,7 +199,15 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
             }
 
             log::info!("Activating systemd services...");
-            let final_state = match services::activate(store_path, old_state.services, ephemeral) {
+            // Jobs that didn't complete on units the profile keeps: reported with the failed
+            // units.
+            let mut failed_jobs = vec![];
+            let final_state = match services::activate(
+                store_path,
+                old_state.services,
+                ephemeral,
+                &mut failed_jobs,
+            ) {
                 Ok(services) => StateV1 {
                     file_tree: etc_tree,
                     services,
@@ -172,6 +215,7 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
                 },
                 Err(ActivationError::WithPartialResult { result, source }) => {
                     log::error!("Error during activation: {source:?}");
+                    incomplete.push(format!("services: {source:#}"));
                     StateV1 {
                         file_tree: etc_tree,
                         services: result,
@@ -183,6 +227,16 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
 
             if let Err(e) = tmp_result {
                 return Err(e.into());
+            }
+
+            if !incomplete.is_empty() {
+                return Err(ActivationFailure::Incomplete(incomplete).into());
+            }
+
+            let failed = services::failed_units(&final_state.services, &failed_jobs)?;
+            if !failed.is_empty() {
+                log::error!("Units failed after activation: {}", failed.join(", "));
+                return Err(ActivationFailure::UnitsFailed(failed).into());
             }
 
             Ok(())
@@ -266,4 +320,31 @@ pub(crate) fn get_state_file() -> Result<PathBuf> {
         .recursive(true)
         .create(SYSTEM_MANAGER_STATE_DIR)?;
     Ok(state_file)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn failed_units_exit_like_nixos_switch() {
+        assert_eq!(ActivationFailure::UnitsFailed(vec![]).exit_code(), 4);
+        assert_eq!(ActivationFailure::Incomplete(vec![]).exit_code(), 1);
+    }
+
+    #[test]
+    fn the_exit_code_survives_anyhow() {
+        let error: anyhow::Error = ActivationFailure::UnitsFailed(vec!["a.service".into()]).into();
+        assert_eq!(
+            error
+                .downcast_ref::<ActivationFailure>()
+                .map(ActivationFailure::exit_code),
+            Some(4),
+            "main() finds the failure through anyhow"
+        );
+        assert_eq!(
+            error.to_string(),
+            "units failed after activation: a.service"
+        );
+    }
 }

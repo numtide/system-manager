@@ -131,7 +131,11 @@ fn go(args: Args) -> Result<()> {
 fn handle_toplevel_error<T>(r: Result<T>) -> ExitCode {
     if let Err(e) = r {
         log::error!("{:?}", e);
-        return ExitCode::FAILURE;
+        return e
+            .downcast_ref::<system_manager_engine::activate::ActivationFailure>()
+            .map_or(ExitCode::FAILURE, |failure| {
+                ExitCode::from(failure.exit_code())
+            });
     }
     ExitCode::SUCCESS
 }
