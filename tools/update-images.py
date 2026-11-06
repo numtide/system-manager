@@ -29,6 +29,10 @@ DEBIAN_RELEASES = {
     "debian-13": "https://cloud.debian.org/images/cloud/trixie/",
 }
 
+FEDORA_RELEASES = {
+    "fedora-44": "https://dl.fedoraproject.org/pub/fedora/linux/releases/44/Cloud/",
+}
+
 
 def nix_hash(url: str) -> str:
     print(f"[+] nix-prefetch-url {url}", file=sys.stderr)
@@ -124,6 +128,30 @@ def debian_genericcloud(release: str, base_url: str) -> dict:
     return out
 
 
+def fedora_generic(release: str, base_url: str) -> dict:
+    """Return { system: { url, sha256 } } for the Generic cloud qcow2 of a release."""
+    arch_to_system = {"x86_64": "x86_64-linux", "aarch64": "aarch64-linux"}
+
+    out = {}
+    for arch, system in arch_to_system.items():
+        images_url = f"{base_url}{arch}/images/"
+        # Filenames look like Fedora-Cloud-Base-Generic-44-1.7.x86_64.qcow2
+        qcow2_re = re.compile(rf"^Fedora-Cloud-Base-Generic-[\d.-]+\.{arch}\.qcow2$")
+        print(f"[+] {release}: {images_url}", file=sys.stderr)
+        page = requests.get(images_url, timeout=30)
+        page.raise_for_status()
+        soup = BeautifulSoup(page.content, "html.parser")
+        for link in soup.find_all("a"):
+            href = link.get("href", "")
+            if qcow2_re.match(href):
+                url = f"{images_url}{href}"
+                out[system] = {"url": url, "sha256": nix_hash(url)}
+                break
+        else:
+            raise RuntimeError(f"no Generic qcow2 found under {images_url}")
+    return out
+
+
 def main() -> None:
     images: dict[str, dict] = {}
 
@@ -132,6 +160,9 @@ def main() -> None:
 
     for release, url in DEBIAN_RELEASES.items():
         images[release] = debian_genericcloud(release, url)
+
+    for release, url in FEDORA_RELEASES.items():
+        images[release] = fedora_generic(release, url)
 
     IMAGES_JSON.write_text(json.dumps(images, indent=2, sort_keys=True) + "\n")
     print(f"[+] wrote {IMAGES_JSON}", file=sys.stderr)

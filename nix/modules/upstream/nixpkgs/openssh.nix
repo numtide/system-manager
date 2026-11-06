@@ -780,6 +780,8 @@ in
           Description = "OpenBSD Secure Shell server";
           Documentation = "man:sshd(8) man:sshd_config(5)";
           After = "network.target auditd.service";
+          # the sshd.service mask above does not stop Fedora's running sshd
+          Conflicts = "sshd.service";
           ConditionPathExists = "!/etc/ssh/sshd_not_to_be_run";
         };
         serviceConfig = {

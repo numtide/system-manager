@@ -20,6 +20,7 @@ let
 
           config = {
             nixpkgs.hostPlatform = system;
+            system-manager.allowAnyDistro = true;
 
             services.nginx.enable = false;
             services.userborn.enable = true;
