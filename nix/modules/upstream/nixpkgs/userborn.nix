@@ -51,6 +51,11 @@ in
     };
     serviceConfig = {
       StateDirectory = "userborn";
+      # StateDirectory= is only supported since systemd v235, create the
+      # directory explicitly so this also works on older versions.
+      ExecStartPre = [
+        "${pkgs.coreutils}/bin/mkdir -p /var/lib/userborn"
+      ];
       ExecStartPost = [
         "${pkgs.coreutils}/bin/ln -sf ${userbornConfigJson} ${previousConfigPath}"
       ];

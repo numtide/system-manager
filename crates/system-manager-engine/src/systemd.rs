@@ -285,6 +285,22 @@ impl ServiceManager {
         Ok(())
     }
 
+    /// Checks whether a unit exists, i.e. whether systemd can find and parse
+    /// a unit file for it.
+    ///
+    /// This is implemented with `LoadUnit` and the unit's `LoadState`
+    /// property rather than `ListUnitsByPatterns`, since the latter is only
+    /// available on systemd v230 and newer.
+    pub fn unit_exists(&self, unit_name: &str) -> Result<bool, Error> {
+        let unit_path = OrgFreedesktopSystemd1Manager::load_unit(&self.proxy, unit_name)?;
+        let unit_proxy =
+            self.proxy
+                .connection
+                .with_proxy(SD_DESTINATION, unit_path, Duration::from_secs(2));
+        let load_state = OrgFreedesktopSystemd1Unit::load_state(&unit_proxy)?;
+        Ok(load_state == "loaded")
+    }
+
     pub fn list_units_by_patterns(
         &self,
         states: &[&str],
