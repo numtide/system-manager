@@ -209,6 +209,18 @@
       ];
 
     system-manager.preActivationAssertions = {
+      # We're relying on systemd tmpfiles to be in path to link the
+      # system-manager files to /etc. Fail before activation if it's not in path.
+      systemdTmpfilesInPath = {
+        enable = true;
+        script = ''
+          if ! command -v systemd-tmpfiles > /dev/null 2>&1; then
+            echo "system manager depends on systemd-tmpfiles to be in ''$PATH to activate a new configuration."
+            echo "Please add systemd-tmpfiles to your ''$PATH and try to activate your profile again."
+            exit 1
+          fi
+        '';
+      };
       osVersion =
         let
           supportedIds = [
