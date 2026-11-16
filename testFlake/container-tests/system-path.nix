@@ -92,7 +92,10 @@ forEachDistro "system-path" {
   modules = [
     ../../examples/example.nix
   ];
-  extraPathsToRegister = [ newConfig ];
+  extraPathsToRegister = [
+    newConfig
+    ../sops/age-keys.txt
+  ];
   testScriptFunction =
     { toplevel, hostPkgs, ... }:
     ''
@@ -111,7 +114,10 @@ forEachDistro "system-path" {
       machine.succeed("bash --login -c 'realpath $(which rg) | grep -F ${hostPkgs.ripgrep}/bin/rg'")
       machine.succeed("bash --login -c 'realpath $(which fd) | grep -F ${hostPkgs.fd}/bin/fd'")
 
+      # newConfig's sops secret is decrypted with this key.
+      machine.succeed("cp ${../sops/age-keys.txt} /run/age-keys.txt")
       machine.activate("${newConfig}")
+      machine.succeed("test -f /run/secrets/test")
 
       machine.fail("bash --login -c '$(which rg)'")
       machine.fail("bash --login -c '$(which fd)'")

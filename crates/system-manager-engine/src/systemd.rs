@@ -75,8 +75,16 @@ pub struct Job<'a> {
     path: Path<'a>,
 }
 
+impl Job<'_> {
+    /// The job's object path, by which systemd's JobRemoved signal names it.
+    pub fn path(&self) -> String {
+        self.path.to_string()
+    }
+}
+
 pub struct JobMonitor<'a> {
-    job_names: Arc<Mutex<im::HashSet<String>>>,
+    /// The jobs systemd removed since monitor_jobs_finish last looked.
+    removed_jobs: Arc<Mutex<Vec<OrgFreedesktopSystemd1ManagerJobRemoved>>>,
     tokens: im::HashSet<Token>,
     service_manager: &'a ServiceManager,
 }
@@ -149,6 +157,12 @@ impl ServiceManager {
         Ok(())
     }
 
+    /// Resets a unit's failed state, and with it its start rate limit.
+    pub fn reset_failed_unit(&self, unit_name: &str) -> Result<(), Error> {
+        OrgFreedesktopSystemd1Manager::reset_failed_unit(&self.proxy, unit_name)?;
+        Ok(())
+    }
+
     /// Builds a unit manager for the unit with the given status.
     pub fn unit_manager(&'_ self, unit_status: &UnitStatus) -> UnitManager<'_> {
         UnitManager {
@@ -161,15 +175,17 @@ impl ServiceManager {
     }
 
     pub fn monitor_jobs_init(&'_ self) -> Result<JobMonitor<'_>, Error> {
-        let job_names = Arc::new(Mutex::from(im::HashSet::<String>::new()));
+        let removed_jobs = Arc::new(Mutex::from(
+            Vec::<OrgFreedesktopSystemd1ManagerJobRemoved>::new(),
+        ));
 
-        let job_names_clone = Arc::clone(&job_names);
+        let removed_jobs_clone = Arc::clone(&removed_jobs);
         let token = self.proxy.match_signal(
             move |h: OrgFreedesktopSystemd1ManagerJobRemoved, _: &Connection, _: &Message| {
-                log::debug!("Job for {} done", h.unit);
+                log::debug!("Job for {} done: {}", h.unit, h.result);
                 {
-                    // Insert a new name, and let the lock go out of scope immediately
-                    job_names_clone.lock().unwrap().insert(h.unit);
+                    // Record the job, and let the lock go out of scope immediately
+                    removed_jobs_clone.lock().unwrap().push(h);
                 }
                 // The callback gets removed at the end of monitor_jobs_finish
                 true
@@ -177,19 +193,23 @@ impl ServiceManager {
         )?;
 
         Ok(JobMonitor {
-            job_names: Arc::clone(&job_names),
+            removed_jobs: Arc::clone(&removed_jobs),
             tokens: im::HashSet::unit(token),
             service_manager: self,
         })
     }
 
-    /// Waits for the monitored jobs to finish. Returns `true` if all jobs
-    /// finished before the timeout, `false` otherwise.
+    /// Waits for the monitored jobs, given by their object paths, to finish, adding
+    /// the unit and result of each one that does to `results` (systemd's JobRemoved
+    /// result: `done`, `failed`, `dependency`, ...). Matching by path rather than by
+    /// unit leaves out another job on the same unit, such as one ours replaced.
+    /// Returns `true` if all jobs finished before the timeout, `false` otherwise.
     pub fn monitor_jobs_finish<I>(
         &self,
         job_monitor: &JobMonitor,
         timeout: &Option<Duration>,
-        services: I,
+        jobs: I,
+        results: &mut Vec<(String, String)>,
     ) -> Result<bool, Error>
     where
         I: IntoIterator,
@@ -197,7 +217,7 @@ impl ServiceManager {
     {
         let start_time = Instant::now();
 
-        let mut waiting_for: im::HashSet<_> = services.into_iter().map(Into::into).collect();
+        let mut waiting_for: im::HashSet<String> = jobs.into_iter().map(Into::into).collect();
         let total_jobs = waiting_for.len();
 
         if total_jobs > 0 {
@@ -214,10 +234,13 @@ impl ServiceManager {
             {
                 return Ok(false);
             }
-            let mut job_names = job_monitor.job_names.lock().unwrap();
-            if !job_names.is_empty() {
-                waiting_for = waiting_for.relative_complement(job_names.clone());
-                *job_names = im::HashSet::new();
+            let removed_jobs = std::mem::take(&mut *job_monitor.removed_jobs.lock().unwrap());
+            if !removed_jobs.is_empty() {
+                for removed in removed_jobs {
+                    if waiting_for.remove(&*removed.job).is_some() {
+                        results.push((removed.unit, removed.result));
+                    }
+                }
                 if !waiting_for.is_empty() {
                     log::debug!(
                         "Waiting for jobs to finish... ({}/{})",
@@ -255,6 +278,26 @@ impl ServiceManager {
         Ok(Job {
             path: OrgFreedesktopSystemd1Manager::start_unit(&self.proxy, unit_name, "replace")?,
         })
+    }
+
+    /// Starts a unit, returning its job and, as (unit, job path), every other job systemd
+    /// queued in the same transaction: the units it pulls in, whose jobs StartUnit doesn't
+    /// return.
+    pub fn start_unit_and_pulled_in(
+        &'_ self,
+        unit_name: &str,
+    ) -> Result<(Job<'_>, Vec<(String, String)>), Error> {
+        let (_, path, _, _, _, affected) = OrgFreedesktopSystemd1Manager::enqueue_unit_job(
+            &self.proxy,
+            unit_name,
+            "start",
+            "replace",
+        )?;
+        let pulled_in = affected
+            .into_iter()
+            .map(|(_, job, unit, _, _)| (unit, job.to_string()))
+            .collect();
+        Ok((Job { path }, pulled_in))
     }
 
     pub fn stop_unit(&'_ self, unit_name: &str) -> Result<Job<'_>, Error> {

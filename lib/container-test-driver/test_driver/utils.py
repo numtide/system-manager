@@ -19,10 +19,24 @@ CONTAINER_PATH = ":".join([
 ])
 
 
+# The container runs inside the Nix build sandbox, whose seccomp filter refuses
+# setuid and setgid bits (and file capabilities) to every process in it, the
+# container's root included: the security wrappers can't be made there, and
+# suid-sgid-wrappers.service would fail on every activation. Skip it instead;
+# the VM tests cover the wrappers.
+SUID_SGID_WRAPPERS_DROP_IN = """\
+[Unit]
+ConditionVirtualization=!container
+"""
+
+
 def prepare_machine_root(root: Path) -> None:
     """Prepare the machine root directory structure."""
     root.mkdir(parents=True, exist_ok=True)
     root.joinpath("etc").mkdir(parents=True, exist_ok=True)
+    drop_in_dir = root / "etc/systemd/system/suid-sgid-wrappers.service.d"
+    drop_in_dir.mkdir(parents=True, exist_ok=True)
+    drop_in_dir.joinpath("nix-sandbox.conf").write_text(SUID_SGID_WRAPPERS_DROP_IN)
 
 
 def pythonize_name(name: str) -> str:

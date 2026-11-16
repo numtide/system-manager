@@ -3,7 +3,7 @@ use im::{HashMap, HashSet};
 use serde::{Deserialize, Serialize};
 use std::path::{self, Path, PathBuf};
 use std::time::Duration;
-use std::{fs, io};
+use std::{fmt, fs, io};
 
 use super::ActivationResult;
 use crate::activate::ActivationError;
@@ -12,7 +12,7 @@ use crate::{create_link, etc_dir, systemd, StorePath};
 
 type ServiceActivationResult = ActivationResult<Services>;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ServiceConfig {
     /// absent for masked units
@@ -22,6 +22,20 @@ pub struct ServiceConfig {
 }
 
 pub type Services = HashMap<String, ServiceConfig>;
+
+/// A job systemd accepted and then didn't complete: its unit, and the result systemd's
+/// JobRemoved signal gave (`failed`, `dependency`, `timeout`, `canceled`, ...).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UnfinishedJob {
+    unit: String,
+    result: String,
+}
+
+impl fmt::Display for UnfinishedJob {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} (job {})", self.unit, self.result)
+    }
+}
 
 fn print_services(services: &Services) -> String {
     let out = itertools::intersperse(
@@ -58,10 +72,13 @@ pub fn get_active_services(
     Ok(services)
 }
 
+/// A (re)start or reload job that didn't complete, on a unit the profile keeps, is added to
+/// `failed_jobs`: that is a unit failure, for `failed_units` to report.
 pub fn activate(
     store_path: &StorePath,
     old_services: Services,
     ephemeral: bool,
+    failed_jobs: &mut Vec<UnfinishedJob>,
 ) -> ServiceActivationResult {
     verify_systemd_dir(ephemeral)
         .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
@@ -84,39 +101,103 @@ pub fn activate(
         .map_err(|e| ActivationError::with_partial_result(old_services.clone(), e))?;
     let timeout = Some(Duration::from_secs(30));
 
+    // What wasn't applied: units systemd refused a job for, and units the profile drops or
+    // masks whose stop didn't complete, which may still be running. The activation isn't
+    // complete.
+    let mut incomplete = vec![];
+
+    // What the state records. A unit the profile drops or changes keeps its old entry until
+    // systemd confirms its stop or restart, so that whatever cuts the activation short,
+    // activating the profile again retries it, and deactivating still stops a dropped unit.
+    let mut applied = pending_entries(
+        &services,
+        &old_services,
+        services_to_stop.keys().chain(services_to_reload.keys()),
+    );
+
     // Stop removed services and any masked services that might still be running
     // (e.g. distro-provided units). Must happen before daemon-reload so systemd
     // still knows about these units.
     let mut units_to_stop = convert_services(&services_to_stop);
     units_to_stop.extend(convert_services(&masked));
-    wait_for_jobs(
+    let mut refused_stops = vec![];
+    let mut unfinished_stops = vec![];
+    let stopped = wait_for_jobs(
         &service_manager,
         &job_monitor,
-        stop_services(&service_manager, units_to_stop),
+        stop_services(
+            &service_manager,
+            units_to_stop,
+            &mut incomplete,
+            &mut refused_stops,
+        ),
         &timeout,
-    )
-    .map_err(|e| ActivationError::with_partial_result(services.clone(), e))?;
+        &mut unfinished_stops,
+    );
+    incomplete.extend(
+        unfinished_stops
+            .iter()
+            .map(|job| format!("{} not stopped (job {})", job.unit, job.result)),
+    );
+    // When the wait is cut short, which stops completed isn't known.
+    stopped.map_err(|e| {
+        ActivationError::with_partial_result(applied.clone(), cut_short(&incomplete, e))
+    })?;
+    let not_stopped: Vec<&String> = refused_stops
+        .iter()
+        .chain(unfinished_stops.iter().map(|job| &job.unit))
+        .collect();
+    applied = settled(
+        applied,
+        &services,
+        services_to_stop
+            .keys()
+            .filter(|unit| !not_stopped.contains(unit)),
+    );
 
-    wait_for_jobs(
+    let mut refused_reloads = vec![];
+    let reload_jobs = reload_or_restart_units(
+        &service_manager,
+        convert_services(&services_to_reload),
+        &mut incomplete,
+        &mut refused_reloads,
+    );
+    let target_jobs = start_target(&service_manager, &active, &mut incomplete);
+    let failed_before = failed_jobs.len();
+    let waited = wait_for_jobs(
         &service_manager,
         &job_monitor,
-        reload_or_restart_units(&service_manager, convert_services(&services_to_reload))
-            + start_units(&service_manager, ["system-manager.target"]),
+        reload_jobs + target_jobs,
         &timeout,
-    )
-    .map_err(|e| ActivationError::with_partial_result(services.clone(), e))?;
+        failed_jobs,
+    );
+    // When the wait is cut short, which restarts completed isn't known.
+    waited.map_err(|e| {
+        ActivationError::with_partial_result(applied.clone(), cut_short(&incomplete, e))
+    })?;
+    let not_reloaded: Vec<&String> = refused_reloads
+        .iter()
+        .chain(failed_jobs[failed_before..].iter().map(|job| &job.unit))
+        .collect();
+    applied = settled(
+        applied,
+        &services,
+        services_to_reload
+            .keys()
+            .filter(|unit| !not_reloaded.contains(unit)),
+    );
 
     if !masked.is_empty() {
         let unit_names: Vec<&str> = masked.keys().map(AsRef::as_ref).collect();
         service_manager
             .mask_unit_files(&unit_names, ephemeral)
             .with_context(|| format!("masking {} unit(s)", masked.len()))
-            .map_err(|e| ActivationError::with_partial_result(services.clone(), e))?;
+            .map_err(|e| ActivationError::with_partial_result(applied.clone(), e))?;
 
         log::info!("Reloading systemd daemon after masking...");
         service_manager
             .daemon_reload()
-            .map_err(|e| ActivationError::with_partial_result(services.clone(), e))?;
+            .map_err(|e| ActivationError::with_partial_result(applied.clone(), e))?;
 
         log::info!(
             "Masked {} unit(s): {}",
@@ -125,8 +206,102 @@ pub fn activate(
         );
     }
 
+    if !incomplete.is_empty() {
+        return Err(ActivationError::with_partial_result(
+            applied,
+            anyhow::anyhow!(incomplete.join("; ")),
+        ));
+    }
+
     log::info!("Done");
-    Ok(services)
+    // `services`, but for a changed unit whose restart or reload ran and didn't complete
+    // (reported with the failed units): it keeps its old entry, and is retried.
+    Ok(applied)
+}
+
+/// The error for a services phase cut short (a job timeout, a D-Bus error), naming what
+/// wasn't applied before it was, so that the diagnostic doesn't lose it.
+fn cut_short(incomplete: &[String], e: anyhow::Error) -> anyhow::Error {
+    if incomplete.is_empty() {
+        e
+    } else {
+        anyhow::anyhow!("{}; {e:#}", incomplete.join("; "))
+    }
+}
+
+/// `services`, with each of `units` that the profile drops or changes on its old entry: what
+/// to record while their stops and restarts are pending. A unit the profile masks has its new
+/// entry: it is masked whether its stop completes or not.
+fn pending_entries<'a, I>(services: &Services, old_services: &Services, units: I) -> Services
+where
+    I: IntoIterator<Item = &'a String>,
+{
+    units
+        .into_iter()
+        .fold(services.clone(), |mut applied, unit| {
+            let masked = services.get(unit).is_some_and(|cfg| cfg.masked);
+            if let (false, Some(old)) = (masked, old_services.get(unit)) {
+                applied.insert(unit.clone(), old.clone());
+            }
+            applied
+        })
+}
+
+/// `applied`, with each of `units`, whose stop or restart completed, as the profile has it:
+/// its new entry, or none for a unit it drops.
+fn settled<'a, I>(applied: Services, services: &Services, units: I) -> Services
+where
+    I: IntoIterator<Item = &'a String>,
+{
+    units.into_iter().fold(applied, |mut applied, unit| {
+        match services.get(unit) {
+            Some(cfg) => applied.insert(unit.clone(), cfg.clone()),
+            None => applied.remove(unit),
+        };
+        applied
+    })
+}
+
+/// The managed units that failed: those systemd reports as failed once activation is done,
+/// and those whose (re)start or reload job didn't complete (`failed_jobs`, from `activate`),
+/// which can leave a unit active on its old configuration or inactive rather than failed. As
+/// NixOS' switch-to-configuration does, a unit that failed doesn't fail the activation by
+/// itself, but it is reported, so that the caller can judge it against what was failing
+/// before.
+pub fn failed_units(
+    services: &Services,
+    failed_jobs: &[UnfinishedJob],
+) -> anyhow::Result<Vec<String>> {
+    let names: Vec<&str> = services
+        .iter()
+        .filter(|(_, cfg)| !cfg.masked)
+        .map(|(name, _)| name.as_str())
+        .collect();
+    let in_failed_state = if names.is_empty() {
+        vec![]
+    } else {
+        systemd::ServiceManager::new_session()?
+            .list_units_by_patterns(&["failed"], &names)?
+            .into_iter()
+            .map(|unit| unit.name)
+            .collect()
+    };
+    Ok(name_failed(in_failed_state, failed_jobs))
+}
+
+/// Names each failed unit once: by its name when systemd reports it failed, else by its
+/// job's result.
+fn name_failed(mut failed: Vec<String>, failed_jobs: &[UnfinishedJob]) -> Vec<String> {
+    let not_failed_state: Vec<String> = failed_jobs
+        .iter()
+        .filter(|job| !failed.contains(&job.unit))
+        .map(ToString::to_string)
+        .collect();
+    failed.extend(not_failed_state);
+    failed.sort();
+    // Two jobs on one unit, say a restart and the target's start, may both not complete.
+    failed.dedup();
+    failed
 }
 
 fn get_services_to_reload(services: Services, old_services: Services) -> Services {
@@ -256,8 +431,9 @@ pub fn deactivate(old_services: Services) -> ServiceActivationResult {
         wait_for_jobs(
             &service_manager,
             &job_monitor,
-            stop_services(&service_manager, units_to_stop),
+            stop_services(&service_manager, units_to_stop, &mut vec![], &mut vec![]),
             &timeout,
+            &mut vec![],
         )
         // We consider all jobs stopped now..
         .map_err(|e| ActivationError::with_partial_result(im::HashMap::new(), e))?;
@@ -310,57 +486,122 @@ fn restore_ephemeral_system_dir() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn stop_services<'a, U>(service_manager: &systemd::ServiceManager, units: U) -> HashSet<JobId>
-where
-    U: AsRef<[&'a str]>,
-{
-    for_each_unit(|s| service_manager.stop_unit(s), units.as_ref(), "stopping")
-}
-
-fn reload_or_restart_units<'a, U>(
+/// Queues a stop for each unit. A unit systemd refuses a stop for is also added to
+/// `not_stopped`: it may still be running.
+fn stop_services<'a, U>(
     service_manager: &systemd::ServiceManager,
     units: U,
+    refused: &mut Vec<String>,
+    not_stopped: &mut Vec<String>,
 ) -> HashSet<JobId>
 where
     U: AsRef<[&'a str]>,
 {
     for_each_unit(
-        |s| service_manager.reload_or_restart_unit(s),
+        |unit| {
+            service_manager.stop_unit(unit).inspect_err(|e| {
+                if !is_not_loaded(e) {
+                    not_stopped.push(unit.to_owned());
+                }
+            })
+        },
         units.as_ref(),
-        "reloading",
+        "stopping",
+        // An inactive unit whose file is gone isn't loaded any more: it is already stopped.
+        is_not_loaded,
+        refused,
     )
 }
 
-fn start_units<'a, U>(service_manager: &systemd::ServiceManager, units: U) -> HashSet<JobId>
+fn is_not_loaded(e: &anyhow::Error) -> bool {
+    e.downcast_ref::<dbus::Error>()
+        .and_then(dbus::Error::name)
+        .is_some_and(|name| name == "org.freedesktop.systemd1.NoSuchUnit")
+}
+
+/// Queues a reload or restart for each unit. A unit systemd refuses one for is also added to
+/// `not_reloaded`: it still runs its old configuration.
+fn reload_or_restart_units<'a, U>(
+    service_manager: &systemd::ServiceManager,
+    units: U,
+    refused: &mut Vec<String>,
+    not_reloaded: &mut Vec<String>,
+) -> HashSet<JobId>
 where
     U: AsRef<[&'a str]>,
 {
     for_each_unit(
-        |unit| service_manager.start_unit(unit),
+        |unit| {
+            service_manager
+                .reload_or_restart_unit(unit)
+                .inspect_err(|_| not_reloaded.push(unit.to_owned()))
+        },
         units.as_ref(),
-        "starting",
+        "reloading",
+        |_| false,
+        refused,
     )
+}
+
+/// Starts system-manager.target, returning its job and the jobs of the managed units it pulls
+/// in (`managed`): a unit whose start fails on a dependency ends up inactive, not failed, and
+/// the target's own job completes all the same. Jobs for units the profile doesn't manage
+/// aren't waited for. A refusal is added to `refused`.
+fn start_target(
+    service_manager: &systemd::ServiceManager,
+    managed: &Services,
+    refused: &mut Vec<String>,
+) -> HashSet<JobId> {
+    let unit = "system-manager.target";
+    match service_manager.start_unit_and_pulled_in(unit) {
+        Ok((job, pulled_in)) => {
+            log::debug!("Unit {unit}: starting ({})...", job.path());
+            pulled_in
+                .into_iter()
+                .filter(|(unit, _)| managed.contains_key(unit))
+                .map(|(_, id)| JobId { id })
+                .collect::<HashSet<_>>()
+                .update(JobId { id: job.path() })
+        }
+        Err(e) => {
+            log::error!("Service {unit}: error starting, please consult the logs");
+            log::error!("{e}");
+            refused.push(format!("{unit}: error starting: {e}"));
+            HashSet::new()
+        }
+    }
 }
 
 fn convert_services(services: &Services) -> Vec<&str> {
     services.keys().map(AsRef::as_ref).collect::<Vec<&str>>()
 }
 
-fn for_each_unit<'a, F, R, S>(action: F, units: S, log_action: &str) -> HashSet<JobId>
+/// Queues `action` for each unit, returning the jobs to wait for. A unit systemd refuses a
+/// job for is logged and added to `refused`, unless `nothing_to_do` says the error means the
+/// unit is already where `action` would put it.
+fn for_each_unit<'a, 'm, F, N, S>(
+    mut action: F,
+    units: S,
+    log_action: &str,
+    nothing_to_do: N,
+    refused: &mut Vec<String>,
+) -> HashSet<JobId>
 where
-    F: Fn(&str) -> anyhow::Result<R>,
+    F: FnMut(&str) -> anyhow::Result<systemd::Job<'m>>,
+    N: Fn(&anyhow::Error) -> bool,
     S: AsRef<[&'a str]>,
 {
-    // TODO: do we want to propagate unit failures here in some way?
     units
         .as_ref()
         .iter()
         .fold(HashSet::new(), |mut set, unit| match action(unit) {
-            Ok(_) => {
-                log::debug!("Unit {}: {}...", unit, log_action);
-                set.insert(JobId {
-                    id: (*unit).to_owned(),
-                });
+            Ok(job) => {
+                log::debug!("Unit {}: {} ({})...", unit, log_action, job.path());
+                set.insert(JobId { id: job.path() });
+                set
+            }
+            Err(e) if nothing_to_do(&e) => {
+                log::debug!("Unit {unit}: nothing to do for {log_action}: {e}");
                 set
             }
             Err(e) => {
@@ -369,23 +610,46 @@ where
                     unit
                 );
                 log::error!("{e}");
+                refused.push(format!("{unit}: error {log_action}: {e}"));
                 set
             }
         })
 }
 
+/// Waits for `jobs`, adding each one that finished without completing to `unfinished`, also
+/// when the wait is then cut short.
 fn wait_for_jobs(
     service_manager: &systemd::ServiceManager,
     job_monitor: &systemd::JobMonitor,
     jobs: HashSet<JobId>,
     timeout: &Option<Duration>,
+    unfinished: &mut Vec<UnfinishedJob>,
 ) -> anyhow::Result<()> {
-    if !service_manager.monitor_jobs_finish(job_monitor, timeout, jobs)? {
+    let mut results = vec![];
+    let finished = service_manager.monitor_jobs_finish(job_monitor, timeout, jobs, &mut results);
+    unfinished.extend(
+        results
+            .into_iter()
+            .filter(|(_, result)| !job_completed(result))
+            .map(|(unit, result)| {
+                log::error!("Unit {unit}: job didn't complete: {result}");
+                UnfinishedJob { unit, result }
+            }),
+    );
+    if !finished? {
         anyhow::bail!("Timeout waiting for systemd jobs");
     }
     Ok(())
 }
 
+/// Whether a job did what it was asked. `skipped` is a job that didn't apply to the unit's
+/// current state: there was nothing for it to do. Anything else but `done` (`failed`,
+/// `dependency`, `timeout`, `canceled`, ...) means the unit isn't where the job was to put it.
+fn job_completed(result: &str) -> bool {
+    matches!(result, "done" | "skipped")
+}
+
+/// A job's object path.
 #[derive(PartialEq, Eq, Hash, Clone)]
 struct JobId {
     id: String,
@@ -397,7 +661,32 @@ impl From<JobId> for String {
     }
 }
 
-pub fn restart_sysinit_reactivation_target() -> anyhow::Result<()> {
+/// Forgets the failed state and the start rate limit of each unit the profile manages, as
+/// NixOS' switch-to-configuration does for every unit. An activation restarts some units
+/// every time (userborn.service twice: through sysinit-reactivation.target, then on its
+/// own), so a few activations in a row would reach their start limit (by default, 5 starts
+/// in 10 seconds) and systemd would refuse the next restart. The host's other units keep
+/// their failed states: they aren't the profile's.
+pub fn reset_failed_units(store_path: &StorePath) -> anyhow::Result<()> {
+    let file = fs::File::open(
+        Path::new(&store_path.store_path)
+            .join("services")
+            .join("services.json"),
+    )?;
+    let services: Services = serde_json::from_reader(io::BufReader::new(file))?;
+    let service_manager = systemd::ServiceManager::new_session()?;
+    for unit in services.keys() {
+        // A unit systemd hasn't loaded (a new one, before the daemon reload) has none.
+        if let Err(e) = service_manager.reset_failed_unit(unit) {
+            log::debug!("Unit {unit}: failed state not reset: {e}");
+        }
+    }
+    Ok(())
+}
+
+/// A job systemd refuses, or that doesn't complete, is added to `incomplete` rather than
+/// returned, so that the activation carries on and records what it applied.
+pub fn restart_sysinit_reactivation_target(incomplete: &mut Vec<String>) -> anyhow::Result<()> {
     let service_manager = systemd::ServiceManager::new_session()?;
     let job_monitor = service_manager.monitor_jobs_init()?;
     let timeout = Some(Duration::from_secs(30));
@@ -409,10 +698,20 @@ pub fn restart_sysinit_reactivation_target() -> anyhow::Result<()> {
         |unit| service_manager.restart_unit(unit),
         ["sysinit-reactivation.target"],
         "restarting",
+        |_| false,
+        incomplete,
     );
 
-    wait_for_jobs(&service_manager, &job_monitor, jobs, &timeout)?;
-    Ok(())
+    let mut unfinished = vec![];
+    let finished = wait_for_jobs(
+        &service_manager,
+        &job_monitor,
+        jobs,
+        &timeout,
+        &mut unfinished,
+    );
+    incomplete.extend(unfinished.iter().map(ToString::to_string));
+    finished
 }
 
 /// This must be called after daemon-reload so systemd knows about the unit,
@@ -435,13 +734,243 @@ pub fn restart_userborn_if_exists() -> anyhow::Result<()> {
 
     // We use restart rather than start because userborn is a oneshot service
     // with RemainAfterExit=true.
+    let mut incomplete = vec![];
     let jobs = for_each_unit(
         |unit| service_manager.restart_unit(unit),
         ["userborn.service"],
         "restarting",
+        |_| false,
+        &mut incomplete,
     );
 
-    wait_for_jobs(&service_manager, &job_monitor, jobs, &timeout)?;
+    // A oneshot's job fails when it does: users exist only if the job completed.
+    let mut unfinished = vec![];
+    wait_for_jobs(
+        &service_manager,
+        &job_monitor,
+        jobs,
+        &timeout,
+        &mut unfinished,
+    )?;
+    incomplete.extend(unfinished.iter().map(ToString::to_string));
+    if !incomplete.is_empty() {
+        anyhow::bail!(incomplete.join("; "));
+    }
     log::info!("userborn.service completed");
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_unit_systemd_has_not_loaded_needs_no_stop() {
+        let not_loaded: anyhow::Error = dbus::Error::new_custom(
+            "org.freedesktop.systemd1.NoSuchUnit",
+            "Unit gone.service not loaded.",
+        )
+        .into();
+        assert!(is_not_loaded(&not_loaded));
+
+        let refused: anyhow::Error = dbus::Error::new_custom(
+            "org.freedesktop.systemd1.OnlyByDependency",
+            "Operation refused, unit pinned.service may be requested by dependency only.",
+        )
+        .into();
+        assert!(!is_not_loaded(&refused));
+        assert!(!is_not_loaded(&anyhow::anyhow!("something else")));
+    }
+
+    #[test]
+    fn only_done_and_skipped_jobs_completed() {
+        assert!(job_completed("done"));
+        assert!(job_completed("skipped"));
+        for result in ["failed", "dependency", "timeout", "canceled", "assert"] {
+            assert!(!job_completed(result), "{result}");
+        }
+    }
+
+    #[test]
+    fn a_phase_cut_short_still_names_what_was_not_applied() {
+        let timeout = || anyhow::anyhow!("Timeout waiting for systemd jobs");
+        assert_eq!(
+            cut_short(&[], timeout()).to_string(),
+            "Timeout waiting for systemd jobs"
+        );
+        assert_eq!(
+            cut_short(
+                &[
+                    "pinned.service: error stopping: refused".to_owned(),
+                    "busy.mount not stopped (job failed)".to_owned(),
+                ],
+                timeout().context("stopping")
+            )
+            .to_string(),
+            "pinned.service: error stopping: refused; busy.mount not stopped (job failed); \
+             stopping: Timeout waiting for systemd jobs"
+        );
+    }
+
+    #[test]
+    fn a_failed_unit_is_named_once() {
+        let job = |unit: &str, result: &str| UnfinishedJob {
+            unit: unit.to_owned(),
+            result: result.to_owned(),
+        };
+        assert_eq!(
+            name_failed(
+                vec!["b.service".to_owned()],
+                &[
+                    // Failed state and failed job: named once, by the failed state.
+                    job("b.service", "failed"),
+                    // A reload that failed leaves the unit active.
+                    job("c.service", "failed"),
+                    job("a.service", "dependency"),
+                ],
+            ),
+            [
+                "a.service (job dependency)",
+                "b.service",
+                "c.service (job failed)"
+            ]
+        );
+        assert!(name_failed(vec![], &[]).is_empty());
+    }
+
+    #[test]
+    fn a_dropped_unit_keeps_its_entry_until_its_stop_completes() {
+        let unit = |path: &str| ServiceConfig {
+            store_path: Some(StorePath {
+                store_path: PathBuf::from(path),
+            }),
+            masked: false,
+        };
+        let masked = ServiceConfig {
+            store_path: None,
+            masked: true,
+        };
+        let services = |entries: &[(&str, &ServiceConfig)]| -> Services {
+            entries
+                .iter()
+                .map(|(name, cfg)| ((*name).to_owned(), (*cfg).clone()))
+                .collect()
+        };
+        let busy = unit("/nix/store/aaa-unit-busy.mount/busy.mount");
+        let gone = unit("/nix/store/bbb-unit-gone.service/gone.service");
+        let old_kept = unit("/nix/store/ccc-unit-kept.service/kept.service");
+        let new_kept = unit("/nix/store/ddd-unit-kept.service/kept.service");
+        let pinned = unit("/nix/store/eee-unit-pinned.service/pinned.service");
+
+        let old = services(&[
+            ("busy.mount", &busy),
+            ("gone.service", &gone),
+            ("kept.service", &old_kept),
+            ("pinned.service", &pinned),
+        ]);
+        let new = services(&[("kept.service", &new_kept), ("pinned.service", &masked)]);
+
+        // While the stops are pending, the units the profile drops keep their old entries,
+        // and pinned.service, which the profile masks, has its new one.
+        let to_stop = [
+            "busy.mount".to_owned(),
+            "gone.service".to_owned(),
+            "pinned.service".to_owned(),
+        ];
+        let pending = pending_entries(&new, &old, &to_stop);
+        assert_eq!(
+            pending,
+            services(&[
+                ("busy.mount", &busy),
+                ("gone.service", &gone),
+                ("kept.service", &new_kept),
+                ("pinned.service", &masked),
+            ])
+        );
+
+        // gone.service's stop completed; busy.mount's failed, and pinned.service didn't stop
+        // either.
+        let applied = settled(pending, &new, &to_stop[1..2]);
+        assert_eq!(
+            applied,
+            services(&[
+                ("busy.mount", &busy),
+                ("kept.service", &new_kept),
+                ("pinned.service", &masked),
+            ])
+        );
+
+        // Activating the profile again retries the stop.
+        let active: Services = new.clone().into_iter().filter(|(_, c)| !c.masked).collect();
+        let to_stop = get_services_to_stop(applied.clone().relative_complement(active));
+        assert!(to_stop.contains_key("busy.mount"));
+        assert!(!to_stop.contains_key("gone.service"));
+
+        // A rollback to the profile that has it finds it unchanged: no restart.
+        let to_reload = get_services_to_reload(old.clone(), applied.clone());
+        assert!(!to_reload.contains_key("busy.mount"));
+        assert!(to_reload.contains_key("kept.service"));
+
+        // Nothing pending: the new services, as they are.
+        assert_eq!(settled(pending_entries(&new, &old, &[]), &new, &[]), new);
+    }
+
+    #[test]
+    fn a_changed_unit_keeps_its_old_entry_until_its_restart_completes() {
+        let unit = |path: &str| ServiceConfig {
+            store_path: Some(StorePath {
+                store_path: PathBuf::from(path),
+            }),
+            masked: false,
+        };
+        let services = |entries: &[(&str, &ServiceConfig)]| -> Services {
+            entries
+                .iter()
+                .map(|(name, cfg)| ((*name).to_owned(), (*cfg).clone()))
+                .collect()
+        };
+        let old_refused = unit("/nix/store/aaa-unit-refused.service/refused.service");
+        let new_refused = unit("/nix/store/bbb-unit-refused.service/refused.service");
+        let old_restarted = unit("/nix/store/ccc-unit-restarted.service/restarted.service");
+        let new_restarted = unit("/nix/store/ddd-unit-restarted.service/restarted.service");
+        let added = unit("/nix/store/eee-unit-added.service/added.service");
+
+        let old = services(&[
+            ("refused.service", &old_refused),
+            ("restarted.service", &old_restarted),
+        ]);
+        let new = services(&[
+            ("refused.service", &new_refused),
+            ("restarted.service", &new_restarted),
+            ("added.service", &added),
+        ]);
+
+        // Both restarts are pending; systemd refused refused.service's, and
+        // restarted.service's completed. A new unit has its new entry throughout:
+        // system-manager.target starts it every time.
+        let to_reload = ["refused.service".to_owned(), "restarted.service".to_owned()];
+        let pending = pending_entries(&new, &old, &to_reload);
+        assert_eq!(
+            pending,
+            services(&[
+                ("refused.service", &old_refused),
+                ("restarted.service", &old_restarted),
+                ("added.service", &added),
+            ])
+        );
+        let applied = settled(pending, &new, &to_reload[1..]);
+        assert_eq!(
+            applied,
+            services(&[
+                ("refused.service", &old_refused),
+                ("restarted.service", &new_restarted),
+                ("added.service", &added),
+            ])
+        );
+
+        // Activating the profile again retries the restart, and only that one.
+        let to_reload = get_services_to_reload(new.clone(), applied);
+        assert!(to_reload.contains_key("refused.service"));
+        assert!(!to_reload.contains_key("restarted.service"));
+    }
 }

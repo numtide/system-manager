@@ -9,7 +9,10 @@ forEachImage "prepopulate" {
   modules = [
     ../../examples/example.nix
   ];
-  extraPathsToRegister = [ newConfig ];
+  extraPathsToRegister = [
+    newConfig
+    ../sops/age-keys.txt
+  ];
   testScriptFunction =
     { toplevel, ... }:
     ''
@@ -17,6 +20,8 @@ forEachImage "prepopulate" {
       start_all()
 
       vm.wait_for_unit("default.target")
+      # newConfig's sops secret is decrypted with this key.
+      vm.succeed("cp ${../sops/age-keys.txt} /run/age-keys.txt")
 
       ${system-manager.lib.prepopulateProfileSnippet {
         node = "vm";
@@ -46,6 +51,7 @@ forEachImage "prepopulate" {
         profile = newConfig;
       }}
       vm.succeed("systemctl status new-service.service")
+      vm.succeed("test -f /run/secrets/test")
       vm.fail("systemctl status service-9.service")
       vm.fail("test -f /etc/a/nested/example/foo3")
       vm.fail("test -f /etc/baz/bar/foo2")
