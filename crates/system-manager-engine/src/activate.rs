@@ -147,7 +147,9 @@ pub fn activate(store_path: &StorePath, ephemeral: bool) -> Result<()> {
     match etc_files::activate(store_path, old_state.file_tree, ephemeral) {
         Ok(etc_tree) => {
             log::info!("Restarting sysinit-reactivation.target...");
-            services::restart_sysinit_reactivation_target()?;
+            if let Err(e) = services::restart_sysinit_reactivation_target() {
+                log::warn!("Error restarting sysinit-reactivation.target: {e}");
+            }
 
             // Restart userborn before tmpfiles so users exist when tmpfiles runs
             if let Err(e) = services::restart_userborn_if_exists() {
