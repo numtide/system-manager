@@ -97,6 +97,17 @@ in
         };
       })
 
+      # sops-install-secrets needs group `keys` or `nogroup`. NixOS declares
+      # `keys` outside sops-nix, and Fedora has no `nogroup`.
+      (lib.mkIf (secrets != { } && config.services.userborn.enable) {
+        users.groups.keys = { };
+      })
+      (lib.mkIf (secrets != { } && !config.services.userborn.enable) {
+        systemd.services.sops-install-secrets.serviceConfig.ExecStartPre = [
+          "${pkgs.shadow}/bin/groupadd --force --system keys"
+        ];
+      })
+
       (lib.mkIf (secrets != { } && generateAgeKeyScript != "") {
         # `sops.age.generateKey` is only implemented as an activation script
         # upstream. Run the very same script from a oneshot unit ordered before

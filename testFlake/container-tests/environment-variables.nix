@@ -51,15 +51,29 @@ forEachDistro "environment-variables" {
           assert "FOO" in content, f"Expected FOO in profile script, got: {content}"
           assert "NULLED" not in content, f"Expected NULLED to be absent, got: {content}"
 
-      with subtest("variables are written to environment.d"):
-          content = machine.succeed("cat /etc/environment.d/10-system-manager.conf")
-          assert 'FOO="bar"' in content, f"Expected FOO in environment.d, got: {content}"
-          assert 'PATHLIKE="/a:/b:/c"' in content, f"Expected PATHLIKE in environment.d, got: {content}"
-          assert "NULLED" not in content, f"Expected NULLED to be absent, got: {content}"
-          assert "/run/system-manager/sw" in content, f"Expected system profile in NIX_PROFILES, got: {content}"
-          assert "/etc/profiles/per-user/" in content, (
-              f"Expected per-user profile in NIX_PROFILES, got: {content}"
+      with subtest("variables are emitted by the user environment generator"):
+          content = machine.succeed(
+              "env -i USER=alice PATH=/usr/bin /etc/systemd/user-environment-generators/50-system-manager"
           )
+          assert 'FOO="bar"' in content, f"Expected FOO in generator output, got: {content}"
+          assert 'PATHLIKE="/a:/b:/c"' in content, f"Expected PATHLIKE in generator output, got: {content}"
+          assert "NULLED" not in content, f"Expected NULLED to be absent, got: {content}"
+          assert 'PATH="/etc/profiles/per-user/alice/bin:/run/system-manager/sw/bin:/usr/bin"' in content, (
+              f"Expected expanded PATH in generator output, got: {content}"
+          )
+          assert "/run/system-manager/sw" in content, f"Expected system profile in NIX_PROFILES, got: {content}"
+
+      with subtest("systemd user manager picks up the generator"):
+          machine.succeed("systemctl start user@0.service")
+          env = machine.succeed("XDG_RUNTIME_DIR=/run/user/0 systemctl --user show-environment")
+          assert "FOO=bar" in env.split("\n"), f"Expected FOO in user manager environment, got: {env}"
+          assert "PATH=/etc/profiles/per-user/root/bin:/run/system-manager/sw/bin:" in env, (
+              f"Expected expanded PATH in user manager environment, got: {env}"
+          )
+
+      with subtest("pam_env does not see unexpanded variables"):
+          value = machine.succeed("su -s /bin/sh nobody -c 'echo \"$PATH\"'").strip()
+          assert "''${" not in value, f"Expected no unexpanded variables in PATH, got: {value}"
 
       with subtest("NIX_PROFILES is exported in login shell"):
           content = machine.succeed("cat /etc/profile.d/system-manager-path.sh")

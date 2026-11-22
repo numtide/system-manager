@@ -9,6 +9,16 @@
       "url": "https://cloud.debian.org/images/cloud/trixie/20261001-2618/debian-13-genericcloud-amd64-20261001-2618.tar.xz"
     }
   },
+  "fedora-44": {
+    "aarch64-linux": {
+      "sha256": "0nqdz9r1m90281pa99xbahyg1sazwxch9zasf046lqfkh0xhmijm",
+      "url": "https://dl.fedoraproject.org/pub/fedora/linux/releases/44/Cloud/aarch64/images/Fedora-Cloud-Base-Generic-44-1.7.aarch64.qcow2"
+    },
+    "x86_64-linux": {
+      "sha256": "0zqbz5qp0gh9qmlkkl29k7jni8c6w0k1k8s3pwpai9bingjhys18",
+      "url": "https://dl.fedoraproject.org/pub/fedora/linux/releases/44/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-44-1.7.x86_64.qcow2"
+    }
+  },
   "ubuntu-22_04": {
     "aarch64-linux": {
       "sha256": "0i8m4d9xlnw9yz3iqnfgdn8m3nnzzwxk87j7jd27dx4vfzpk02n9",

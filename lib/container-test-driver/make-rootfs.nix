@@ -25,6 +25,57 @@ in
       excludePruneCommands = builtins.concatStringsSep "\n    " (
         map (p: "rm -rf $out/${p}") excludePatterns
       );
+      extractDiskImage = toRawImage: ''
+        set -euo pipefail
+
+        workdir=$(mktemp -d)
+        ${toRawImage}
+
+        # Pick the largest partition
+        read -r start size <<<"$(sfdisk -J "$rawimg" \
+          | jq -r '.partitiontable.partitions | max_by(.size) | "\(.start) \(.size)"')"
+        dd if="$rawimg" of="$workdir/root.img" \
+           bs=512 skip="$start" count="$size" conv=sparse status=none
+        rm -f "$rawimg"
+
+        fstype=$(blkid -o value -s TYPE "$workdir/root.img")
+        case "$fstype" in
+          ext4)
+            debugfs -R "rdump / $out" "$workdir/root.img" >/dev/null 2>&1
+            ;;
+          btrfs)
+            mkdir "$workdir/fs"
+            btrfs restore -s -m -S "$workdir/root.img" "$workdir/fs" >/dev/null
+            fstab=$(ls "$workdir"/fs/*/etc/fstab | head -n1)
+            awk '$3 == "btrfs" && match($4, /subvol=[^,]*/) {
+                   subvol = substr($4, RSTART + 7, RLENGTH - 7)
+                   sub(/^\//, "", subvol)
+                   print $2, subvol
+                 }' "$fstab" | sort > "$workdir/subvols"
+            if [ "$(head -n1 "$workdir/subvols" | cut -d' ' -f1)" != / ]; then
+              echo "btrfs: no subvolume mounted on / in $fstab" >&2
+              exit 1
+            fi
+            while read -r mnt subvol; do
+              rm -rf "$out$mnt"
+              mv "$workdir/fs/$subvol" "$out$mnt"
+            done < "$workdir/subvols"
+            ;;
+          *)
+            echo "unsupported root filesystem: $fstype" >&2
+            exit 1
+            ;;
+        esac
+
+        # debugfs rdump and btrfs restore have no --exclude, so apply
+        # excludePatterns via a post-extraction prune pass. Also strip /dev/*
+        # to match the tar path (which uses tar --exclude='dev/*').
+        rm -rf $out/dev/*
+        ${excludePruneCommands}
+
+        rm -rf "$workdir"
+      '';
+      isDiskImage = cloudImgFormat == "disk-tarball" || cloudImgFormat == "disk-qcow2";
       extractCommand =
         if cloudImgFormat == "tar" then
           ''
@@ -42,53 +93,34 @@ in
                     -C $out -x
           ''
         else if cloudImgFormat == "disk-tarball" then
-          ''
-            set -euo pipefail
-
-            workdir=$(mktemp -d)
+          extractDiskImage ''
             tar -C "$workdir" -xf ${cloudImg}
             rawimg=$(ls "$workdir"/*.raw | head -n1)
             if [ -z "$rawimg" ]; then
               echo "disk-tarball: no *.raw file inside ${cloudImg}" >&2
               exit 1
             fi
-
-            # Pick the largest partition
-            read -r start size <<<"$(sfdisk -J "$rawimg" \
-              | jq -r '.partitiontable.partitions | max_by(.size) | "\(.start) \(.size)"')"
-            dd if="$rawimg" of="$workdir/root.ext4" \
-               bs=512 skip="$start" count="$size" status=none
-
-            debugfs -R "rdump / $out" "$workdir/root.ext4" >/dev/null 2>&1
-
-            # debugfs rdump has no --exclude, so apply excludePatterns via a
-            # post-extraction prune pass. Also strip /dev/* to match the tar
-            # path (which uses tar --exclude='dev/*').
-            rm -rf $out/dev/*
-            ${excludePruneCommands}
-
-            rm -rf "$workdir"
+          ''
+        else if cloudImgFormat == "disk-qcow2" then
+          extractDiskImage ''
+            rawimg="$workdir/disk.raw"
+            qemu-img convert -O raw ${cloudImg} "$rawimg"
           ''
         else
-          throw "buildRootfs: unsupported cloudImgFormat '${cloudImgFormat}' (expected 'tar', 'qcow2', or 'disk-tarball')";
+          throw "buildRootfs: unsupported cloudImgFormat '${cloudImgFormat}' (expected 'tar', 'qcow2', 'disk-tarball', or 'disk-qcow2')";
       nativeBuildInputs = [
         pkgs.xz
       ]
       ++ pkgs.lib.optionals (cloudImgFormat == "qcow2") [ pkgs.libguestfs-with-appliance ]
-      ++ pkgs.lib.optionals (cloudImgFormat == "disk-tarball") [
+      ++ pkgs.lib.optionals isDiskImage [
         pkgs.util-linux
         pkgs.e2fsprogs
+        pkgs.btrfs-progs
+        pkgs.fakeroot
         pkgs.jq
-      ];
-    in
-    pkgs.runCommand "rootfs-${name}.tar"
-      {
-        inherit nativeBuildInputs;
-        passthru = {
-          inherit rootFsConfig;
-        };
-      }
-      ''
+      ]
+      ++ pkgs.lib.optionals (cloudImgFormat == "disk-qcow2") [ pkgs.qemu-utils ];
+      buildCommand = ''
         tarball=$out
         out=$PWD/rootfs
         mkdir -p $out
@@ -134,6 +166,23 @@ in
         # Run distro-specific setup
         ${extraSetup}
 
-        tar -C $out --sparse -cf $tarball .
+        tar -C $out --sparse${pkgs.lib.optionalString isDiskImage " --mode=ug-s"} -cf $tarball .
       '';
+    in
+    pkgs.runCommand "rootfs-${name}.tar"
+      {
+        inherit nativeBuildInputs;
+        passthru = {
+          inherit rootFsConfig;
+        };
+      }
+      # The sandbox rejects chown and setuid chmod, so dumped files lose their
+      # modes. fakeroot keeps them for the final tar; setuid/setgid are
+      # dropped there because the driver extracts in the sandbox too.
+      (
+        if isDiskImage then
+          "fakeroot ${pkgs.writeShellScript "build-rootfs-${name}" "set -euo pipefail\n${buildCommand}"}"
+        else
+          buildCommand
+      );
 }

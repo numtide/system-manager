@@ -10,6 +10,7 @@ let
     modules = [
       {
         nixpkgs.hostPlatform = system;
+        system-manager.allowAnyDistro = true;
       }
     ];
   };

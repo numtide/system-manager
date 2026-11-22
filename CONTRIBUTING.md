@@ -76,11 +76,12 @@ Adding a new entry there causes all existing tests to automatically generate a `
 
 The entry must supply `systems`, a `rootfs` derivation built by `lib.container-test-driver.make-rootfs.buildRootfs`, and a `maskableService` (a systemd unit that test scripts may mask, typically `unattended-upgrades.service` or equivalent).
 
-`buildRootfs` accepts three upstream image formats via `cloudImgFormat`, and the right choice depends on what the distribution publishes:
+`buildRootfs` accepts four upstream image formats via `cloudImgFormat`, and the right choice depends on what the distribution publishes:
 
 - `"tar"` (default) consumes a flat rootfs tarball such as Ubuntu's `*-server-cloudimg-amd64-root.tar.xz`. This is the simplest path, has no architecture restrictions, and should be preferred whenever the distribution ships a rootfs tarball.
-- `"disk-tarball"` consumes a `.tar.xz` that wraps a raw disk image, such as Debian's `*-genericcloud-*.tar.xz`. It unpacks the outer tarball, locates the root partition with `sfdisk -J` + `jq`, extracts it with `dd`, and dumps the ext4 filesystem into `$out` via `debugfs -R "rdump / $out"`. All required tools (`util-linux`, `e2fsprogs`, `jq`) are cross-architecture in nixpkgs, so this works on both `x86_64-linux` and `aarch64-linux`. `excludePatterns` are applied as a post-extraction prune pass rather than as tar `--exclude` flags. Note: this currently assumes the root filesystem is ext4; a btrfs-backed rootfs (such as Fedora Workstation) would need a `btrfs restore`-based variant added alongside.
-- `"qcow2"` extracts the rootfs from a qcow2 cloud disk image using `guestfish tar-out`. It pulls in `libguestfs-with-appliance`, whose `libguestfs-appliance` subpackage is marked `meta.platforms = [ "i686-linux" "x86_64-linux" ]` in nixpkgs, so entries using this format must restrict `systems` to `x86_64-linux`. Use only as a last resort, when the distribution publishes neither a rootfs tarball nor a disk-in-tarball variant.
+- `"disk-tarball"` consumes a `.tar.xz` that wraps a raw disk image, such as Debian's `*-genericcloud-*.tar.xz`. It unpacks the outer tarball, locates the root partition with `sfdisk -J` + `jq`, and extracts it with `dd`. An ext4 filesystem is dumped with `debugfs -R "rdump / $out"`. A btrfs filesystem is dumped with `btrfs restore`, and each subvolume is moved to the mount point that the image's `/etc/fstab` gives it. The build runs under `fakeroot`, because the Nix sandbox forbids the chown and setuid chmod calls that would otherwise drop file modes. The final tarball has no setuid or setgid bits, because the test driver also extracts it in the sandbox. All required tools are cross-architecture in nixpkgs, so this works on both `x86_64-linux` and `aarch64-linux`. `excludePatterns` are applied as a post-extraction prune pass rather than as tar `--exclude` flags.
+- `"disk-qcow2"` is the same as `"disk-tarball"`, but consumes a qcow2 disk image, such as Fedora's `Fedora-Cloud-Base-Generic-*.qcow2`. It converts the image to raw with `qemu-img` first.
+- `"qcow2"` extracts the rootfs from a qcow2 cloud disk image using `guestfish tar-out`. It pulls in `libguestfs-with-appliance`, whose `libguestfs-appliance` subpackage is marked `meta.platforms = [ "i686-linux" "x86_64-linux" ]` in nixpkgs, so entries using this format must restrict `systems` to `x86_64-linux`. Prefer `"disk-qcow2"`; use this only when the root partition cannot be dumped with `debugfs` or `btrfs restore`.
 
 Pin a specific dated build directory upstream rather than `latest/` and obtain the SHA256 with `nix-prefetch-url`. URL and hash go in `lib/container-test-driver/images.json`; `distros.nix` reads them automatically.
 
@@ -90,6 +91,7 @@ Reuse the existing `excludePatterns` (which strip container-incompatible systemd
 VM tests live under `testFlake/vm-tests/` and iterate over the same `images.json` keys as the container tests, so step 2 already added them.
 A key like `ubuntu-24_04` selects `nix-vm-test.ubuntu."24_04"`, which means the distribution name must match the one `nix-vm-test` uses (`ubuntu`, `debian`, `fedora`, `rocky`) and the version must be one it publishes.
 If `nix-vm-test` does not yet support the distribution or that version, support must be added there first.
+Fedora is the exception: it runs in container tests only, so `testFlake/vm-tests/default.nix` filters it out.
 
 **4. Run the test matrix and triage failures.**
 Build the new check attributes via `nix build .#checks.x86_64-linux.container-<distro>-*` and `vm-<distro>-*-*` and triage any failures.

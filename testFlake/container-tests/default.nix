@@ -36,6 +36,7 @@ let
                 nixpkgs.hostPlatform = system;
                 hostPkgs = pkgs;
                 system-manager.allowAnyDistro = true;
+                _module.args.distroConfig = distroConfig;
               };
             }
           )
