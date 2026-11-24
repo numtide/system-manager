@@ -105,7 +105,9 @@ pub struct NixOptions {
 }
 
 pub struct NixBuildOptions {
-    pub flake_uri: String,
+    pub is_flake: bool,
+    pub path: String,
+    pub attr: Option<String>,
     pub refresh: bool,
 }
 

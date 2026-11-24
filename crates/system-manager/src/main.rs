@@ -141,36 +141,96 @@ struct InitArgs {
 }
 
 #[derive(clap::Args, Debug)]
-struct BuildArgs {
-    /// The flake URI defining the system-manager profile
+#[group(multiple = false)]
+pub struct BuildUri {
+    /// The flake URI defining the system-manager profile [default: ~/.config/system-manager]
     #[arg(
         long = "flake",
         name = "FLAKE_URI",
-        default_value = DEFAULT_FLAKE_PATH,
-        value_parser = |src: &str| -> Result<String> {
-            if src.starts_with("~") {
-                if let Some(home) = std::env::home_dir() {
-                    let expanded = src.replace("~", &home.to_string_lossy());
-                    return Ok(expanded);
-                }
-                bail!("Failed to determine a home directory for the flake URI.")
+        value_parser = |src: &str| -> Result<(String, Option<String>)> {
+            let mut splitted = src.trim_end_matches('#').split('#');
+            let path = splitted.next()
+                .ok_or_else(|| anyhow!("Invalid flake URI: {src}"));
+            let attr = splitted.next();
+            if splitted.next().is_some() {
+                anyhow::bail!("Invalid flake URI, too many '#'s: {src}");
             }
-            Ok(src.to_string())
+            path.map(|p| (p.to_string(), attr.map(|a| a.to_string())))
         },
     )]
-    flake_uri: String,
+    flake_uri: Option<(String, Option<String>)>,
+
+    #[clap(flatten)]
+    file_args: Option<FileArgs>,
+}
+
+#[derive(clap::Args, Debug)]
+struct FileArgs {
+    /// Path to a (non-flake) nix file to build the system-manager configuration from [default: ~/.config/system-manager].
+    #[arg(long)]
+    file: Option<String>,
+
+    /// Specific attribute path to the system-manager configuration from.
+    #[arg(long)]
+    attr: Option<String>,
+}
+
+#[derive(clap::Args, Debug)]
+struct BuildArgs {
+    #[clap(flatten)]
+    uri: BuildUri,
 
     #[arg(long, action)]
     /// Bypass the flake evaluation cache and fetch remote flakes fresh
     refresh: bool,
 }
 
-impl From<&BuildArgs> for NixBuildOptions {
-    fn from(build_args: &BuildArgs) -> Self {
-        Self {
-            flake_uri: build_args.flake_uri.clone(),
-            refresh: build_args.refresh,
+impl TryFrom<&BuildArgs> for NixBuildOptions {
+    type Error = anyhow::Error;
+    fn try_from(build_args: &BuildArgs) -> Result<Self, Self::Error> {
+        // Work-around https://github.com/clap-rs/clap/issues/5253
+        if build_args.uri.flake_uri.is_some() && build_args.uri.file_args.is_some() {
+            bail!("the argument '--flake <FLAKE_URI>' cannot be used with '--file <FILE> | --attr <ATTR>'")
         }
+
+        let mut path = build_args
+            .uri
+            .file_args
+            .as_ref()
+            .and_then(|f_args| f_args.file.clone())
+            .unwrap_or_else(|| {
+                build_args
+                    .uri
+                    .flake_uri
+                    .as_ref()
+                    .map(|flake| flake.0.clone())
+                    .unwrap_or_else(|| DEFAULT_FLAKE_PATH.to_string())
+            });
+        if path.starts_with("~") {
+            if let Some(home) = std::env::home_dir() {
+                path = path.replace("~", &home.to_string_lossy());
+            } else {
+                bail!("Failed to determine a home directory for the flake URI.")
+            }
+        }
+
+        Ok(Self {
+            is_flake: build_args.uri.file_args.is_none(),
+            path: path.to_string(),
+            attr: build_args
+                .uri
+                .file_args
+                .as_ref()
+                .and_then(|f_args| f_args.attr.clone())
+                .or_else(|| {
+                    build_args
+                        .uri
+                        .flake_uri
+                        .as_ref()
+                        .and_then(|flake| flake.1.clone())
+                }),
+            refresh: build_args.refresh,
+        })
     }
 }
 
@@ -189,19 +249,12 @@ struct OptionalStorePathArg {
 }
 
 #[derive(clap::Args, Debug)]
-struct OptionalFlakeUriArg {
-    #[arg(long = "flake", name = "FLAKE_URI")]
-    /// The flake URI defining the system-manager profile
-    maybe_flake_uri: Option<String>,
-}
-
-#[derive(clap::Args, Debug)]
-struct StoreOrFlakeArgs {
+struct StoreOrBuildArgs {
     #[command(flatten)]
     optional_store_path_arg: OptionalStorePathArg,
 
     #[command(flatten)]
-    optional_flake_uri_arg: OptionalFlakeUriArg,
+    optional_build_uri_arg: BuildUri,
 
     #[arg(long, action)]
     /// Bypass the flake evaluation cache and fetch remote flakes fresh
@@ -227,7 +280,7 @@ enum Action {
     /// Build a new system-manager generation and register it as the active system-manager profile
     Register {
         #[command(flatten)]
-        store_or_flake_args: StoreOrFlakeArgs,
+        store_or_build_args: StoreOrBuildArgs,
         #[command(flatten)]
         sudo_args: SudoArgs,
     },
@@ -246,7 +299,7 @@ enum Action {
     /// Put all files defined by the given generation in place, but do not start services
     PrePopulate {
         #[command(flatten)]
-        store_or_flake_args: StoreOrFlakeArgs,
+        store_or_build_args: StoreOrBuildArgs,
         #[command(flatten)]
         activation_args: ActivationArgs,
         #[command(flatten)]
@@ -303,13 +356,13 @@ fn go(args: Args) -> Result<()> {
 
     match action {
         Action::PrePopulate {
-            store_or_flake_args,
+            store_or_build_args,
             activation_args: ActivationArgs { ephemeral },
             sudo_args,
         } => {
             let sudo_options = sudo_args.to_sudo_options(legacy_use_remote_sudo)?;
             prepopulate(
-                store_or_flake_args,
+                store_or_build_args,
                 ephemeral,
                 &target_host,
                 &sudo_options,
@@ -339,12 +392,12 @@ fn go(args: Args) -> Result<()> {
         }
 
         Action::Register {
-            store_or_flake_args,
+            store_or_build_args,
             sudo_args,
         } => {
             let sudo_options = sudo_args.to_sudo_options(legacy_use_remote_sudo)?;
             register(
-                store_or_flake_args,
+                store_or_build_args,
                 &target_host,
                 &sudo_options,
                 &nix_options,
@@ -405,8 +458,7 @@ fn go(args: Args) -> Result<()> {
             build_args,
             activation_args: ActivationArgs { ephemeral },
             sudo_args,
-        } => {
-            let mut nix_build_options = NixBuildOptions::from(&build_args);
+        } => NixBuildOptions::try_from(&build_args).and_then(|mut nix_build_options| {
             let sudo_options = sudo_args.to_sudo_options(legacy_use_remote_sudo)?;
             let store_path = do_build(&mut nix_build_options, &nix_options)?;
             copy_closure(&store_path, &target_host, &ssh_options)?;
@@ -425,7 +477,7 @@ fn go(args: Args) -> Result<()> {
                 &ssh_options,
                 verbose,
             )
-        }
+        }),
 
         Action::Activate {
             store_path,
@@ -490,10 +542,11 @@ fn build(
     nix_options: &NixOptions,
     ssh_options: &[String],
 ) -> Result<StorePath> {
-    let mut nix_build_options = NixBuildOptions::from(build_args);
-    let store_path = do_build(&mut nix_build_options, nix_options)?;
-    copy_closure(&store_path, target_host, ssh_options)?;
-    Ok(store_path)
+    NixBuildOptions::try_from(build_args).and_then(|mut nix_build_options| {
+        let store_path = do_build(&mut nix_build_options, nix_options)?;
+        copy_closure(&store_path, target_host, ssh_options)?;
+        Ok(store_path)
+    })
 }
 
 fn do_build(
@@ -504,7 +557,7 @@ fn do_build(
 }
 
 fn register(
-    args: StoreOrFlakeArgs,
+    args: StoreOrBuildArgs,
     target_host: &Option<String>,
     sudo_options: &SudoOptions,
     nix_options: &NixOptions,
@@ -512,31 +565,32 @@ fn register(
     verbose: bool,
 ) -> Result<StorePath> {
     match args {
-        StoreOrFlakeArgs {
+        StoreOrBuildArgs {
             optional_store_path_arg:
                 OptionalStorePathArg {
                     maybe_store_path: None,
                 },
-            optional_flake_uri_arg:
-                OptionalFlakeUriArg {
-                    maybe_flake_uri: Some(flake_uri),
-                },
+            optional_build_uri_arg,
             refresh,
-        } => {
-            let mut nix_build_options = NixBuildOptions { flake_uri, refresh };
+        } => NixBuildOptions::try_from(&BuildArgs {
+            uri: optional_build_uri_arg,
+            refresh,
+        })
+        .and_then(|mut nix_build_options| {
             let store_path = do_build(&mut nix_build_options, nix_options)?;
             copy_closure(&store_path, target_host, ssh_options)?;
             invoke_engine_register(&store_path, target_host, sudo_options, ssh_options, verbose)?;
             Ok(store_path)
-        }
-        StoreOrFlakeArgs {
+        }),
+        StoreOrBuildArgs {
             optional_store_path_arg:
                 OptionalStorePathArg {
                     maybe_store_path: Some(store_path),
                 },
-            optional_flake_uri_arg:
-                OptionalFlakeUriArg {
-                    maybe_flake_uri: None,
+            optional_build_uri_arg:
+                BuildUri {
+                    flake_uri: None,
+                    file_args: None,
                 },
             refresh: _,
         } => {
@@ -551,7 +605,7 @@ fn register(
 }
 
 fn prepopulate(
-    args: StoreOrFlakeArgs,
+    args: StoreOrBuildArgs,
     ephemeral: bool,
     target_host: &Option<String>,
     sudo_options: &SudoOptions,
@@ -560,18 +614,18 @@ fn prepopulate(
     verbose: bool,
 ) -> Result<StorePath> {
     match args {
-        StoreOrFlakeArgs {
+        StoreOrBuildArgs {
             optional_store_path_arg:
                 OptionalStorePathArg {
                     maybe_store_path: None,
                 },
-            optional_flake_uri_arg:
-                OptionalFlakeUriArg {
-                    maybe_flake_uri: Some(flake_uri),
-                },
+            optional_build_uri_arg,
             refresh,
-        } => {
-            let mut nix_build_options = NixBuildOptions { flake_uri, refresh };
+        } => NixBuildOptions::try_from(&BuildArgs {
+            uri: optional_build_uri_arg,
+            refresh,
+        })
+        .and_then(|mut nix_build_options| {
             let store_path = do_build(&mut nix_build_options, nix_options)?;
             copy_closure(&store_path, target_host, ssh_options)?;
             invoke_engine_register(&store_path, target_host, sudo_options, ssh_options, verbose)?;
@@ -584,12 +638,13 @@ fn prepopulate(
                 verbose,
             )?;
             Ok(store_path)
-        }
-        StoreOrFlakeArgs {
+        }),
+        StoreOrBuildArgs {
             optional_store_path_arg: OptionalStorePathArg { maybe_store_path },
-            optional_flake_uri_arg:
-                OptionalFlakeUriArg {
-                    maybe_flake_uri: None,
+            optional_build_uri_arg:
+                BuildUri {
+                    flake_uri: None,
+                    file_args: None,
                 },
             refresh: _,
         } => {
